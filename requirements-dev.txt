@@ -1,4 +1,4 @@
 black
-fastmcp 
+fastmcp
 pre-commit
 pytest

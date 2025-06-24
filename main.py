@@ -18,6 +18,7 @@ class LeverMCP(FastMCP):
 
 mcp = LeverMCP("Lever MCP")
 
+
 @mcp.tool()
 def mutate_string(text: str, mutation: str, data: Dict[str, Any] = {}) -> str:
     """
@@ -45,30 +46,35 @@ def mutate_string(text: str, mutation: str, data: Dict[str, Any] = {}) -> str:
         mutate_string('Hello, {name}!', 'template', {'name': 'World'})
         # => 'Hello, World!'
     """
-    if mutation == 'deburr':
+    if mutation == "deburr":
         return "".join(
-            c for c in unicodedata.normalize("NFKD", text) if not unicodedata.combining(c)
+            c
+            for c in unicodedata.normalize("NFKD", text)
+            if not unicodedata.combining(c)
         )
-    elif mutation == 'template':
+    elif mutation == "template":
         if not data:
             raise ValueError("'data' argument is required for 'template' mutation.")
+
         def replacer(match):
             key = match.group(1)
             return str(data.get(key, match.group(0)))
+
         return re.sub(r"\{(\w+)\}", replacer, text)
-    elif mutation == 'camel_case':
+    elif mutation == "camel_case":
         s = re.sub(r"(_|-)+", " ", text).title().replace(" ", "")
         return s[0].lower() + s[1:] if s else ""
-    elif mutation == 'kebab_case':
+    elif mutation == "kebab_case":
         s = re.sub(r"([a-z0-9])([A-Z])", r"\1-\2", text)
         return re.sub(r"(\s|_|-)+", "-", s).lower().strip("-_")
-    elif mutation == 'snake_case':
+    elif mutation == "snake_case":
         s = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", text)
         return re.sub(r"(\s|-)+", "_", s).lower().strip("-_")
-    elif mutation == 'capitalize':
+    elif mutation == "capitalize":
         return text.capitalize()
     else:
         raise ValueError(f"Unknown mutation type: {mutation}")
+
 
 @mcp.tool()
 def mutate_list(
@@ -135,28 +141,36 @@ def mutate_list(
         ], 'pluck', 'name')
         # => ['Alice', 'Bob']
     """
-    if mutation == 'flatten_deep':
+    if mutation == "flatten_deep":
         result = []
+
         def _flatten(lst):
             for i in lst:
                 if isinstance(i, list):
                     _flatten(i)
                 else:
                     result.append(i)
+
         _flatten(items)
         return result
-    elif mutation == 'sort_by':
+    elif mutation == "sort_by":
+
         def get_sort_key(x):
             v = x.get(param, "") if isinstance(x, dict) else getattr(x, param, "")
             if isinstance(v, dict):
                 return json.dumps(v, sort_keys=True)
             return v
+
         return sorted(items, key=get_sort_key)
-    elif mutation == 'uniq_by':
+    elif mutation == "uniq_by":
         seen = set()
         result = []
         for item in items:
-            k = item.get(param) if isinstance(item, dict) else getattr(item, param, None)
+            k = (
+                item.get(param)
+                if isinstance(item, dict)
+                else getattr(item, param, None)
+            )
             if isinstance(k, dict):
                 k_hash = json.dumps(k, sort_keys=True)
             else:
@@ -165,42 +179,54 @@ def mutate_list(
                 seen.add(k_hash)
                 result.append(item)
         return result
-    elif mutation == 'partition':
+    elif mutation == "partition":
         trues, falses = [], []
         for item in items:
-            result = item.get(param) if isinstance(item, dict) else getattr(item, param, False)
+            result = (
+                item.get(param)
+                if isinstance(item, dict)
+                else getattr(item, param, False)
+            )
             (trues if result else falses).append(item)
         return [trues, falses]
-    elif mutation == 'pluck':
-        return [item.get(param) if isinstance(item, dict) else getattr(item, param, None) for item in items]
-    elif mutation == 'compact':
+    elif mutation == "pluck":
+        return [
+            item.get(param) if isinstance(item, dict) else getattr(item, param, None)
+            for item in items
+        ]
+    elif mutation == "compact":
         return [item for item in items if item]
-    elif mutation == 'chunk':
+    elif mutation == "chunk":
         size = int(param)
-        return [items[i:i + size] for i in range(0, len(items), size)]
-    elif mutation == 'zip_lists':
+        return [items[i : i + size] for i in range(0, len(items), size)]
+    elif mutation == "zip_lists":
         return [list(t) for t in zip(*items)]
-    elif mutation == 'unzip_list':
+    elif mutation == "unzip_list":
         return [list(t) for t in zip(*items)]
-    elif mutation == 'remove_by':
-        key = param['key']
-        value = param['value']
-        return [item for item in items if (item.get(key) if isinstance(item, dict) else getattr(item, key, None)) != value]
-    elif mutation == 'tail':
+    elif mutation == "remove_by":
+        key = param["key"]
+        value = param["value"]
+        return [
+            item
+            for item in items
+            if (item.get(key) if isinstance(item, dict) else getattr(item, key, None))
+            != value
+        ]
+    elif mutation == "tail":
         return items[1:] if len(items) > 1 else []
-    elif mutation == 'initial':
+    elif mutation == "initial":
         return items[:-1] if items else []
-    elif mutation == 'drop':
-        return items[int(param):]
-    elif mutation == 'drop_right':
-        return items[:-int(param)] if int(param) > 0 else items[:]
-    elif mutation == 'take':
-        return items[:int(param)]
-    elif mutation == 'take_right':
-        return items[-int(param):] if int(param) > 0 else []
-    elif mutation == 'flatten':
+    elif mutation == "drop":
+        return items[int(param) :]
+    elif mutation == "drop_right":
+        return items[: -int(param)] if int(param) > 0 else items[:]
+    elif mutation == "take":
+        return items[: int(param)]
+    elif mutation == "take_right":
+        return items[-int(param) :] if int(param) > 0 else []
+    elif mutation == "flatten":
         return [item for sublist in items for item in sublist]
-    elif mutation == 'union':
+    elif mutation == "union":
         result = []
         seen = set()
         for sublist in items:
@@ -209,20 +235,21 @@ def mutate_list(
                     seen.add(item)
                     result.append(item)
         return result
-    elif mutation == 'xor':
+    elif mutation == "xor":
         counts = {}
         for sublist in items:
             for item in sublist:
                 counts[item] = counts.get(item, 0) + 1
         return [item for item, count in counts.items() if count == 1]
-    elif mutation == 'shuffle':
+    elif mutation == "shuffle":
         result = list(items)
         random.shuffle(result)
         return result
-    elif mutation == 'sample_size':
+    elif mutation == "sample_size":
         return random.sample(items, min(int(param), len(items)))
     else:
         raise ValueError(f"Unknown mutation type: {mutation}")
+
 
 @mcp.tool()
 def has_property(obj: Any, property: str, param: Optional[Any] = None) -> bool:
@@ -257,28 +284,29 @@ def has_property(obj: Any, property: str, param: Optional[Any] = None) -> bool:
         has_property('abc', 'starts_with', 'a')
         # => True
     """
-    if property == 'starts_with':
+    if property == "starts_with":
         if not isinstance(obj, str) or param is None:
             return False
         return obj.startswith(param)
-    elif property == 'ends_with':
+    elif property == "ends_with":
         if not isinstance(obj, str) or param is None:
             return False
         return obj.endswith(param)
-    elif property == 'is_empty':
-        if hasattr(obj, '__len__'):
+    elif property == "is_empty":
+        if hasattr(obj, "__len__"):
             return len(obj) == 0
         return not bool(obj)
-    elif property == 'is_equal':
+    elif property == "is_equal":
         return obj == param
-    elif property == 'is_nil':
+    elif property == "is_nil":
         return obj is None
-    elif property == 'has_key':
+    elif property == "has_key":
         if not isinstance(obj, dict) or param is None:
             return False
         return param in obj
     else:
         raise ValueError(f"Unknown property: {property}")
+
 
 @mcp.tool()
 def select_from_list(items: list, operation: str, param: Optional[Any] = None) -> Any:
@@ -313,27 +341,31 @@ def select_from_list(items: list, operation: str, param: Optional[Any] = None) -
         select_from_list([1, 2, 3], 'sample')
         # => 2 (example output)
     """
-    if operation == 'find_by':
-        if not param or 'key' not in param or 'value' not in param:
-            raise ValueError("'param' with 'key' and 'value' is required for 'find_by'.")
-        key = param['key']
-        value = param['value']
+    if operation == "find_by":
+        if not param or "key" not in param or "value" not in param:
+            raise ValueError(
+                "'param' with 'key' and 'value' is required for 'find_by'."
+            )
+        key = param["key"]
+        value = param["value"]
         for item in items:
             v = item.get(key) if isinstance(item, dict) else getattr(item, key, None)
             if v == value:
                 return item
         return None
-    elif operation == 'head':
+    elif operation == "head":
         return items[0] if items else None
-    elif operation == 'last':
+    elif operation == "last":
         return items[-1] if items else None
-    elif operation == 'sample':
+    elif operation == "sample":
         if not items:
             return None
         import random
+
         return random.choice(items)
     else:
         raise ValueError(f"Unknown operation: {operation}")
+
 
 @mcp.tool()
 def compare_lists(a: list, b: list, operation: str, key: Optional[str] = None) -> list:
@@ -375,22 +407,39 @@ def compare_lists(a: list, b: list, operation: str, key: Optional[str] = None) -
         ], 'intersection_by', 'id')
         # => [{'id': 2}]
     """
-    if operation == 'difference_by':
+    if operation == "difference_by":
         if key is None:
             raise ValueError("'key' is required for 'difference_by'.")
-        b_keys = set(item.get(key) if isinstance(item, dict) else getattr(item, key, None) for item in b)
-        return [item for item in a if (item.get(key) if isinstance(item, dict) else getattr(item, key, None)) not in b_keys]
-    elif operation == 'intersection_by':
+        b_keys = set(
+            item.get(key) if isinstance(item, dict) else getattr(item, key, None)
+            for item in b
+        )
+        return [
+            item
+            for item in a
+            if (item.get(key) if isinstance(item, dict) else getattr(item, key, None))
+            not in b_keys
+        ]
+    elif operation == "intersection_by":
         if key is None:
             raise ValueError("'key' is required for 'intersection_by'.")
-        b_keys = set(item.get(key) if isinstance(item, dict) else getattr(item, key, None) for item in b)
-        return [item for item in a if (item.get(key) if isinstance(item, dict) else getattr(item, key, None)) in b_keys]
-    elif operation == 'intersection':
+        b_keys = set(
+            item.get(key) if isinstance(item, dict) else getattr(item, key, None)
+            for item in b
+        )
+        return [
+            item
+            for item in a
+            if (item.get(key) if isinstance(item, dict) else getattr(item, key, None))
+            in b_keys
+        ]
+    elif operation == "intersection":
         return list(set(a) & set(b))
-    elif operation == 'difference':
+    elif operation == "difference":
         return [item for item in a if item not in b]
     else:
         raise ValueError(f"Unknown operation: {operation}")
+
 
 @mcp.tool()
 def process_list(items: list, operation: str, key: str) -> dict:
@@ -427,22 +476,23 @@ def process_list(items: list, operation: str, key: str) -> dict:
         ], 'key_by', 'id')
         # => {'a': {...}, 'b': {...}}
     """
-    if operation == 'group_by':
+    if operation == "group_by":
         result = {}
         for item in items:
             k = item.get(key) if isinstance(item, dict) else getattr(item, key, None)
             result.setdefault(k, []).append(item)
         return result
-    elif operation == 'count_by':
+    elif operation == "count_by":
         result = {}
         for item in items:
             k = item.get(key) if isinstance(item, dict) else getattr(item, key, None)
             result[k] = result.get(k, 0) + 1
         return result
-    elif operation == 'key_by':
+    elif operation == "key_by":
         return {item[key]: item for item in items}
     else:
         raise ValueError(f"Unknown operation: {operation}")
+
 
 @mcp.tool()
 def process_dict(obj: dict, operation: str, param: Optional[list] = None) -> dict:
@@ -468,18 +518,19 @@ def process_dict(obj: dict, operation: str, param: Optional[list] = None) -> dic
         process_dict({'a': 1, 'b': 2}, 'pick', ['a'])
         # => {'a': 1}
     """
-    if operation == 'invert':
+    if operation == "invert":
         return {str(value): key for key, value in obj.items()}
-    elif operation == 'pick':
+    elif operation == "pick":
         if param is None:
             raise ValueError("'param' (list of keys) is required for 'pick' operation.")
         return {key: obj[key] for key in param if key in obj}
-    elif operation == 'omit':
+    elif operation == "omit":
         if param is None:
             raise ValueError("'param' (list of keys) is required for 'omit' operation.")
         return {key: value for key, value in obj.items() if key not in param}
     else:
         raise ValueError(f"Unknown operation: {operation}")
+
 
 @mcp.tool()
 async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> Any:
@@ -534,11 +585,13 @@ async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> Any:
 
         # Now 'tool' is always the resolved object, safe to access attributes
         if not hasattr(tool, "run") or not callable(getattr(tool, "run", None)):
-            return {"error": f"Step {i}: Tool '{tool_name}' is not a valid tool object."}
-        
+            return {
+                "error": f"Step {i}: Tool '{tool_name}' is not a valid tool object."
+            }
+
         param_schema = tool.parameters.get("properties", {})
         required = tool.parameters.get("required", [])
-        
+
         # Find the first required param not in params, or just the first param
         primary_param = None
         for k in required:
@@ -551,12 +604,16 @@ async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> Any:
         arguments = dict(params)
         if primary_param:
             if primary_param in arguments:
-                return {"error": f"Step {i}: Chaining does not allow specifying the primary parameter '{primary_param}' in params. The output from the previous tool is always used as input."}
+                return {
+                    "error": f"Step {i}: Chaining does not allow specifying the primary parameter '{primary_param}' in params. The output from the previous tool is always used as input."
+                }
             arguments[primary_param] = value
         elif len(param_schema) == 1:
             only_param = next(iter(param_schema))
             if only_param in arguments:
-                return {"error": f"Step {i}: Chaining does not allow specifying the primary parameter '{only_param}' in params. The output from the previous tool is always used as input."}
+                return {
+                    "error": f"Step {i}: Chaining does not allow specifying the primary parameter '{only_param}' in params. The output from the previous tool is always used as input."
+                }
             arguments[only_param] = value
         elif not param_schema:
             arguments = {}
@@ -568,14 +625,16 @@ async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> Any:
         value = unwrap_result(result)
     return value
 
+
 def unwrap_result(result):
     import json
+
     # If result is a list of content objects, extract their values
     if isinstance(result, list) and result:
-        if all(hasattr(x, 'text') for x in result):
+        if all(hasattr(x, "text") for x in result):
             values = []
             for content in result:
-                if hasattr(content, 'text'):
+                if hasattr(content, "text"):
                     try:
                         values.append(json.loads(content.text))  # type: ignore[attr-defined]
                     except Exception:
@@ -584,13 +643,14 @@ def unwrap_result(result):
                     values.append(content)
             return values if len(values) > 1 else values[0]
     # If result is a single content object
-    if hasattr(result, 'text'):
+    if hasattr(result, "text"):
         try:
             return json.loads(result.text)  # type: ignore[attr-defined]
         except Exception:
             return result.text  # type: ignore[attr-defined]
     # Otherwise, return as is
     return result
+
 
 @mcp.tool()
 def merge(dicts: list) -> dict:
@@ -611,6 +671,7 @@ def merge(dicts: list) -> dict:
         # => {'a': 1, 'b': {'c': 2, 'd': 3}}
     """
     import copy
+
     def deep_merge(a, b):
         for k, v in b.items():
             if k in a and isinstance(a[k], dict) and isinstance(v, dict):
@@ -618,10 +679,12 @@ def merge(dicts: list) -> dict:
             else:
                 a[k] = copy.deepcopy(v)
         return a
+
     result = {}
     for d in dicts:
         result = deep_merge(result, d)
     return result
+
 
 @mcp.tool()
 def set_value(obj: dict, path, value):
@@ -641,6 +704,7 @@ def set_value(obj: dict, path, value):
         # => {'a': {'b': 2}}
     """
     import re
+
     if isinstance(path, str):
         path = re.findall(r"[^.\[\]]+", path)
     d = obj
@@ -650,6 +714,7 @@ def set_value(obj: dict, path, value):
         d = d[p]
     d[path[-1]] = value
     return obj
+
 
 @mcp.tool()
 def get_value(obj: dict, path, default=None):
@@ -671,6 +736,7 @@ def get_value(obj: dict, path, default=None):
         # => 42
     """
     import re
+
     if isinstance(path, str):
         path = re.findall(r"[^.\[\]]+", path)
     d = obj
@@ -680,6 +746,7 @@ def get_value(obj: dict, path, default=None):
         else:
             return default
     return d
+
 
 if __name__ == "__main__":
     mcp.run()
