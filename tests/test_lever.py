@@ -4,6 +4,8 @@ from fastmcp import Client
 import importlib
 import main
 from main import LeverMCP
+from json.decoder import JSONDecodeError
+from fastmcp.exceptions import ToolError
 
 
 @pytest.fixture
@@ -25,7 +27,7 @@ async def test_group_by(client):
         {"type": "fruit", "name": "banana"},
         {"type": "vegetable", "name": "carrot"},
     ]
-    result = await client.call_tool("group_by", {"items": items, "key": "type"})
+    result = await client.call_tool("process_list", {"items": items, "operation": "group_by", "key": "type"})
     data = json.loads(result[0].text)
     assert data == {
         "fruit": [
@@ -48,7 +50,7 @@ async def test_merge(client):
 @pytest.mark.asyncio
 async def test_flatten_deep(client):
     items = [1, [2, [3, 4], 5]]
-    result = await client.call_tool("flatten_deep", {"items": items})
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "flatten_deep"})
     data = json.loads(result[0].text)
     assert data == [1, 2, 3, 4, 5]
 
@@ -56,7 +58,7 @@ async def test_flatten_deep(client):
 @pytest.mark.asyncio
 async def test_sort_by(client):
     items = [{"name": "b"}, {"name": "a"}]
-    result = await client.call_tool("sort_by", {"items": items, "key": "name"})
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "sort_by", "param": "name"})
     data = json.loads(result[0].text)
     assert data == [{"name": "a"}, {"name": "b"}]
 
@@ -64,40 +66,32 @@ async def test_sort_by(client):
 @pytest.mark.asyncio
 async def test_uniq_by(client):
     items = [{"id": 1, "name": "a"}, {"id": 1, "name": "a"}, {"id": 2, "name": "b"}]
-    result = await client.call_tool("uniq_by", {"items": items, "key": "id"})
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "uniq_by", "param": "id"})
     data = json.loads(result[0].text)
     assert data == [{"id": 1, "name": "a"}, {"id": 2, "name": "b"}]
 
 
 @pytest.mark.asyncio
 async def test_deburr(client):
-    result = await client.call_tool("deburr", {"text": "Café déjà vu"})
+    result = await client.call_tool("mutate_string", {"text": "Café déjà vu", "mutation": "deburr"})
     assert result[0].text == "Cafe deja vu"
 
 
 @pytest.mark.asyncio
 async def test_template(client):
-    result = await client.call_tool(
-        "template", {"text": "Hello, {name}!", "data": {"name": "World"}}
-    )
+    result = await client.call_tool("mutate_string", {"text": "Hello, {name}!", "mutation": "template", "data": {"name": "World"}})
     assert result[0].text == "Hello, World!"
 
 
 @pytest.mark.asyncio
 async def test_set_and_get_value(client):
     obj = {"a": {"b": 1}}
-    set_result = await client.call_tool(
-        "set_value", {"obj": obj, "path": "a.b", "value": 2}
-    )
+    set_result = await client.call_tool("set_value", {"obj": obj, "path": "a.b", "value": 2})
     set_data = json.loads(set_result[0].text)
     assert set_data == {"a": {"b": 2}}
-    get_result = await client.call_tool(
-        "get_value", {"obj": {"a": {"b": 2}}, "path": "a.b"}
-    )
+    get_result = await client.call_tool("get_value", {"obj": {"a": {"b": 2}}, "path": "a.b"})
     assert json.loads(get_result[0].text) == 2
-    get_default = await client.call_tool(
-        "get_value", {"obj": {"a": {"b": 2}}, "path": "a.c", "default": 42}
-    )
+    get_default = await client.call_tool("get_value", {"obj": {"a": {"b": 2}}, "path": "a.c", "default": 42})
     assert json.loads(get_default[0].text) == 42
 
 
@@ -109,7 +103,7 @@ async def test_partition_by_boolean(client):
         {"value": 4, "even": True},
         {"value": 3, "even": False},
     ]
-    result = await client.call_tool("partition", {"items": items, "predicate": "even"})
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "partition", "param": "even"})
     data = json.loads(result[0].text)
     assert data == [
         [{"value": 2, "even": True}, {"value": 4, "even": True}],
@@ -120,7 +114,7 @@ async def test_partition_by_boolean(client):
 @pytest.mark.asyncio
 async def test_partition_by_int(client):
     items = [{"value": 0}, {"value": 1}, {"value": 2}, {"value": 0}]
-    result = await client.call_tool("partition", {"items": items, "predicate": "value"})
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "partition", "param": "value"})
     data = json.loads(result[0].text)
     assert data == [[{"value": 1}, {"value": 2}], [{"value": 0}, {"value": 0}]]
 
@@ -128,7 +122,7 @@ async def test_partition_by_int(client):
 @pytest.mark.asyncio
 async def test_partition_by_string(client):
     items = [{"name": "foo"}, {"name": ""}, {"name": "bar"}, {"name": ""}]
-    result = await client.call_tool("partition", {"items": items, "predicate": "name"})
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "partition", "param": "name"})
     data = json.loads(result[0].text)
     assert data == [[{"name": "foo"}, {"name": "bar"}], [{"name": ""}, {"name": ""}]]
 
@@ -136,7 +130,7 @@ async def test_partition_by_string(client):
 @pytest.mark.asyncio
 async def test_partition_by_none(client):
     items = [{"flag": None}, {"flag": True}, {"flag": False}, {"flag": None}]
-    result = await client.call_tool("partition", {"items": items, "predicate": "flag"})
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "partition", "param": "flag"})
     data = json.loads(result[0].text)
     assert data == [[{"flag": True}], [{"flag": None}, {"flag": False}, {"flag": None}]]
 
@@ -148,7 +142,7 @@ async def test_group_by_string(client):
         {"type": "fruit", "name": "banana"},
         {"type": "vegetable", "name": "carrot"},
     ]
-    result = await client.call_tool("group_by", {"items": items, "key": "type"})
+    result = await client.call_tool("process_list", {"items": items, "operation": "group_by", "key": "type"})
     data = json.loads(result[0].text)
     assert data == {
         "fruit": [
@@ -166,7 +160,7 @@ async def test_group_by_number(client):
         {"value": 2, "name": "b"},
         {"value": 1, "name": "c"},
     ]
-    result = await client.call_tool("group_by", {"items": items, "key": "value"})
+    result = await client.call_tool("process_list", {"items": items, "operation": "group_by", "key": "value"})
     data = json.loads(result[0].text)
     assert data == {
         "1": [{"value": 1, "name": "a"}, {"value": 1, "name": "c"}],
@@ -181,7 +175,7 @@ async def test_group_by_boolean(client):
         {"flag": False, "name": "b"},
         {"flag": True, "name": "c"},
     ]
-    result = await client.call_tool("group_by", {"items": items, "key": "flag"})
+    result = await client.call_tool("process_list", {"items": items, "operation": "group_by", "key": "flag"})
     data = json.loads(result[0].text)
     # JSON keys are strings, so True/False become "true"/"false"
     assert data == {
@@ -199,7 +193,7 @@ async def test_group_by_dict(client):
     ]
     # Dicts are not hashable, so all will be grouped under one key (or error)
     try:
-        result = await client.call_tool("group_by", {"items": items, "key": "meta"})
+        result = await client.call_tool("process_list", {"items": items, "operation": "group_by", "key": "meta"})
         data = json.loads(result[0].text)
         # If the server serializes dict keys, they will be stringified
         assert any(isinstance(k, str) for k in data.keys())
@@ -210,7 +204,7 @@ async def test_group_by_dict(client):
 @pytest.mark.asyncio
 async def test_sort_by_string(client):
     items = [{"name": "b"}, {"name": "a"}]
-    result = await client.call_tool("sort_by", {"items": items, "key": "name"})
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "sort_by", "param": "name"})
     data = json.loads(result[0].text)
     assert data == [{"name": "a"}, {"name": "b"}]
 
@@ -218,7 +212,7 @@ async def test_sort_by_string(client):
 @pytest.mark.asyncio
 async def test_sort_by_number(client):
     items = [{"value": 2}, {"value": 1}]
-    result = await client.call_tool("sort_by", {"items": items, "key": "value"})
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "sort_by", "param": "value"})
     data = json.loads(result[0].text)
     assert data == [{"value": 1}, {"value": 2}]
 
@@ -226,78 +220,49 @@ async def test_sort_by_number(client):
 @pytest.mark.asyncio
 async def test_sort_by_boolean(client):
     items = [{"flag": True}, {"flag": False}]
-    result = await client.call_tool("sort_by", {"items": items, "key": "flag"})
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "sort_by", "param": "flag"})
     data = json.loads(result[0].text)
-    # False sorts before True
     assert data == [{"flag": False}, {"flag": True}]
 
 
 @pytest.mark.asyncio
 async def test_sort_by_dict(client):
     items = [{"meta": {"x": 2}}, {"meta": {"x": 1}}]
-    # Dicts are not orderable, so this should raise or group all under one
-    try:
-        result = await client.call_tool("sort_by", {"items": items, "key": "meta"})
-        data = json.loads(result[0].text)
-        # If the server stringifies dicts, this will not error
-        assert isinstance(data, list)
-    except Exception:
-        pass  # Accept error as valid outcome
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "sort_by", "param": "meta"})
+    data = json.loads(result[0].text)
+    assert data == [{"meta": {"x": 1}}, {"meta": {"x": 2}}]
 
 
 @pytest.mark.asyncio
 async def test_uniq_by_string(client):
-    items = [
-        {"type": "fruit", "name": "apple"},
-        {"type": "fruit", "name": "banana"},
-        {"type": "vegetable", "name": "carrot"},
-    ]
-    result = await client.call_tool("uniq_by", {"items": items, "key": "type"})
+    items = [{"type": "a"}, {"type": "a"}, {"type": "b"}]
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "uniq_by", "param": "type"})
     data = json.loads(result[0].text)
-    assert data == [
-        {"type": "fruit", "name": "apple"},
-        {"type": "vegetable", "name": "carrot"},
-    ]
+    assert data == [{"type": "a"}, {"type": "b"}]
 
 
 @pytest.mark.asyncio
 async def test_uniq_by_number(client):
-    items = [
-        {"value": 1, "name": "a"},
-        {"value": 2, "name": "b"},
-        {"value": 1, "name": "c"},
-    ]
-    result = await client.call_tool("uniq_by", {"items": items, "key": "value"})
+    items = [{"value": 1}, {"value": 1}, {"value": 2}]
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "uniq_by", "param": "value"})
     data = json.loads(result[0].text)
-    assert data == [{"value": 1, "name": "a"}, {"value": 2, "name": "b"}]
+    assert data == [{"value": 1}, {"value": 2}]
 
 
 @pytest.mark.asyncio
 async def test_uniq_by_boolean(client):
-    items = [
-        {"flag": True, "name": "a"},
-        {"flag": False, "name": "b"},
-        {"flag": True, "name": "c"},
-    ]
-    result = await client.call_tool("uniq_by", {"items": items, "key": "flag"})
+    items = [{"flag": True}, {"flag": True}, {"flag": False}]
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "uniq_by", "param": "flag"})
     data = json.loads(result[0].text)
-    assert data == [{"flag": True, "name": "a"}, {"flag": False, "name": "b"}]
+    assert data == [{"flag": True}, {"flag": False}]
 
 
 @pytest.mark.asyncio
 async def test_uniq_by_dict(client):
-    items = [
-        {"meta": {"x": 1}, "name": "a"},
-        {"meta": {"x": 2}, "name": "b"},
-        {"meta": {"x": 1}, "name": "c"},
-    ]
-    # Dicts are not hashable, so this should raise or only keep the first
-    try:
-        result = await client.call_tool("uniq_by", {"items": items, "key": "meta"})
-        data = json.loads(result[0].text)
-        assert isinstance(data, list)
-    except Exception:
-        pass  # Accept error as valid outcome
+    items = [{"meta": {"x": 1}}, {"meta": {"x": 1}}, {"meta": {"x": 2}}]
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "uniq_by", "param": "meta"})
+    data = json.loads(result[0].text)
+    assert data == [{"meta": {"x": 1}}, {"meta": {"x": 2}}]
 
 
 @pytest.mark.asyncio
@@ -307,7 +272,7 @@ async def test_pluck(client):
         {"id": 2, "name": "b"},
         {"id": 3, "name": "c"},
     ]
-    result = await client.call_tool("pluck", {"items": items, "key": "name"})
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "pluck", "param": "name"})
     data = json.loads(result[0].text)
     assert data == ["a", "b", "c"]
 
@@ -315,7 +280,7 @@ async def test_pluck(client):
 @pytest.mark.asyncio
 async def test_compact(client):
     items = [0, 1, False, 2, '', 3, None]
-    result = await client.call_tool("compact", {"items": items})
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "compact"})
     data = json.loads(result[0].text)
     assert data == [1, 2, 3]
 
@@ -323,7 +288,7 @@ async def test_compact(client):
 @pytest.mark.asyncio
 async def test_chunk(client):
     items = [1, 2, 3, 4, 5]
-    result = await client.call_tool("chunk", {"items": items, "size": 2})
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "chunk", "param": 2})
     data = json.loads(result[0].text)
     assert data == [[1, 2], [3, 4], [5]]
 
@@ -333,7 +298,7 @@ async def test_count_by(client):
     items = [
         {"type": "a"}, {"type": "b"}, {"type": "a"}, {"type": "c"}, {"type": "b"}
     ]
-    result = await client.call_tool("count_by", {"items": items, "key": "type"})
+    result = await client.call_tool("process_list", {"items": items, "operation": "count_by", "key": "type"})
     data = json.loads(result[0].text)
     assert data == {"a": 2, "b": 2, "c": 1}
 
@@ -342,7 +307,7 @@ async def test_count_by(client):
 async def test_difference_by(client):
     a = [{"id": 1}, {"id": 2}, {"id": 3}]
     b = [{"id": 2}]
-    result = await client.call_tool("difference_by", {"a": a, "b": b, "key": "id"})
+    result = await client.call_tool("compare_lists", {"a": a, "b": b, "operation": "difference_by", "key": "id"})
     data = json.loads(result[0].text)
     assert data == [{"id": 1}, {"id": 3}]
 
@@ -351,7 +316,7 @@ async def test_difference_by(client):
 async def test_intersection_by(client):
     a = [{"id": 1}, {"id": 2}, {"id": 3}]
     b = [{"id": 2}, {"id": 4}]
-    result = await client.call_tool("intersection_by", {"a": a, "b": b, "key": "id"})
+    result = await client.call_tool("compare_lists", {"a": a, "b": b, "operation": "intersection_by", "key": "id"})
     data = json.loads(result[0].text) if result else None
     if isinstance(data, dict):
         data = [data]
@@ -362,7 +327,7 @@ async def test_intersection_by(client):
 async def test_zip_lists(client):
     l1 = [1, 2]
     l2 = ["a", "b"]
-    result = await client.call_tool("zip_lists", {"lists": [l1, l2]})
+    result = await client.call_tool("mutate_list", {"items": [l1, l2], "mutation": "zip_lists"})
     data = json.loads(result[0].text)
     assert data == [[1, "a"], [2, "b"]]
 
@@ -370,7 +335,7 @@ async def test_zip_lists(client):
 @pytest.mark.asyncio
 async def test_unzip_list(client):
     items = [[1, "a"], [2, "b"]]
-    result = await client.call_tool("unzip_list", {"items": items})
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "unzip_list"})
     data = json.loads(result[0].text)
     assert data == [[1, 2], ["a", "b"]]
 
@@ -378,11 +343,11 @@ async def test_unzip_list(client):
 @pytest.mark.asyncio
 async def test_find_by(client):
     items = [{"id": 1}, {"id": 2}, {"id": 3}]
-    result = await client.call_tool("find_by", {"items": items, "key": "id", "value": 2})
+    result = await client.call_tool("select_from_list", {"items": items, "operation": "find_by", "param": {"key": "id", "value": 2}})
     data = json.loads(result[0].text) if result else None
     assert data == {"id": 2}
     # Test not found
-    result = await client.call_tool("find_by", {"items": items, "key": "id", "value": 99})
+    result = await client.call_tool("select_from_list", {"items": items, "operation": "find_by", "param": {"key": "id", "value": 99}})
     data = json.loads(result[0].text) if result else None
     assert data is None
 
@@ -390,7 +355,7 @@ async def test_find_by(client):
 @pytest.mark.asyncio
 async def test_remove_by(client):
     items = [{"id": 1}, {"id": 2}, {"id": 1}]
-    result = await client.call_tool("remove_by", {"items": items, "key": "id", "value": 1})
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "remove_by", "param": {"key": "id", "value": 1}})
     data = json.loads(result[0].text) if result else None
     if isinstance(data, dict):
         data = [data]
@@ -403,7 +368,7 @@ async def test_chain_single_tool(client):
     result = await client.call_tool("chain", {
         "input": [1, [2, [3, 4], 5]],
         "tool_calls": [
-            {"tool": "flatten_deep", "params": {}}
+            {"tool": "mutate_list", "params": {"mutation": "flatten_deep"}}
         ]
     })
     data = json.loads(result[0].text)
@@ -416,8 +381,8 @@ async def test_chain_multiple_tools(client):
     result = await client.call_tool("chain", {
         "input": [0, 1, [2, [0, 3, 4], 5], None],
         "tool_calls": [
-            {"tool": "flatten_deep", "params": {}},
-            {"tool": "compact", "params": {}}
+            {"tool": "mutate_list", "params": {"mutation": "flatten_deep"}},
+            {"tool": "mutate_list", "params": {"mutation": "compact"}}
         ]
     })
     data = json.loads(result[0].text)
@@ -430,8 +395,8 @@ async def test_chain_with_params(client):
     result = await client.call_tool("chain", {
         "input": [1, [2, [3, 4], 5]],
         "tool_calls": [
-            {"tool": "flatten_deep", "params": {}},
-            {"tool": "chunk", "params": {"size": 2}}
+            {"tool": "mutate_list", "params": {"mutation": "flatten_deep"}},
+            {"tool": "mutate_list", "params": {"mutation": "chunk", "param": 2}}
         ]
     })
     data = json.loads(result[0].text)
@@ -457,11 +422,11 @@ async def test_chain_error_missing_param(client):
     result = await client.call_tool("chain", {
         "input": [1, 2, 3],
         "tool_calls": [
-            {"tool": "chunk", "params": {}}  # missing 'size'
+            {"tool": "mutate_list", "params": {"mutation": "chunk"}}  # missing 'param' for size
         ]
     })
     data = json.loads(result[0].text)
-    assert "error" in data and "chunk" in data["error"]
+    assert "error" in data and "mutate_list" in data["error"]
 
 
 @pytest.mark.asyncio
@@ -470,8 +435,8 @@ async def test_chain_type_chaining(client):
     result = await client.call_tool("chain", {
         "input": [{"type": "a", "val": 1}, [{"type": "b", "val": 2}]],
         "tool_calls": [
-            {"tool": "flatten_deep", "params": {}},
-            {"tool": "group_by", "params": {"key": "type"}}
+            {"tool": "mutate_list", "params": {"mutation": "flatten_deep"}},
+            {"tool": "process_list", "params": {"operation": "group_by", "key": "type"}}
         ]
     })
     data = json.loads(result[0].text)
@@ -495,8 +460,196 @@ async def test_chain_chain_with_text_content(client):
     result = await client.call_tool("chain", {
         "input": None,
         "tool_calls": [
-            {"tool": "template", "params": {"text": "Hello, {name}!", "data": {"name": "World"}}}
+            {"tool": "mutate_string", "params": {"text": "Hello, {name}!", "mutation": "template", "data": {"name": "World"}}}
         ]
     })
     data = result[0].text
     assert "Chaining does not allow specifying the primary parameter" in data
+
+
+@pytest.mark.asyncio
+async def test_mutate_string_edge_cases(client):
+    # Empty string
+    result = await client.call_tool("mutate_string", {"text": "", "mutation": "camel_case"})
+    if result[0].text:
+        assert json.loads(result[0].text) == ""
+    else:
+        assert result[0].text == ""
+    # Missing data for template
+    with pytest.raises(ToolError):
+        await client.call_tool("mutate_string", {"text": "Hello, {name}!", "mutation": "template"})
+    # Non-string input
+    with pytest.raises(ToolError):
+        await client.call_tool("mutate_string", {"text": 123, "mutation": "camel_case"})
+    # Unknown mutation
+    with pytest.raises(ToolError):
+        await client.call_tool("mutate_string", {"text": "foo", "mutation": "unknown"})
+
+
+@pytest.mark.asyncio
+async def test_mutate_list_edge_cases(client):
+    # Deeply nested list
+    result = await client.call_tool("mutate_list", {"items": [1, [2, [3, [4, [5]]]]], "mutation": "flatten_deep"})
+    assert json.loads(result[0].text) == [1, 2, 3, 4, 5]
+    # Invalid param type
+    with pytest.raises(ToolError):
+        await client.call_tool("mutate_list", {"items": [1, 2], "mutation": "chunk", "param": "two"})
+    # Empty input for all mutations, using correct param types
+    empty_mutations = [
+        ("flatten_deep", None),
+        ("compact", None),
+        ("chunk", 2),
+        ("sort_by", "x"),
+        ("uniq_by", "x"),
+        ("pluck", "x"),
+        ("partition", "x")
+    ]
+    for mutation, param in empty_mutations:
+        params = {"items": [], "mutation": mutation}
+        if param is not None:
+            params["param"] = param
+        result = await client.call_tool("mutate_list", params)
+        assert result is not None
+    # Unknown mutation
+    with pytest.raises(ToolError):
+        await client.call_tool("mutate_list", {"items": [1, 2], "mutation": "unknown"})
+
+
+@pytest.mark.asyncio
+async def test_has_property_edge_cases(client):
+    # Non-string/non-dict input returns false
+    result = await client.call_tool("has_property", {"obj": 123, "property": "starts_with", "param": "1"})
+    assert result[0].text == "false"
+    # Missing param returns false
+    result = await client.call_tool("has_property", {"obj": "abc", "property": "starts_with"})
+    assert result[0].text == "false"
+    # Unknown property raises
+    with pytest.raises(ToolError):
+        await client.call_tool("has_property", {"obj": "abc", "property": "unknown"})
+
+
+@pytest.mark.asyncio
+async def test_select_from_list_edge_cases(client):
+    # Non-dict items for find_by returns []
+    result = await client.call_tool("select_from_list", {"items": [1, 2], "operation": "find_by", "param": {"key": "id", "value": 1}})
+    assert result == []
+    # Missing param for find_by raises
+    with pytest.raises(ToolError):
+        await client.call_tool("select_from_list", {"items": [{"id": 1}], "operation": "find_by"})
+    # Unknown operation raises
+    with pytest.raises(ToolError):
+        await client.call_tool("select_from_list", {"items": [1, 2], "operation": "unknown"})
+
+
+@pytest.mark.asyncio
+async def test_compare_lists_edge_cases(client):
+    # Non-dict items for *_by returns []
+    result = await client.call_tool("compare_lists", {"a": [1, 2], "b": [2, 3], "operation": "difference_by", "key": "id"})
+    assert result == []
+    # Missing key for *_by raises
+    with pytest.raises(ToolError):
+        await client.call_tool("compare_lists", {"a": [{"id": 1}], "b": [{"id": 2}], "operation": "difference_by"})
+    # Unknown operation raises
+    with pytest.raises(ToolError):
+        await client.call_tool("compare_lists", {"a": [1], "b": [2], "operation": "unknown"})
+
+
+@pytest.mark.asyncio
+async def test_process_list_edge_cases(client):
+    # Missing key raises
+    with pytest.raises(ToolError):
+        await client.call_tool("process_list", {"items": [{"a": 1}], "operation": "group_by"})
+    # Non-dict items returns {}
+    result = await client.call_tool("process_list", {"items": [1, 2], "operation": "group_by", "key": "a"})
+    assert json.loads(result[0].text) == {"None": [1, 2]}
+    # Unknown operation raises
+    with pytest.raises(ToolError):
+        await client.call_tool("process_list", {"items": [{"a": 1}], "operation": "unknown", "key": "a"})
+
+
+@pytest.mark.asyncio
+async def test_process_dict_edge_cases(client):
+    # Non-dict input raises
+    with pytest.raises(ToolError):
+        await client.call_tool("process_dict", {"obj": 123, "operation": "pick", "param": ["a"]})
+    # Missing param for pick/omit raises
+    with pytest.raises(ToolError):
+        await client.call_tool("process_dict", {"obj": {"a": 1}, "operation": "pick"})
+    # Unknown operation raises
+    with pytest.raises(ToolError):
+        await client.call_tool("process_dict", {"obj": {"a": 1}, "operation": "unknown"})
+
+
+@pytest.mark.asyncio
+async def test_chain_all_tools_and_error_propagation(client):
+    # Chain all tool types
+    result = await client.call_tool("chain", {
+        "input": "foo bar",
+        "tool_calls": [
+            {"tool": "mutate_string", "params": {"mutation": "camel_case"}},
+            {"tool": "mutate_string", "params": {"mutation": "capitalize"}}
+        ]
+    })
+    if result[0].text:
+        assert result[0].text == "Foobar"
+    else:
+        raise AssertionError("Expected 'Foobar' but got empty response")
+    # Error propagation
+    result = await client.call_tool("chain", {
+        "input": "foo bar",
+        "tool_calls": [
+            {"tool": "mutate_string", "params": {"mutation": "unknown"}}
+        ]
+    })
+    assert result and ("error" in result[0].text or result[0].text == "")
+
+
+@pytest.mark.asyncio
+async def test_merge_edge_cases(client):
+    # More than two dicts
+    dicts = [{"a": 1}, {"b": 2}, {"c": 3}]
+    result = await client.call_tool("merge", {"dicts": dicts})
+    data = json.loads(result[0].text)
+    assert data == {"a": 1, "b": 2, "c": 3}
+    # Empty list
+    result = await client.call_tool("merge", {"dicts": []})
+    data = json.loads(result[0].text)
+    assert data == {}
+    # Non-dict input raises
+    with pytest.raises(ToolError):
+        await client.call_tool("merge", {"dicts": [1, 2]})
+
+
+@pytest.mark.asyncio
+async def test_set_value_edge_cases(client):
+    # List path
+    obj = {"a": {"b": 1}}
+    result = await client.call_tool("set_value", {"obj": obj, "path": ["a", "b"], "value": 3})
+    data = json.loads(result[0].text)
+    assert data["a"]["b"] == 3
+    # Creating new keys
+    obj = {}
+    result = await client.call_tool("set_value", {"obj": obj, "path": "x.y.z", "value": 1})
+    data = json.loads(result[0].text)
+    assert data["x"]["y"]["z"] == 1
+    # Invalid path raises
+    with pytest.raises(ToolError):
+        await client.call_tool("set_value", {"obj": {}, "path": 123, "value": 1})
+    # Non-dict input raises
+    with pytest.raises(ToolError):
+        await client.call_tool("set_value", {"obj": 123, "path": "a.b", "value": 1})
+
+
+@pytest.mark.asyncio
+async def test_get_value_edge_cases(client):
+    # List path
+    obj = {"a": {"b": 2}}
+    result = await client.call_tool("get_value", {"obj": obj, "path": ["a", "b"]})
+    data = json.loads(result[0].text)
+    assert data == 2
+    # Missing path returns default
+    result = await client.call_tool("get_value", {"obj": obj, "path": "x.y", "default": "not found"})
+    assert result[0].text == "not found"
+    # Non-dict input raises
+    with pytest.raises(ToolError):
+        await client.call_tool("get_value", {"obj": 123, "path": "a.b"})

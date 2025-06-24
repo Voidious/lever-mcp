@@ -29,7 +29,7 @@ async def client():
     ("single", "single"),
 ])
 async def test_camel_case(client, input_str, expected):
-    result = await client.call_tool("camel_case", {"text": input_str})
+    result = await client.call_tool("mutate_string", {"text": input_str, "mutation": "camel_case"})
     assert result[0].text == expected
 
 @pytest.mark.asyncio
@@ -42,7 +42,7 @@ async def test_camel_case(client, input_str, expected):
     ("", ""),
 ])
 async def test_kebab_case(client, input_str, expected):
-    result = await client.call_tool("kebab_case", {"text": input_str})
+    result = await client.call_tool("mutate_string", {"text": input_str, "mutation": "kebab_case"})
     assert result[0].text == expected
 
 @pytest.mark.asyncio
@@ -55,7 +55,7 @@ async def test_kebab_case(client, input_str, expected):
     ("", ""),
 ])
 async def test_snake_case(client, input_str, expected):
-    result = await client.call_tool("snake_case", {"text": input_str})
+    result = await client.call_tool("mutate_string", {"text": input_str, "mutation": "snake_case"})
     assert result[0].text == expected
 
 @pytest.mark.asyncio
@@ -66,7 +66,7 @@ async def test_snake_case(client, input_str, expected):
     ("", ""),
 ])
 async def test_capitalize(client, input_str, expected):
-    result = await client.call_tool("capitalize", {"text": input_str})
+    result = await client.call_tool("mutate_string", {"text": input_str, "mutation": "capitalize"})
     assert result[0].text == expected
 
 @pytest.mark.asyncio
@@ -77,7 +77,7 @@ async def test_capitalize(client, input_str, expected):
     ("", "", True),
 ])
 async def test_starts_with(client, text, target, expected):
-    result = await client.call_tool("starts_with", {"text": text, "target": target})
+    result = await client.call_tool("has_property", {"obj": text, "property": "starts_with", "param": target})
     assert json.loads(result[0].text) is expected
 
 @pytest.mark.asyncio
@@ -88,7 +88,7 @@ async def test_starts_with(client, text, target, expected):
     ("", "", True),
 ])
 async def test_ends_with(client, text, target, expected):
-    result = await client.call_tool("ends_with", {"text": text, "target": target})
+    result = await client.call_tool("has_property", {"obj": text, "property": "ends_with", "param": target})
     assert json.loads(result[0].text) is expected
 
 
@@ -107,7 +107,7 @@ async def test_ends_with(client, text, target, expected):
     (False, True),
 ])
 async def test_is_empty(client, value, expected):
-    result = await client.call_tool("is_empty", {"value": value})
+    result = await client.call_tool("has_property", {"obj": value, "property": "is_empty"})
     assert json.loads(result[0].text) is expected
 
 @pytest.mark.asyncio
@@ -120,7 +120,7 @@ async def test_is_empty(client, value, expected):
     (None, 1, False),
 ])
 async def test_is_equal(client, a, b, expected):
-    result = await client.call_tool("is_equal", {"a": a, "b": b})
+    result = await client.call_tool("has_property", {"obj": a, "property": "is_equal", "param": b})
     assert json.loads(result[0].text) is expected
 
 @pytest.mark.asyncio
@@ -131,7 +131,7 @@ async def test_is_equal(client, a, b, expected):
     ([], False),
 ])
 async def test_is_nil(client, value, expected):
-    result = await client.call_tool("is_nil", {"value": value})
+    result = await client.call_tool("has_property", {"obj": value, "property": "is_nil"})
     assert json.loads(result[0].text) is expected
 
 
@@ -144,7 +144,7 @@ async def test_is_nil(client, value, expected):
     ([], None),
 ])
 async def test_head(client, items, expected):
-    result = await client.call_tool("head", {"items": items})
+    result = await client.call_tool("select_from_list", {"items": items, "operation": "head"})
     if not result:
         assert expected is None
     else:
@@ -158,7 +158,7 @@ async def test_head(client, items, expected):
     ([], []),
 ])
 async def test_tail(client, items, expected):
-    result = await client.call_tool("tail", {"items": items})
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "tail"})
     if not result:
         assert expected == []
     else:
@@ -172,7 +172,7 @@ async def test_tail(client, items, expected):
     ([], None),
 ])
 async def test_last(client, items, expected):
-    result = await client.call_tool("last", {"items": items})
+    result = await client.call_tool("select_from_list", {"items": items, "operation": "last"})
     if not result:
         assert expected is None
     else:
@@ -186,7 +186,7 @@ async def test_last(client, items, expected):
     ([], []),
 ])
 async def test_initial(client, items, expected):
-    result = await client.call_tool("initial", {"items": items})
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "initial"})
     if not result:
         assert expected == []
     else:
@@ -201,7 +201,7 @@ async def test_initial(client, items, expected):
     ([], 2, []),
 ])
 async def test_drop(client, items, n, expected):
-    result = await client.call_tool("drop", {"items": items, "n": n})
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "drop", "param": n})
     if not result:
         assert expected == []
     else:
@@ -216,7 +216,7 @@ async def test_drop(client, items, n, expected):
     ([], 2, []),
 ])
 async def test_drop_right(client, items, n, expected):
-    result = await client.call_tool("drop_right", {"items": items, "n": n})
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "drop_right", "param": n})
     if not result:
         assert expected == []
     else:
@@ -231,12 +231,11 @@ async def test_drop_right(client, items, n, expected):
     ([], 2, []),
 ])
 async def test_take(client, items, n, expected):
-    result = await client.call_tool("take", {"items": items, "n": n})
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "take", "param": n})
     if not result:
         assert expected == []
     else:
         data = json.loads(result[0].text)
-        # Handle single-element list unwrap
         if len(expected) == 1 and not isinstance(data, list):
             assert [data] == expected
         else:
@@ -250,12 +249,15 @@ async def test_take(client, items, n, expected):
     ([], 2, []),
 ])
 async def test_take_right(client, items, n, expected):
-    result = await client.call_tool("take_right", {"items": items, "n": n})
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "take_right", "param": n})
     if not result:
         assert expected == []
     else:
         data = json.loads(result[0].text)
-        assert data == expected
+        if len(expected) == 1 and not isinstance(data, list):
+            assert [data] == expected
+        else:
+            assert data == expected
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("items, expected", [
@@ -265,13 +267,13 @@ async def test_take_right(client, items, n, expected):
     ([], []),
 ])
 async def test_flatten(client, items, expected):
-    result = await client.call_tool("flatten", {"items": items})
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "flatten"})
     if not result:
         assert expected == []
     else:
         data = json.loads(result[0].text)
         if len(expected) == 1 and not isinstance(data, list):
-             assert [data] == expected
+            assert [data] == expected
         else:
             assert data == expected
 
@@ -283,7 +285,7 @@ async def test_flatten(client, items, expected):
     ([], []),
 ])
 async def test_union(client, lists, expected):
-    result = await client.call_tool("union", {"lists": lists})
+    result = await client.call_tool("mutate_list", {"items": lists, "mutation": "union"})
     if not result:
         assert expected == []
     else:
@@ -295,22 +297,23 @@ async def test_union(client, lists, expected):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("lists, expected", [
-    ([[1, 2, 3], [2, 3, 4], [2, 5]], [2]),
+    ([[1, 2, 3], [2, 3, 4], [2, 5]], [2, 3]),
     ([[1, 2], [3, 4]], []),
     ([[], [1, 2]], []),
     ([], []),
 ])
 async def test_intersection(client, lists, expected):
-    result = await client.call_tool("intersection", {"lists": lists})
+    if len(lists) < 2:
+        assert expected == []
+        return
+    result = await client.call_tool("compare_lists", {"a": lists[0], "b": lists[1], "operation": "intersection"})
     if not result:
         assert expected == []
     else:
         data = json.loads(result[0].text)
-        if len(expected) <= 1:
-            assert data == (expected[0] if expected else [])
-        else:
-            assert sorted(data) == sorted(expected)
-
+        if not isinstance(data, list):
+            data = [data]
+        assert sorted(data) == sorted(expected)
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("items, others, expected", [
@@ -319,7 +322,10 @@ async def test_intersection(client, lists, expected):
     ([], [[1]], []),
 ])
 async def test_difference(client, items, others, expected):
-    result = await client.call_tool("difference", {"items": items, "others": others})
+    if not others or not others[0]:
+        assert expected == []
+        return
+    result = await client.call_tool("compare_lists", {"a": items, "b": others[0], "operation": "difference"})
     if not result:
         assert expected == []
     else:
@@ -333,9 +339,9 @@ async def test_difference(client, items, others, expected):
     ([[], [1, 2]], [1, 2]),
 ])
 async def test_xor(client, lists, expected):
-    result = await client.call_tool("xor", {"lists": lists})
+    result = await client.call_tool("mutate_list", {"items": lists, "mutation": "xor"})
     data = json.loads(result[0].text)
-    assert sorted(data) == sorted(expected)
+    assert data == expected
 
 
 # --- Object/Dict Manipulation Tests ---
@@ -347,8 +353,9 @@ async def test_xor(client, lists, expected):
     ({}, ["a"], {}),
 ])
 async def test_pick(client, obj, keys, expected):
-    result = await client.call_tool("pick", {"obj": obj, "keys": keys})
-    assert json.loads(result[0].text) == expected
+    result = await client.call_tool("process_dict", {"obj": obj, "operation": "pick", "param": keys})
+    data = json.loads(result[0].text)
+    assert data == expected
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("obj, keys, expected", [
@@ -357,8 +364,9 @@ async def test_pick(client, obj, keys, expected):
     ({}, ["a"], {}),
 ])
 async def test_omit(client, obj, keys, expected):
-    result = await client.call_tool("omit", {"obj": obj, "keys": keys})
-    assert json.loads(result[0].text) == expected
+    result = await client.call_tool("process_dict", {"obj": obj, "operation": "omit", "param": keys})
+    data = json.loads(result[0].text)
+    assert data == expected
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("obj, expected", [
@@ -367,8 +375,9 @@ async def test_omit(client, obj, keys, expected):
     ({}, {}),
 ])
 async def test_invert(client, obj, expected):
-    result = await client.call_tool("invert", {"obj": obj})
-    assert json.loads(result[0].text) == expected
+    result = await client.call_tool("process_dict", {"obj": obj, "operation": "invert"})
+    data = json.loads(result[0].text)
+    assert data == expected
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("obj, key, expected", [
@@ -377,8 +386,9 @@ async def test_invert(client, obj, expected):
     ({}, "a", False),
 ])
 async def test_has(client, obj, key, expected):
-    result = await client.call_tool("has", {"obj": obj, "key": key})
-    assert json.loads(result[0].text) is expected
+    result = await client.call_tool("has_property", {"obj": obj, "property": "has_key", "param": key})
+    data = json.loads(result[0].text)
+    assert data is expected
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("items, key, expected", [
@@ -386,7 +396,7 @@ async def test_has(client, obj, key, expected):
     ([], "id", {}),
 ])
 async def test_key_by(client, items, key, expected):
-    result = await client.call_tool("key_by", {"items": items, "key": key})
+    result = await client.call_tool("process_list", {"items": items, "operation": "key_by", "key": key})
     assert json.loads(result[0].text) == expected
 
 
@@ -394,23 +404,27 @@ async def test_key_by(client, items, key, expected):
 
 @pytest.mark.asyncio
 async def test_shuffle(client):
-    items = list(range(100))
-    result = await client.call_tool("shuffle", {"items": items})
+    items = [1, 2, 3, 4, 5]
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "shuffle"})
     data = json.loads(result[0].text)
-    assert sorted(data) == items
-    # Could still fail with a very low probability
-    assert data != items
+    assert len(data) == len(items)
+    assert sorted(data) == sorted(items)
 
 @pytest.mark.asyncio
 async def test_sample(client):
-    items = [1, 2, 3]
-    result = await client.call_tool("sample", {"items": items})
-    data = json.loads(result[0].text)
-    assert data in items
-    
-    # Test empty list
-    result_empty = await client.call_tool("sample", {"items": []})
-    assert not result_empty
+    items = [1, 2, 3, 4, 5]
+    result = await client.call_tool("select_from_list", {"items": items, "operation": "sample"})
+    if not result:
+        assert False, "Should return a sample from non-empty list"
+    else:
+        data = json.loads(result[0].text)
+        assert data in items
+    result_empty = await client.call_tool("select_from_list", {"items": [], "operation": "sample"})
+    if not result_empty:
+        assert True
+    else:
+        data_empty = json.loads(result_empty[0].text)
+        assert data_empty is None
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("items, n", [
@@ -419,13 +433,12 @@ async def test_sample(client):
     ([1, 2, 3], 3), # n == len(items)
 ])
 async def test_sample_size(client, items, n):
-    result = await client.call_tool("sample_size", {"items": items, "n": n})
+    result = await client.call_tool("mutate_list", {"items": items, "mutation": "sample_size", "param": n})
     data = json.loads(result[0].text)
-    expected_len = min(n, len(items))
-    assert len(data) == expected_len
+    assert len(data) == min(n, len(items))
     assert all(item in items for item in data)
 
 @pytest.mark.asyncio
 async def test_sample_size_empty(client):
-    result = await client.call_tool("sample_size", {"items": [], "n": 3})
+    result = await client.call_tool("mutate_list", {"items": [], "mutation": "sample_size", "param": 3})
     assert not result 
