@@ -123,15 +123,6 @@ Interpolates variables in a string using {var} syntax.
 **Returns:**
 - `str`: The interpolated string with variables replaced.
 
-### clone_deep
-Performs a deep copy of a dictionary or list.
-
-**Parameters:**
-- `obj` (Any): The object (dict or list) to deep copy.
-
-**Returns:**
-- `Any`: A deep copy of the input object.
-
 ### set_value
 Sets a deep property in a dictionary by path (dot/bracket notation or list).
 
@@ -264,6 +255,32 @@ Removes all items from a list where a property matches a value.
 
 **Returns:**
 - `List[Any]`: The list with matching items removed.
+
+### chain
+Chains multiple tool calls, piping the output of one as the input to the next.
+
+**Parameters:**
+- `input` (Any): The initial input to the chain.
+- `tool_calls` (List[Dict[str, Any]]): Each dict must have:
+  - `tool` (str): The tool name to call.
+  - `params` (dict, optional): Additional parameters for the tool (other than the primary input; specifying the primary parameter is an error).
+
+**Returns:**
+- The result of the last tool in the chain, or a descriptive error message if a tool is missing, incompatible, or if the primary parameter is specified in `params`.
+
+**Chaining Rule:**
+- The output from one tool is always used as the input to the next tool's primary parameter. You must not specify the primary parameter in `params` for any tool in the chain.
+
+**Usage Example:**
+```json
+{
+  "input": [1, [2, [3, 4], 5]],
+  "tool_calls": [
+    {"tool": "flatten_deep", "params": {}},
+    {"tool": "compact", "params": {}}
+  ]
+}
+```
 
 ## Running Tests
 

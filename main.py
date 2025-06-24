@@ -5,6 +5,8 @@ from typing import Any, Callable, Dict, List, Optional, Union
 import copy
 import inspect
 from typing import get_origin, get_args
+from mcp.types import TextContent, ImageContent, AudioContent, EmbeddedResource
+import json
 
 # --- MCP Server Setup ---
 
@@ -203,24 +205,6 @@ def template(text: str, data: Dict[str, Any]) -> str:
         return str(data.get(key, match.group(0)))
 
     return re.sub(r"\{(\w+)\}", replacer, text)
-
-
-@mcp.tool()
-def clone_deep(obj: Any) -> Any:
-    """
-    Performs a deep copy of a dictionary or list.
-
-    Parameters:
-        obj (Any): The object (dict or list) to deep copy.
-
-    Returns:
-        Any: A deep copy of the input object.
-    
-    Usage Example:
-        clone_deep({"a": [1, 2, 3]})
-        # => {'a': [1, 2, 3]} (deep copy)
-    """
-    return copy.deepcopy(obj)
 
 
 @mcp.tool()
@@ -529,6 +513,128 @@ def remove_by(items: List[Any], key: str, value: Any) -> List[Any]:
     """
     result = [item for item in items if (item.get(key) if isinstance(item, dict) else getattr(item, key, None)) != value]
     return list(result)
+
+
+def unwrap_result(result):
+    # If result is a list of content objects, extract their values
+    if isinstance(result, list) and result and all(
+        isinstance(x, (TextContent, ImageContent, AudioContent, EmbeddedResource)) for x in result
+    ):
+        values = []
+        for content in result:
+            if isinstance(content, TextContent):
+                try:
+                    values.append(json.loads(content.text))
+                except Exception:
+                    values.append(content.text)
+            elif isinstance(content, (ImageContent, AudioContent)):
+                values.append(content.data)
+            elif isinstance(content, EmbeddedResource):
+                values.append(content.resource)
+            else:
+                values.append(content)
+        return values if len(values) > 1 else values[0]
+    # If result is a single content object
+    if isinstance(result, (TextContent, ImageContent, AudioContent, EmbeddedResource)):
+        if isinstance(result, TextContent):
+            try:
+                return json.loads(result.text)
+            except Exception:
+                return result.text
+        elif isinstance(result, (ImageContent, AudioContent)):
+            return result.data
+        elif isinstance(result, EmbeddedResource):
+            return result.resource
+    # Otherwise, return as is
+    return result
+
+
+@mcp.tool()
+async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> Any:
+    """
+    Chains multiple tool calls, piping the output of one as the input to the next.
+
+    Parameters:
+        input (Any): The initial input to the chain.
+        tool_calls (List[Dict[str, Any]]): Each dict must have:
+            - 'tool': the tool name (str)
+            - 'params': dict of additional parameters (optional, default empty)
+
+    Returns:
+        Any: The result of the last tool in the chain, or a descriptive error message if a tool is missing, incompatible, or if the primary parameter is specified in params.
+
+    Chaining Rule:
+        The output from one tool is always used as the input to the next tool's primary parameter. You must not specify the primary parameter in params for any tool in the chain.
+
+    Usage Example:
+        chain(
+            [1, [2, [3, 4], 5]],
+            [
+                {"tool": "flatten_deep", "params": {}},
+                {"tool": "compact", "params": {}}
+            ]
+        )
+    # Or as a JSON payload:
+    # {
+    #   "input": [1, [2, [3, 4], 5]],
+    #   "tool_calls": [
+    #     {"tool": "flatten_deep", "params": {}},
+    #     {"tool": "compact", "params": {}}
+    #   ]
+    # }
+    """
+    value = input
+    for i, step in enumerate(tool_calls):
+        tool_name = step.get("tool")
+        params = step.get("params", {})
+        if not tool_name:
+            return {"error": f"Step {i}: Missing 'tool' name."}
+        # Get the tool (support both sync and async)
+        try:
+            tool_coro = mcp._tool_manager.get_tool(tool_name)
+        except Exception as e:
+            return {"error": f"Step {i}: Tool '{tool_name}' not found: {e}"}
+        # Await if coroutine, else use directly
+        if hasattr(tool_coro, "__await__"):
+            try:
+                tool = await tool_coro
+            except Exception as e:
+                return {"error": f"Step {i}: Tool '{tool_name}' not found: {e}"}
+        else:
+            tool = tool_coro
+        # Now 'tool' is always the resolved object, safe to access attributes
+        if not hasattr(tool, "run") or not callable(getattr(tool, "run", None)):
+            return {"error": f"Step {i}: Tool '{tool_name}' is not a valid tool object."}
+        param_schema = tool.parameters.get("properties", {})
+        required = tool.parameters.get("required", [])
+        # Find the first required param not in params, or just the first param
+        primary_param = None
+        for k in required:
+            primary_param = k
+            break
+        if not primary_param and param_schema:
+            for k in param_schema:
+                primary_param = k
+                break
+        arguments = dict(params)
+        if primary_param:
+            if primary_param in arguments:
+                return {"error": f"Step {i}: Chaining does not allow specifying the primary parameter '{primary_param}' in params. The output from the previous tool is always used as input."}
+            arguments[primary_param] = value
+        elif len(param_schema) == 1:
+            only_param = next(iter(param_schema))
+            if only_param in arguments:
+                return {"error": f"Step {i}: Chaining does not allow specifying the primary parameter '{only_param}' in params. The output from the previous tool is always used as input."}
+            arguments[only_param] = value
+        elif not param_schema:
+            arguments = {}
+        # Call the tool's run method (must be awaited)
+        try:
+            result = await tool.run(arguments)
+        except Exception as e:
+            return {"error": f"Step {i}: Error calling tool '{tool_name}': {e}"}
+        value = unwrap_result(result)
+    return value
 
 
 if __name__ == "__main__":

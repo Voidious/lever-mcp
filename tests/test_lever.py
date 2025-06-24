@@ -84,15 +84,6 @@ async def test_template(client):
 
 
 @pytest.mark.asyncio
-async def test_clone_deep(client):
-    obj = {"a": [1, 2, 3]}
-    result = await client.call_tool("clone_deep", {"obj": obj})
-    data = json.loads(result[0].text)
-    assert data == {"a": [1, 2, 3]}
-    assert data is not obj
-
-
-@pytest.mark.asyncio
 async def test_set_and_get_value(client):
     obj = {"a": {"b": 1}}
     set_result = await client.call_tool(
@@ -404,3 +395,108 @@ async def test_remove_by(client):
     if isinstance(data, dict):
         data = [data]
     assert data == [{"id": 2}]
+
+
+@pytest.mark.asyncio
+async def test_chain_single_tool(client):
+    # Should flatten a nested list
+    result = await client.call_tool("chain", {
+        "input": [1, [2, [3, 4], 5]],
+        "tool_calls": [
+            {"tool": "flatten_deep", "params": {}}
+        ]
+    })
+    data = json.loads(result[0].text)
+    assert data == [1, 2, 3, 4, 5]
+
+
+@pytest.mark.asyncio
+async def test_chain_multiple_tools(client):
+    # Should flatten and then compact (remove falsy values)
+    result = await client.call_tool("chain", {
+        "input": [0, 1, [2, [0, 3, 4], 5], None],
+        "tool_calls": [
+            {"tool": "flatten_deep", "params": {}},
+            {"tool": "compact", "params": {}}
+        ]
+    })
+    data = json.loads(result[0].text)
+    assert data == [1, 2, 3, 4, 5]
+
+
+@pytest.mark.asyncio
+async def test_chain_with_params(client):
+    # Should chunk after flattening
+    result = await client.call_tool("chain", {
+        "input": [1, [2, [3, 4], 5]],
+        "tool_calls": [
+            {"tool": "flatten_deep", "params": {}},
+            {"tool": "chunk", "params": {"size": 2}}
+        ]
+    })
+    data = json.loads(result[0].text)
+    assert data == [[1, 2], [3, 4], [5]]
+
+
+@pytest.mark.asyncio
+async def test_chain_error_missing_tool(client):
+    # Should return error for missing tool
+    result = await client.call_tool("chain", {
+        "input": [1, 2, 3],
+        "tool_calls": [
+            {"tool": "not_a_tool", "params": {}}
+        ]
+    })
+    data = json.loads(result[0].text)
+    assert "error" in data and "not_a_tool" in data["error"]
+
+
+@pytest.mark.asyncio
+async def test_chain_error_missing_param(client):
+    # Should return error for missing required param
+    result = await client.call_tool("chain", {
+        "input": [1, 2, 3],
+        "tool_calls": [
+            {"tool": "chunk", "params": {}}  # missing 'size'
+        ]
+    })
+    data = json.loads(result[0].text)
+    assert "error" in data and "chunk" in data["error"]
+
+
+@pytest.mark.asyncio
+async def test_chain_type_chaining(client):
+    # Should group by after flattening
+    result = await client.call_tool("chain", {
+        "input": [{"type": "a", "val": 1}, [{"type": "b", "val": 2}]],
+        "tool_calls": [
+            {"tool": "flatten_deep", "params": {}},
+            {"tool": "group_by", "params": {"key": "type"}}
+        ]
+    })
+    data = json.loads(result[0].text)
+    assert "a" in data and "b" in data
+
+
+@pytest.mark.asyncio
+async def test_chain_empty_chain(client):
+    # Should return the input unchanged
+    result = await client.call_tool("chain", {
+        "input": 42,
+        "tool_calls": []
+    })
+    data = json.loads(result[0].text)
+    assert data == 42
+
+
+@pytest.mark.asyncio
+async def test_chain_chain_with_text_content(client):
+    # Should error if user tries to specify the primary parameter in params
+    result = await client.call_tool("chain", {
+        "input": None,
+        "tool_calls": [
+            {"tool": "template", "params": {"text": "Hello, {name}!", "data": {"name": "World"}}}
+        ]
+    })
+    data = result[0].text
+    assert "Chaining does not allow specifying the primary parameter" in data
