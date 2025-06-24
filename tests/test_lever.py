@@ -307,3 +307,100 @@ async def test_uniq_by_dict(client):
         assert isinstance(data, list)
     except Exception:
         pass  # Accept error as valid outcome
+
+
+@pytest.mark.asyncio
+async def test_pluck(client):
+    items = [
+        {"id": 1, "name": "a"},
+        {"id": 2, "name": "b"},
+        {"id": 3, "name": "c"},
+    ]
+    result = await client.call_tool("pluck", {"items": items, "key": "name"})
+    data = json.loads(result[0].text)
+    assert data == ["a", "b", "c"]
+
+
+@pytest.mark.asyncio
+async def test_compact(client):
+    items = [0, 1, False, 2, '', 3, None]
+    result = await client.call_tool("compact", {"items": items})
+    data = json.loads(result[0].text)
+    assert data == [1, 2, 3]
+
+
+@pytest.mark.asyncio
+async def test_chunk(client):
+    items = [1, 2, 3, 4, 5]
+    result = await client.call_tool("chunk", {"items": items, "size": 2})
+    data = json.loads(result[0].text)
+    assert data == [[1, 2], [3, 4], [5]]
+
+
+@pytest.mark.asyncio
+async def test_count_by(client):
+    items = [
+        {"type": "a"}, {"type": "b"}, {"type": "a"}, {"type": "c"}, {"type": "b"}
+    ]
+    result = await client.call_tool("count_by", {"items": items, "key": "type"})
+    data = json.loads(result[0].text)
+    assert data == {"a": 2, "b": 2, "c": 1}
+
+
+@pytest.mark.asyncio
+async def test_difference_by(client):
+    a = [{"id": 1}, {"id": 2}, {"id": 3}]
+    b = [{"id": 2}]
+    result = await client.call_tool("difference_by", {"a": a, "b": b, "key": "id"})
+    data = json.loads(result[0].text)
+    assert data == [{"id": 1}, {"id": 3}]
+
+
+@pytest.mark.asyncio
+async def test_intersection_by(client):
+    a = [{"id": 1}, {"id": 2}, {"id": 3}]
+    b = [{"id": 2}, {"id": 4}]
+    result = await client.call_tool("intersection_by", {"a": a, "b": b, "key": "id"})
+    data = json.loads(result[0].text) if result else None
+    if isinstance(data, dict):
+        data = [data]
+    assert data == [{"id": 2}]
+
+
+@pytest.mark.asyncio
+async def test_zip_lists(client):
+    l1 = [1, 2]
+    l2 = ["a", "b"]
+    result = await client.call_tool("zip_lists", {"lists": [l1, l2]})
+    data = json.loads(result[0].text)
+    assert data == [[1, "a"], [2, "b"]]
+
+
+@pytest.mark.asyncio
+async def test_unzip_list(client):
+    items = [[1, "a"], [2, "b"]]
+    result = await client.call_tool("unzip_list", {"items": items})
+    data = json.loads(result[0].text)
+    assert data == [[1, 2], ["a", "b"]]
+
+
+@pytest.mark.asyncio
+async def test_find_by(client):
+    items = [{"id": 1}, {"id": 2}, {"id": 3}]
+    result = await client.call_tool("find_by", {"items": items, "key": "id", "value": 2})
+    data = json.loads(result[0].text) if result else None
+    assert data == {"id": 2}
+    # Test not found
+    result = await client.call_tool("find_by", {"items": items, "key": "id", "value": 99})
+    data = json.loads(result[0].text) if result else None
+    assert data is None
+
+
+@pytest.mark.asyncio
+async def test_remove_by(client):
+    items = [{"id": 1}, {"id": 2}, {"id": 1}]
+    result = await client.call_tool("remove_by", {"items": items, "key": "id", "value": 1})
+    data = json.loads(result[0].text) if result else None
+    if isinstance(data, dict):
+        data = [data]
+    assert data == [{"id": 2}]

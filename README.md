@@ -164,6 +164,107 @@ Splits a list into two lists: [items where item[predicate] is truthy, items wher
 **Returns:**
 - `List[List[Any]]`: A list containing two lists: [truthy_items, falsy_items].
 
+### pluck
+Extracts a list of values for a given property from a list of dicts/objects.
+
+**Parameters:**
+- `items` (List[Any]): The list of items (dicts or objects).
+- `key` (str): The property name to extract.
+
+**Returns:**
+- `List[Any]`: A list of values for the given property.
+
+### compact
+Removes falsy values from a list.
+
+**Parameters:**
+- `items` (List[Any]): The list to compact.
+
+**Returns:**
+- `List[Any]`: A list with all falsy values removed.
+
+### chunk
+Splits a list into chunks of a specified size.
+
+**Parameters:**
+- `items` (List[Any]): The list to split.
+- `size` (int): The chunk size.
+
+**Returns:**
+- `List[List[Any]]`: A list of chunks (sublists).
+
+### count_by
+Counts occurrences of values for a given property in a list of dicts/objects.
+
+**Parameters:**
+- `items` (List[Any]): The list of items (dicts or objects).
+- `key` (str): The property name to count by.
+
+**Returns:**
+- `Dict[Any, int]`: A dictionary mapping property values to their counts.
+
+### difference_by
+Returns items from the first list whose property value is not present in the second list.
+
+**Parameters:**
+- `a` (List[Any]): The list to filter.
+- `b` (List[Any]): The list of items to exclude by property value.
+- `key` (str): The property name to compare.
+
+**Returns:**
+- `List[Any]`: Filtered list of items from 'a'.
+
+### intersection_by
+Returns items from the first list whose property value is present in the second list.
+
+**Parameters:**
+- `a` (List[Any]): The list to filter.
+- `b` (List[Any]): The list of items to include by property value.
+- `key` (str): The property name to compare.
+
+**Returns:**
+- `List[Any]`: Filtered list of items from 'a'.
+
+### zip_lists
+Zips multiple lists into a list of tuples (as lists).
+
+**Parameters:**
+- `lists` (List[List[Any]]): The lists to zip (pass as a list of lists).
+
+**Returns:**
+- `List[List[Any]]`: A list of zipped tuples (as lists).
+
+### unzip_list
+Unzips a list of tuples (as lists) into separate lists.
+
+**Parameters:**
+- `items` (List[List[Any]]): The list of tuples (as lists) to unzip.
+
+**Returns:**
+- `List[List[Any]]`: A list of lists, one for each position in the tuples.
+
+### find_by
+Finds the first item in a list where a property matches a value.
+
+**Parameters:**
+- `items` (List[Any]): The list of items (dicts or objects).
+- `key` (str): The property name to check.
+- `value` (Any): The value to match.
+
+**Returns:**
+- `Optional[Any]`: The first matching item, or None if not found.
+
+### remove_by
+Removes all items from a list where a property matches a value.
+
+**Parameters:**
+- `items` (List[Any]): The list of items (dicts or objects).
+- `key` (str): The property name to check.
+- `value` (Any): The value to match for removal.
+
+**Returns:**
+- `List[Any]`: The list with matching items removed.
+
 ## Running Tests
 
 This project includes a test suite to verify its functionality. The tests use `pytest` and run in-memory without needing to keep the server running in a separate process.

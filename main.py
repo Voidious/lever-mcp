@@ -311,5 +311,225 @@ def partition(items: List[Any], predicate: str) -> List[List[Any]]:
     return [trues, falses]
 
 
+@mcp.tool()
+def pluck(items: List[Any], key: str) -> List[Any]:
+    """
+    Extracts a list of values for a given property from a list of dicts/objects.
+
+    Parameters:
+        items (List[Any]): The list of items (dicts or objects).
+        key (str): The property name to extract.
+
+    Returns:
+        List[Any]: A list of values for the given property.
+    
+    Usage Example:
+        pluck([
+            {"id": 1, "name": "a"},
+            {"id": 2, "name": "b"}
+        ], "name")
+        # => ["a", "b"]
+    """
+    return [item.get(key) if isinstance(item, dict) else getattr(item, key, None) for item in items]
+
+
+@mcp.tool()
+def compact(items: List[Any]) -> List[Any]:
+    """
+    Removes falsy values from a list.
+
+    Parameters:
+        items (List[Any]): The list to compact.
+
+    Returns:
+        List[Any]: A list with all falsy values removed.
+    
+    Usage Example:
+        compact([0, 1, False, 2, '', 3, None])
+        # => [1, 2, 3]
+    """
+    return [item for item in items if item]
+
+
+@mcp.tool()
+def chunk(items: List[Any], size: int) -> List[List[Any]]:
+    """
+    Splits a list into chunks of a specified size.
+
+    Parameters:
+        items (List[Any]): The list to split.
+        size (int): The chunk size.
+
+    Returns:
+        List[List[Any]]: A list of chunks (sublists).
+    
+    Usage Example:
+        chunk([1, 2, 3, 4, 5], 2)
+        # => [[1, 2], [3, 4], [5]]
+    """
+    return [items[i:i + size] for i in range(0, len(items), size)]
+
+
+@mcp.tool()
+def count_by(items: List[Any], key: str) -> Dict[Any, int]:
+    """
+    Counts occurrences of values for a given property in a list of dicts/objects.
+
+    Parameters:
+        items (List[Any]): The list of items (dicts or objects).
+        key (str): The property name to count by.
+
+    Returns:
+        Dict[Any, int]: A dictionary mapping property values to their counts.
+    
+    Usage Example:
+        count_by([
+            {"type": "a"}, {"type": "b"}, {"type": "a"}
+        ], "type")
+        # => {"a": 2, "b": 1}
+    """
+    result = {}
+    for item in items:
+        k = item.get(key) if isinstance(item, dict) else getattr(item, key, None)
+        result[k] = result.get(k, 0) + 1
+    return result
+
+
+@mcp.tool()
+def difference_by(a: List[Any], b: List[Any], key: str) -> List[Any]:
+    """
+    Returns items from the first list whose property value is not present in the second list.
+
+    Parameters:
+        a (List[Any]): The list to filter.
+        b (List[Any]): The list of items to exclude by property value.
+        key (str): The property name to compare.
+
+    Returns:
+        List[Any]: Filtered list of items from 'a'.
+    
+    Usage Example:
+        difference_by([
+            {"id": 1}, {"id": 2}, {"id": 3}
+        ], [
+            {"id": 2}
+        ], "id")
+        # => [{"id": 1}, {"id": 3}]
+    """
+    b_keys = set(item.get(key) if isinstance(item, dict) else getattr(item, key, None) for item in b)
+    return [item for item in a if (item.get(key) if isinstance(item, dict) else getattr(item, key, None)) not in b_keys]
+
+
+@mcp.tool()
+def intersection_by(a: List[Any], b: List[Any], key: str) -> List[Any]:
+    """
+    Returns items from the first list whose property value is present in the second list.
+
+    Parameters:
+        a (List[Any]): The list to filter.
+        b (List[Any]): The list of items to include by property value.
+        key (str): The property name to compare.
+
+    Returns:
+        List[Any]: Filtered list of items from 'a'.
+    
+    Usage Example:
+        intersection_by([
+            {"id": 1}, {"id": 2}, {"id": 3}
+        ], [
+            {"id": 2}, {"id": 4}
+        ], "id")
+        # => [{"id": 2}]
+    """
+    b_keys = set(item.get(key) if isinstance(item, dict) else getattr(item, key, None) for item in b)
+    result = [item for item in a if (item.get(key) if isinstance(item, dict) else getattr(item, key, None)) in b_keys]
+    return list(result)
+
+
+@mcp.tool()
+def zip_lists(lists: List[List[Any]]) -> List[List[Any]]:
+    """
+    Zips multiple lists into a list of tuples (as lists).
+
+    Parameters:
+        lists (List[List[Any]]): The lists to zip (pass as a list of lists).
+
+    Returns:
+        List[List[Any]]: A list of zipped tuples (as lists).
+    
+    Usage Example:
+        zip_lists([[1, 2], ["a", "b"]])
+        # => [[1, "a"], [2, "b"]]
+    """
+    return [list(t) for t in zip(*lists)]
+
+
+@mcp.tool()
+def unzip_list(items: List[List[Any]]) -> List[List[Any]]:
+    """
+    Unzips a list of tuples (as lists) into separate lists.
+
+    Parameters:
+        items (List[List[Any]]): The list of tuples (as lists) to unzip.
+
+    Returns:
+        List[List[Any]]: A list of lists, one for each position in the tuples.
+    
+    Usage Example:
+        unzip_list([[1, "a"], [2, "b"]])
+        # => [[1, 2], ["a", "b"]]
+    """
+    return [list(t) for t in zip(*items)] if items else []
+
+
+@mcp.tool()
+def find_by(items: List[Any], key: str, value: Any) -> Optional[Any]:
+    """
+    Finds the first item in a list where a property matches a value.
+
+    Parameters:
+        items (List[Any]): The list of items (dicts or objects).
+        key (str): The property name to check.
+        value (Any): The value to match.
+
+    Returns:
+        Optional[Any]: The first matching item, or None if not found.
+    
+    Usage Example:
+        find_by([
+            {"id": 1}, {"id": 2}
+        ], "id", 2)
+        # => {"id": 2}
+    """
+    for item in items:
+        v = item.get(key) if isinstance(item, dict) else getattr(item, key, None)
+        if v == value:
+            return item
+    return None
+
+
+@mcp.tool()
+def remove_by(items: List[Any], key: str, value: Any) -> List[Any]:
+    """
+    Removes all items from a list where a property matches a value.
+
+    Parameters:
+        items (List[Any]): The list of items (dicts or objects).
+        key (str): The property name to check.
+        value (Any): The value to match for removal.
+
+    Returns:
+        List[Any]: The list with matching items removed.
+    
+    Usage Example:
+        remove_by([
+            {"id": 1}, {"id": 2}, {"id": 1}
+        ], "id", 1)
+        # => [{"id": 2}]
+    """
+    result = [item for item in items if (item.get(key) if isinstance(item, dict) else getattr(item, key, None)) != value]
+    return list(result)
+
+
 if __name__ == "__main__":
     mcp.run()
