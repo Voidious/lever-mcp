@@ -1,0 +1,4 @@
+black
+fastmcp 
+pre-commit
+pytest
