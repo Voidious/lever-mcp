@@ -19,7 +19,7 @@ mcp = LeverMCP("Lever MCP")
 
 
 @mcp.tool()
-def groupBy(ctx: Context, items: List[Any], key: str) -> Dict[Any, List[Any]]:
+def groupBy(items: List[Any], key: str) -> Dict[Any, List[Any]]:
     """
     Groups items by a property name (string key).
 
@@ -29,6 +29,14 @@ def groupBy(ctx: Context, items: List[Any], key: str) -> Dict[Any, List[Any]]:
 
     Returns:
         Dict[Any, List[Any]]: A dictionary mapping each unique property value to a list of items with that value.
+    
+    Usage Example:
+        groupBy([
+            {"type": "fruit", "name": "apple"},
+            {"type": "fruit", "name": "banana"},
+            {"type": "vegetable", "name": "carrot"}
+        ], "type")
+        # => {'fruit': [{...}, {...}], 'vegetable': [{...}]}
     """
     result = {}
     for item in items:
@@ -38,7 +46,7 @@ def groupBy(ctx: Context, items: List[Any], key: str) -> Dict[Any, List[Any]]:
 
 
 @mcp.tool()
-def merge(ctx: Context, dicts: List[Dict[Any, Any]]) -> Dict[Any, Any]:
+def merge(dicts: List[Dict[Any, Any]]) -> Dict[Any, Any]:
     """
     Deep merges a list of dictionaries.
 
@@ -47,6 +55,13 @@ def merge(ctx: Context, dicts: List[Dict[Any, Any]]) -> Dict[Any, Any]:
 
     Returns:
         Dict[Any, Any]: A single dictionary containing the merged keys and values.
+    
+    Usage Example:
+        merge([
+            {"a": 1, "b": {"c": 2}},
+            {"b": {"d": 3}}
+        ])
+        # => {'a': 1, 'b': {'c': 2, 'd': 3}}
     """
 
     def deep_merge(a, b):
@@ -64,7 +79,7 @@ def merge(ctx: Context, dicts: List[Dict[Any, Any]]) -> Dict[Any, Any]:
 
 
 @mcp.tool()
-def flattenDeep(ctx: Context, items: List[Any]) -> List[Any]:
+def flattenDeep(items: List[Any]) -> List[Any]:
     """
     Fully flattens a nested list.
 
@@ -73,6 +88,10 @@ def flattenDeep(ctx: Context, items: List[Any]) -> List[Any]:
 
     Returns:
         List[Any]: A single, flat list containing all values from the nested structure.
+    
+    Usage Example:
+        flattenDeep([1, [2, [3, 4], 5], 6])
+        # => [1, 2, 3, 4, 5, 6]
     """
     result = []
 
@@ -88,7 +107,7 @@ def flattenDeep(ctx: Context, items: List[Any]) -> List[Any]:
 
 
 @mcp.tool()
-def sortBy(ctx: Context, items: List[Any], key: str) -> List[Any]:
+def sortBy(items: List[Any], key: str) -> List[Any]:
     """
     Sorts a list by a property name (string key).
 
@@ -98,6 +117,13 @@ def sortBy(ctx: Context, items: List[Any], key: str) -> List[Any]:
 
     Returns:
         List[Any]: The sorted list of items.
+    
+    Usage Example:
+        sortBy([
+            {"age": 30, "name": "Alice"},
+            {"age": 25, "name": "Bob"}
+        ], "age")
+        # => [{"age": 25, "name": "Bob"}, {"age": 30, "name": "Alice"}]
     """
     return sorted(
         items,
@@ -106,7 +132,7 @@ def sortBy(ctx: Context, items: List[Any], key: str) -> List[Any]:
 
 
 @mcp.tool()
-def uniqBy(ctx: Context, items: List[Any], key: str) -> List[Any]:
+def uniqBy(items: List[Any], key: str) -> List[Any]:
     """
     Returns unique items in a list by a property name (string key).
 
@@ -116,6 +142,14 @@ def uniqBy(ctx: Context, items: List[Any], key: str) -> List[Any]:
 
     Returns:
         List[Any]: A list of unique items based on the property value.
+    
+    Usage Example:
+        uniqBy([
+            {"id": 1, "name": "Alice"},
+            {"id": 2, "name": "Bob"},
+            {"id": 1, "name": "Alice"}
+        ], "id")
+        # => [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}]
     """
     seen = set()
     result = []
@@ -128,7 +162,7 @@ def uniqBy(ctx: Context, items: List[Any], key: str) -> List[Any]:
 
 
 @mcp.tool()
-def deburr(ctx: Context, text: str) -> str:
+def deburr(text: str) -> str:
     """
     Removes accents/diacritics from a string.
 
@@ -137,6 +171,10 @@ def deburr(ctx: Context, text: str) -> str:
 
     Returns:
         str: The deburred string with accents removed.
+    
+    Usage Example:
+        deburr("Café déjà vu")
+        # => 'Cafe deja vu'
     """
     return "".join(
         c for c in unicodedata.normalize("NFKD", text) if not unicodedata.combining(c)
@@ -144,7 +182,7 @@ def deburr(ctx: Context, text: str) -> str:
 
 
 @mcp.tool()
-def template(ctx: Context, text: str, data: Dict[str, Any]) -> str:
+def template(text: str, data: Dict[str, Any]) -> str:
     """
     Interpolates variables in a string using {var} syntax.
 
@@ -154,6 +192,10 @@ def template(ctx: Context, text: str, data: Dict[str, Any]) -> str:
 
     Returns:
         str: The interpolated string with variables replaced.
+    
+    Usage Example:
+        template("Hello, {name}!", {"name": "World"})
+        # => 'Hello, World!'
     """
 
     def replacer(match):
@@ -164,7 +206,7 @@ def template(ctx: Context, text: str, data: Dict[str, Any]) -> str:
 
 
 @mcp.tool()
-def cloneDeep(ctx: Context, obj: Any) -> Any:
+def cloneDeep(obj: Any) -> Any:
     """
     Performs a deep copy of a dictionary or list.
 
@@ -173,14 +215,16 @@ def cloneDeep(ctx: Context, obj: Any) -> Any:
 
     Returns:
         Any: A deep copy of the input object.
+    
+    Usage Example:
+        cloneDeep({"a": [1, 2, 3]})
+        # => {'a': [1, 2, 3]} (deep copy)
     """
     return copy.deepcopy(obj)
 
 
 @mcp.tool()
-def set_value(
-    ctx: Context, obj: Dict[Any, Any], path: Union[str, List[Any]], value: Any
-) -> Dict[Any, Any]:
+def set_value(obj: Dict[Any, Any], path: Union[str, List[Any]], value: Any) -> Dict[Any, Any]:
     """
     Sets a deep property in a dictionary by path (dot/bracket notation or list).
 
@@ -191,6 +235,10 @@ def set_value(
 
     Returns:
         Dict[Any, Any]: The modified dictionary with the value set.
+    
+    Usage Example:
+        set_value({"a": {"b": 1}}, "a.b", 2)
+        # => {'a': {'b': 2}}
     """
     if isinstance(path, str):
         path = re.findall(r"[^.\[\]]+", path)
@@ -204,9 +252,7 @@ def set_value(
 
 
 @mcp.tool()
-def get_value(
-    ctx: Context, obj: Dict[Any, Any], path: Union[str, List[Any]], default: Any = None
-) -> Any:
+def get_value(obj: Dict[Any, Any], path: Union[str, List[Any]], default: Any = None) -> Any:
     """
     Gets a deep property from a dictionary by path (dot/bracket notation or list).
 
@@ -217,6 +263,12 @@ def get_value(
 
     Returns:
         Any: The value at the specified path, or the default if not found.
+    
+    Usage Example:
+        get_value({"a": {"b": 2}}, "a.b")
+        # => 2
+        get_value({"a": {"b": 2}}, "a.c", 42)
+        # => 42
     """
     if isinstance(path, str):
         path = re.findall(r"[^.\[\]]+", path)
@@ -230,7 +282,7 @@ def get_value(
 
 
 @mcp.tool()
-def partition(ctx: Context, items: List[Any], predicate: str) -> List[List[Any]]:
+def partition(items: List[Any], predicate: str) -> List[List[Any]]:
     """
     Splits a list into two lists: [items where item[predicate] is truthy, items where it is falsy]. Predicate is a property name only.
 
@@ -240,6 +292,13 @@ def partition(ctx: Context, items: List[Any], predicate: str) -> List[List[Any]]
 
     Returns:
         List[List[Any]]: A list containing two lists: [truthy_items, falsy_items].
+    
+    Usage Example:
+        partition([
+            {"active": True, "name": "Alice"},
+            {"active": False, "name": "Bob"}
+        ], "active")
+        # => [[{"active": True, "name": "Alice"}], [{"active": False, "name": "Bob"}]]
     """
     trues, falses = [], []
     for item in items:
