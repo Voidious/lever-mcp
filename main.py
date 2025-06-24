@@ -1,11 +1,8 @@
 import unicodedata
 import re
-from fastmcp import FastMCP, Context
-from typing import Any, Callable, Dict, List, Optional, Union
-import copy
+from fastmcp import FastMCP
+from typing import Any, Dict, List, Optional
 import inspect
-from typing import get_origin, get_args
-from mcp.types import TextContent, ImageContent, AudioContent, EmbeddedResource
 import json
 import random
 
@@ -27,12 +24,19 @@ def mutate_string(text: str, mutation: str, data: Dict[str, Any] = {}) -> str:
     Parameters:
         text (str): The input string to mutate.
         mutation (str): The type of mutation to perform. One of:
-            - 'camel_case': Converts the string to camelCase (e.g., 'foo bar' → 'fooBar').
-            - 'capitalize': Converts the first character to upper case and the rest to lower case (e.g., 'foo bar' → 'Foo bar').
-            - 'deburr': Removes accents/diacritics from the string (e.g., 'Café' → 'Cafe').
-            - 'kebab_case': Converts the string to kebab-case (e.g., 'foo bar' → 'foo-bar').
-            - 'snake_case': Converts the string to snake_case (e.g., 'foo bar' → 'foo_bar').
-            - 'template': Interpolates variables in the string using {var} syntax. Requires 'data' dict (e.g., 'Hello, {name}!' with data={'name': 'World'} → 'Hello, World!').
+            - 'camel_case': Converts the string to camelCase (e.g.,
+              'foo bar' → 'fooBar').
+            - 'capitalize': Converts the first character to upper case and the rest to
+              lower case (e.g., 'foo bar' → 'Foo bar').
+            - 'deburr': Removes accents/diacritics from the string (e.g.,
+              'Café' → 'Cafe').
+            - 'kebab_case': Converts the string to kebab-case (e.g.,
+              'foo bar' → 'foo-bar').
+            - 'snake_case': Converts the string to snake_case (e.g.,
+              'foo bar' → 'foo_bar').
+            - 'template': Interpolates variables in the string using {var} syntax.
+              Requires 'data' dict (e.g., 'Hello, {name}!' with
+              data={'name': 'World'} → 'Hello, World!').
         data (Dict[str, Any], optional): Data for 'template' mutation.
 
     Returns:
@@ -95,9 +99,11 @@ def mutate_list(
             - 'flatten': Flattens a list one level deep.
             - 'flatten_deep': Flattens a nested list completely.
             - 'initial': Gets all but the last element.
-            - 'partition': Splits a list into two lists based on a predicate key (param: str).
+            - 'partition': Splits a list into two lists based on a predicate key
+              (param: str).
             - 'pluck': Extracts a list of values for a given key (param: str).
-            - 'remove_by': Removes items where a property matches a value (param: {'key': str, 'value': Any}).
+            - 'remove_by': Removes items where a property matches a value (param:
+              {'key': str, 'value': Any}).
             - 'sample_size': Gets n random elements from the list (param: int).
             - 'shuffle': Shuffles the list.
             - 'sort_by': Sorts a list of objects by a key (param: str).
@@ -105,9 +111,11 @@ def mutate_list(
             - 'take': Takes n elements from the beginning (param: int).
             - 'take_right': Takes n elements from the end (param: int).
             - 'union': Creates a list of unique values from all given lists.
-            - 'uniq_by': Removes duplicates from a list of objects based on a key (param: str).
+            - 'uniq_by': Removes duplicates from a list of objects based on a key
+              (param: str).
             - 'unzip_list': Unzips a list of tuples into separate lists.
-            - 'xor': Creates a list of unique values that is the symmetric difference of the given lists.
+            - 'xor': Creates a list of unique values that is the symmetric difference of
+              the given lists.
             - 'zip_lists': Zips multiple lists into a list of tuples.
         param (Any, optional): A parameter for mutations that require one.
 
@@ -264,7 +272,8 @@ def has_property(obj: Any, property: str, param: Optional[Any] = None) -> bool:
 
     Parameters:
         obj (Any): The object or value to check.
-        property (str): The property or operation to check. One of: 'starts_with', 'ends_with', 'is_empty', 'is_equal', 'is_nil', 'has_key'.
+        property (str): The property or operation to check. One of: 'starts_with',
+            'ends_with', 'is_empty', 'is_equal', 'is_nil', 'has_key'.
         param (Any, optional): The parameter for the operation, if required.
 
     Returns:
@@ -313,14 +322,16 @@ def select_from_list(items: list, operation: str, param: Optional[Any] = None) -
     """
     Selects an element from a list using various operations.
     Supports:
-        - 'find_by': Finds the first item where a property matches a value (param: {'key': str, 'value': Any}).
+        - 'find_by': Finds the first item where a property matches a value (param:
+          {'key': str, 'value': Any}).
         - 'head': Gets the first element.
         - 'last': Gets the last element.
         - 'sample': Gets a random element.
 
     Parameters:
         items (list): The list to select from.
-        operation (str): The operation to perform. One of: 'find_by', 'head', 'last', 'sample'.
+        operation (str): The operation to perform. One of: 'find_by', 'head', 'last',
+            'sample'.
         param (Any, optional): Parameter for the operation (required for 'find_by').
 
     Returns:
@@ -380,7 +391,8 @@ def compare_lists(a: list, b: list, operation: str, key: Optional[str] = None) -
     Parameters:
         a (list): The first list.
         b (list): The second list.
-        operation (str): The operation to perform. One of: 'difference_by', 'intersection_by', 'intersection', 'difference'.
+        operation (str): The operation to perform. One of: 'difference_by',
+            'intersection_by', 'intersection', 'difference'.
         key (str, optional): The property name for *_by operations.
 
     Returns:
@@ -444,7 +456,8 @@ def compare_lists(a: list, b: list, operation: str, key: Optional[str] = None) -
 @mcp.tool()
 def process_list(items: list, operation: str, key: str) -> dict:
     """
-    Processes a list into a dictionary using grouping, counting, or keying by a property.
+    Processes a list into a dictionary using grouping, counting, or keying by a
+    property.
     Supports:
         - 'count_by': Counts occurrences of property values.
         - 'group_by': Groups items by a property value.
@@ -452,7 +465,8 @@ def process_list(items: list, operation: str, key: str) -> dict:
 
     Parameters:
         items (list): The list of items (dicts or objects).
-        operation (str): The operation to perform. One of: 'group_by', 'count_by', 'key_by'.
+        operation (str): The operation to perform. One of: 'group_by', 'count_by',
+            'key_by'.
         key (str): The property name to use.
 
     Returns:
@@ -544,10 +558,14 @@ async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> Any:
             - 'params': dict of additional parameters (optional, default empty)
 
     Returns:
-        Any: The result of the last tool in the chain, or a descriptive error message if a tool is missing, incompatible, or if the primary parameter is specified in params.
+        Any: The result of the last tool in the chain, or a descriptive error message
+        if a tool is missing, incompatible, or if the primary parameter is specified in
+        params.
 
     Chaining Rule:
-        The output from one tool is always used as the input to the next tool's primary parameter. You must not specify the primary parameter in params for any tool in the chain.
+        The output from one tool is always used as the input to the next tool's primary
+        parameter. You must not specify the primary parameter in params for any tool in
+        the chain.
 
     Usage Example:
         chain(
@@ -605,14 +623,18 @@ async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> Any:
         if primary_param:
             if primary_param in arguments:
                 return {
-                    "error": f"Step {i}: Chaining does not allow specifying the primary parameter '{primary_param}' in params. The output from the previous tool is always used as input."
+                    "error": f"Step {i}: Chaining does not allow specifying the "
+                    f"primary parameter '{primary_param}' in params. The output from "
+                    "the previous tool is always used as input."
                 }
             arguments[primary_param] = value
         elif len(param_schema) == 1:
             only_param = next(iter(param_schema))
             if only_param in arguments:
                 return {
-                    "error": f"Step {i}: Chaining does not allow specifying the primary parameter '{only_param}' in params. The output from the previous tool is always used as input."
+                    "error": f"Step {i}: Chaining does not allow specifying the "
+                    f"primary parameter '{only_param}' in params. The output from the "
+                    "previous tool is always used as input."
                 }
             arguments[only_param] = value
         elif not param_schema:
@@ -636,7 +658,7 @@ def unwrap_result(result):
             for content in result:
                 if hasattr(content, "text"):
                     try:
-                        values.append(json.loads(content.text))  # type: ignore[attr-defined]
+                        values.append(json.loads(content.text))  # type: ignore[attr-defined]  # noqa
                     except Exception:
                         values.append(content.text)  # type: ignore[attr-defined]
                 else:
@@ -693,7 +715,8 @@ def set_value(obj: dict, path, value):
 
     Parameters:
         obj (Dict[Any, Any]): The dictionary to modify.
-        path (Union[str, List[Any]]): The property path as a dot/bracket string or list of keys.
+        path (Union[str, List[Any]]): The property path as a dot/bracket string or list
+            of keys.
         value (Any): The value to set at the specified path.
 
     Returns:
@@ -723,8 +746,10 @@ def get_value(obj: dict, path, default=None):
 
     Parameters:
         obj (Dict[Any, Any]): The dictionary to access.
-        path (Union[str, List[Any]]): The property path as a dot/bracket string or list of keys.
-        default (Any, optional): The value to return if the path does not exist. Defaults to None.
+        path (Union[str, List[Any]]): The property path as a dot/bracket string or list
+            of keys.
+        default (Any, optional): The value to return if the path does not exist.
+            Defaults to None.
 
     Returns:
         Any: The value at the specified path, or the default if not found.

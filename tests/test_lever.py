@@ -4,7 +4,6 @@ from fastmcp import Client
 import importlib
 import main
 from main import LeverMCP
-from json.decoder import JSONDecodeError
 from fastmcp.exceptions import ToolError
 
 
