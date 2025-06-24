@@ -19,7 +19,7 @@ mcp = LeverMCP("Lever MCP")
 
 
 @mcp.tool()
-def groupBy(items: List[Any], key: str) -> Dict[Any, List[Any]]:
+def group_by(items: List[Any], key: str) -> Dict[Any, List[Any]]:
     """
     Groups items by a property name (string key).
 
@@ -31,7 +31,7 @@ def groupBy(items: List[Any], key: str) -> Dict[Any, List[Any]]:
         Dict[Any, List[Any]]: A dictionary mapping each unique property value to a list of items with that value.
     
     Usage Example:
-        groupBy([
+        group_by([
             {"type": "fruit", "name": "apple"},
             {"type": "fruit", "name": "banana"},
             {"type": "vegetable", "name": "carrot"}
@@ -79,7 +79,7 @@ def merge(dicts: List[Dict[Any, Any]]) -> Dict[Any, Any]:
 
 
 @mcp.tool()
-def flattenDeep(items: List[Any]) -> List[Any]:
+def flatten_deep(items: List[Any]) -> List[Any]:
     """
     Fully flattens a nested list.
 
@@ -90,7 +90,7 @@ def flattenDeep(items: List[Any]) -> List[Any]:
         List[Any]: A single, flat list containing all values from the nested structure.
     
     Usage Example:
-        flattenDeep([1, [2, [3, 4], 5], 6])
+        flatten_deep([1, [2, [3, 4], 5], 6])
         # => [1, 2, 3, 4, 5, 6]
     """
     result = []
@@ -107,7 +107,7 @@ def flattenDeep(items: List[Any]) -> List[Any]:
 
 
 @mcp.tool()
-def sortBy(items: List[Any], key: str) -> List[Any]:
+def sort_by(items: List[Any], key: str) -> List[Any]:
     """
     Sorts a list by a property name (string key).
 
@@ -119,7 +119,7 @@ def sortBy(items: List[Any], key: str) -> List[Any]:
         List[Any]: The sorted list of items.
     
     Usage Example:
-        sortBy([
+        sort_by([
             {"age": 30, "name": "Alice"},
             {"age": 25, "name": "Bob"}
         ], "age")
@@ -132,7 +132,7 @@ def sortBy(items: List[Any], key: str) -> List[Any]:
 
 
 @mcp.tool()
-def uniqBy(items: List[Any], key: str) -> List[Any]:
+def uniq_by(items: List[Any], key: str) -> List[Any]:
     """
     Returns unique items in a list by a property name (string key).
 
@@ -144,7 +144,7 @@ def uniqBy(items: List[Any], key: str) -> List[Any]:
         List[Any]: A list of unique items based on the property value.
     
     Usage Example:
-        uniqBy([
+        uniq_by([
             {"id": 1, "name": "Alice"},
             {"id": 2, "name": "Bob"},
             {"id": 1, "name": "Alice"}
@@ -206,7 +206,7 @@ def template(text: str, data: Dict[str, Any]) -> str:
 
 
 @mcp.tool()
-def cloneDeep(obj: Any) -> Any:
+def clone_deep(obj: Any) -> Any:
     """
     Performs a deep copy of a dictionary or list.
 
@@ -217,7 +217,7 @@ def cloneDeep(obj: Any) -> Any:
         Any: A deep copy of the input object.
     
     Usage Example:
-        cloneDeep({"a": [1, 2, 3]})
+        clone_deep({"a": [1, 2, 3]})
         # => {'a': [1, 2, 3]} (deep copy)
     """
     return copy.deepcopy(obj)

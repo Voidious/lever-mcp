@@ -19,13 +19,13 @@ async def client():
 
 
 @pytest.mark.asyncio
-async def test_groupBy(client):
+async def test_group_by(client):
     items = [
         {"type": "fruit", "name": "apple"},
         {"type": "fruit", "name": "banana"},
         {"type": "vegetable", "name": "carrot"},
     ]
-    result = await client.call_tool("groupBy", {"items": items, "key": "type"})
+    result = await client.call_tool("group_by", {"items": items, "key": "type"})
     data = json.loads(result[0].text)
     assert data == {
         "fruit": [
@@ -46,25 +46,25 @@ async def test_merge(client):
 
 
 @pytest.mark.asyncio
-async def test_flattenDeep(client):
+async def test_flatten_deep(client):
     items = [1, [2, [3, 4], 5]]
-    result = await client.call_tool("flattenDeep", {"items": items})
+    result = await client.call_tool("flatten_deep", {"items": items})
     data = json.loads(result[0].text)
     assert data == [1, 2, 3, 4, 5]
 
 
 @pytest.mark.asyncio
-async def test_sortBy(client):
+async def test_sort_by(client):
     items = [{"name": "b"}, {"name": "a"}]
-    result = await client.call_tool("sortBy", {"items": items, "key": "name"})
+    result = await client.call_tool("sort_by", {"items": items, "key": "name"})
     data = json.loads(result[0].text)
     assert data == [{"name": "a"}, {"name": "b"}]
 
 
 @pytest.mark.asyncio
-async def test_uniqBy(client):
+async def test_uniq_by(client):
     items = [{"id": 1, "name": "a"}, {"id": 1, "name": "a"}, {"id": 2, "name": "b"}]
-    result = await client.call_tool("uniqBy", {"items": items, "key": "id"})
+    result = await client.call_tool("uniq_by", {"items": items, "key": "id"})
     data = json.loads(result[0].text)
     assert data == [{"id": 1, "name": "a"}, {"id": 2, "name": "b"}]
 
@@ -84,9 +84,9 @@ async def test_template(client):
 
 
 @pytest.mark.asyncio
-async def test_cloneDeep(client):
+async def test_clone_deep(client):
     obj = {"a": [1, 2, 3]}
-    result = await client.call_tool("cloneDeep", {"obj": obj})
+    result = await client.call_tool("clone_deep", {"obj": obj})
     data = json.loads(result[0].text)
     assert data == {"a": [1, 2, 3]}
     assert data is not obj
@@ -151,13 +151,13 @@ async def test_partition_by_none(client):
 
 
 @pytest.mark.asyncio
-async def test_groupBy_string(client):
+async def test_group_by_string(client):
     items = [
         {"type": "fruit", "name": "apple"},
         {"type": "fruit", "name": "banana"},
         {"type": "vegetable", "name": "carrot"},
     ]
-    result = await client.call_tool("groupBy", {"items": items, "key": "type"})
+    result = await client.call_tool("group_by", {"items": items, "key": "type"})
     data = json.loads(result[0].text)
     assert data == {
         "fruit": [
@@ -169,13 +169,13 @@ async def test_groupBy_string(client):
 
 
 @pytest.mark.asyncio
-async def test_groupBy_number(client):
+async def test_group_by_number(client):
     items = [
         {"value": 1, "name": "a"},
         {"value": 2, "name": "b"},
         {"value": 1, "name": "c"},
     ]
-    result = await client.call_tool("groupBy", {"items": items, "key": "value"})
+    result = await client.call_tool("group_by", {"items": items, "key": "value"})
     data = json.loads(result[0].text)
     assert data == {
         "1": [{"value": 1, "name": "a"}, {"value": 1, "name": "c"}],
@@ -184,13 +184,13 @@ async def test_groupBy_number(client):
 
 
 @pytest.mark.asyncio
-async def test_groupBy_boolean(client):
+async def test_group_by_boolean(client):
     items = [
         {"flag": True, "name": "a"},
         {"flag": False, "name": "b"},
         {"flag": True, "name": "c"},
     ]
-    result = await client.call_tool("groupBy", {"items": items, "key": "flag"})
+    result = await client.call_tool("group_by", {"items": items, "key": "flag"})
     data = json.loads(result[0].text)
     # JSON keys are strings, so True/False become "true"/"false"
     assert data == {
@@ -200,7 +200,7 @@ async def test_groupBy_boolean(client):
 
 
 @pytest.mark.asyncio
-async def test_groupBy_dict(client):
+async def test_group_by_dict(client):
     items = [
         {"meta": {"x": 1}, "name": "a"},
         {"meta": {"x": 2}, "name": "b"},
@@ -208,7 +208,7 @@ async def test_groupBy_dict(client):
     ]
     # Dicts are not hashable, so all will be grouped under one key (or error)
     try:
-        result = await client.call_tool("groupBy", {"items": items, "key": "meta"})
+        result = await client.call_tool("group_by", {"items": items, "key": "meta"})
         data = json.loads(result[0].text)
         # If the server serializes dict keys, they will be stringified
         assert any(isinstance(k, str) for k in data.keys())
@@ -217,36 +217,36 @@ async def test_groupBy_dict(client):
 
 
 @pytest.mark.asyncio
-async def test_sortBy_string(client):
+async def test_sort_by_string(client):
     items = [{"name": "b"}, {"name": "a"}]
-    result = await client.call_tool("sortBy", {"items": items, "key": "name"})
+    result = await client.call_tool("sort_by", {"items": items, "key": "name"})
     data = json.loads(result[0].text)
     assert data == [{"name": "a"}, {"name": "b"}]
 
 
 @pytest.mark.asyncio
-async def test_sortBy_number(client):
+async def test_sort_by_number(client):
     items = [{"value": 2}, {"value": 1}]
-    result = await client.call_tool("sortBy", {"items": items, "key": "value"})
+    result = await client.call_tool("sort_by", {"items": items, "key": "value"})
     data = json.loads(result[0].text)
     assert data == [{"value": 1}, {"value": 2}]
 
 
 @pytest.mark.asyncio
-async def test_sortBy_boolean(client):
+async def test_sort_by_boolean(client):
     items = [{"flag": True}, {"flag": False}]
-    result = await client.call_tool("sortBy", {"items": items, "key": "flag"})
+    result = await client.call_tool("sort_by", {"items": items, "key": "flag"})
     data = json.loads(result[0].text)
     # False sorts before True
     assert data == [{"flag": False}, {"flag": True}]
 
 
 @pytest.mark.asyncio
-async def test_sortBy_dict(client):
+async def test_sort_by_dict(client):
     items = [{"meta": {"x": 2}}, {"meta": {"x": 1}}]
     # Dicts are not orderable, so this should raise or group all under one
     try:
-        result = await client.call_tool("sortBy", {"items": items, "key": "meta"})
+        result = await client.call_tool("sort_by", {"items": items, "key": "meta"})
         data = json.loads(result[0].text)
         # If the server stringifies dicts, this will not error
         assert isinstance(data, list)
@@ -255,13 +255,13 @@ async def test_sortBy_dict(client):
 
 
 @pytest.mark.asyncio
-async def test_uniqBy_string(client):
+async def test_uniq_by_string(client):
     items = [
         {"type": "fruit", "name": "apple"},
         {"type": "fruit", "name": "banana"},
         {"type": "vegetable", "name": "carrot"},
     ]
-    result = await client.call_tool("uniqBy", {"items": items, "key": "type"})
+    result = await client.call_tool("uniq_by", {"items": items, "key": "type"})
     data = json.loads(result[0].text)
     assert data == [
         {"type": "fruit", "name": "apple"},
@@ -270,31 +270,31 @@ async def test_uniqBy_string(client):
 
 
 @pytest.mark.asyncio
-async def test_uniqBy_number(client):
+async def test_uniq_by_number(client):
     items = [
         {"value": 1, "name": "a"},
         {"value": 2, "name": "b"},
         {"value": 1, "name": "c"},
     ]
-    result = await client.call_tool("uniqBy", {"items": items, "key": "value"})
+    result = await client.call_tool("uniq_by", {"items": items, "key": "value"})
     data = json.loads(result[0].text)
     assert data == [{"value": 1, "name": "a"}, {"value": 2, "name": "b"}]
 
 
 @pytest.mark.asyncio
-async def test_uniqBy_boolean(client):
+async def test_uniq_by_boolean(client):
     items = [
         {"flag": True, "name": "a"},
         {"flag": False, "name": "b"},
         {"flag": True, "name": "c"},
     ]
-    result = await client.call_tool("uniqBy", {"items": items, "key": "flag"})
+    result = await client.call_tool("uniq_by", {"items": items, "key": "flag"})
     data = json.loads(result[0].text)
     assert data == [{"flag": True, "name": "a"}, {"flag": False, "name": "b"}]
 
 
 @pytest.mark.asyncio
-async def test_uniqBy_dict(client):
+async def test_uniq_by_dict(client):
     items = [
         {"meta": {"x": 1}, "name": "a"},
         {"meta": {"x": 2}, "name": "b"},
@@ -302,7 +302,7 @@ async def test_uniqBy_dict(client):
     ]
     # Dicts are not hashable, so this should raise or only keep the first
     try:
-        result = await client.call_tool("uniqBy", {"items": items, "key": "meta"})
+        result = await client.call_tool("uniq_by", {"items": items, "key": "meta"})
         data = json.loads(result[0].text)
         assert isinstance(data, list)
     except Exception:

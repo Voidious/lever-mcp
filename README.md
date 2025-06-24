@@ -56,7 +56,7 @@ Once configured, your AI coding assistant will be able to use the Lever MCP tool
 
 All tools accept only property names (strings) for keys/predicates, not function names or callables. Each tool is exposed as an MCP tool with the following parameters and return types:
 
-### groupBy
+### group_by
 Groups items by a property name (string key).
 
 **Parameters:**
@@ -75,7 +75,7 @@ Deep merges a list of dictionaries.
 **Returns:**
 - `Dict[Any, Any]`: A single dictionary containing the merged keys and values.
 
-### flattenDeep
+### flatten_deep
 Fully flattens a nested list.
 
 **Parameters:**
@@ -84,7 +84,7 @@ Fully flattens a nested list.
 **Returns:**
 - `List[Any]`: A single, flat list containing all values from the nested structure.
 
-### sortBy
+### sort_by
 Sorts a list by a property name (string key).
 
 **Parameters:**
@@ -94,7 +94,7 @@ Sorts a list by a property name (string key).
 **Returns:**
 - `List[Any]`: The sorted list of items.
 
-### uniqBy
+### uniq_by
 Returns unique items in a list by a property name (string key).
 
 **Parameters:**
@@ -123,7 +123,7 @@ Interpolates variables in a string using {var} syntax.
 **Returns:**
 - `str`: The interpolated string with variables replaced.
 
-### cloneDeep
+### clone_deep
 Performs a deep copy of a dictionary or list.
 
 **Parameters:**
