@@ -7,6 +7,7 @@ import inspect
 from typing import get_origin, get_args
 from mcp.types import TextContent, ImageContent, AudioContent, EmbeddedResource
 import json
+import random
 
 # --- MCP Server Setup ---
 
@@ -504,15 +505,601 @@ def remove_by(items: List[Any], key: str, value: Any) -> List[Any]:
 
     Returns:
         List[Any]: The list with matching items removed.
-    
+
     Usage Example:
         remove_by([
             {"id": 1}, {"id": 2}, {"id": 1}
         ], "id", 1)
         # => [{"id": 2}]
     """
-    result = [item for item in items if (item.get(key) if isinstance(item, dict) else getattr(item, key, None)) != value]
+    result = []
+    for item in items:
+        if (isinstance(item, dict) and item.get(key) != value) or \
+           (not isinstance(item, dict) and getattr(item, key, None) != value):
+            result.append(item)
+    return result
+
+
+@mcp.tool()
+def camel_case(text: str) -> str:
+    """
+    Converts a string to camelCase.
+
+    Parameters:
+        text (str): The string to convert.
+
+    Returns:
+        str: The camelCased string.
+
+    Usage Example:
+        camel_case("foo-bar_baz")
+        # => "fooBarBaz"
+    """
+    s = re.sub(r"(_|-)+", " ", text).title().replace(" ", "")
+    return s[0].lower() + s[1:] if s else ""
+
+
+@mcp.tool()
+def kebab_case(text: str) -> str:
+    """
+    Converts a string to kebab-case.
+
+    Parameters:
+        text (str): The string to convert.
+
+    Returns:
+        str: The kebab-cased string.
+
+    Usage Example:
+        kebab_case("fooBar Baz")
+        # => "foo-bar-baz"
+    """
+    s = re.sub(r"([a-z0-9])([A-Z])", r"\1-\2", text)
+    return re.sub(r"(\s|_|-)+", "-", s).lower().strip("-_")
+
+
+@mcp.tool()
+def snake_case(text: str) -> str:
+    """
+    Converts a string to snake_case.
+
+    Parameters:
+        text (str): The string to convert.
+
+    Returns:
+        str: The snake_cased string.
+
+    Usage Example:
+        snake_case("fooBar Baz")
+        # => "foo_bar_baz"
+    """
+    s = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", text)
+    return re.sub(r"(\s|-)+", "_", s).lower().strip("-_")
+
+
+@mcp.tool()
+def capitalize(text: str) -> str:
+    """
+    Converts the first character of a string to upper case and the remaining to lower case.
+
+    Parameters:
+        text (str): The string to capitalize.
+
+    Returns:
+        str: The capitalized string.
+
+    Usage Example:
+        capitalize("foo bar")
+        # => "Foo bar"
+    """
+    return text.capitalize()
+
+
+@mcp.tool()
+def starts_with(text: str, target: str) -> bool:
+    """
+    Checks if a string starts with the given target string.
+
+    Parameters:
+        text (str): The string to check.
+        target (str): The string to search for.
+
+    Returns:
+        bool: True if the string starts with the target, else False.
+
+    Usage Example:
+        starts_with("abc", "a")
+        # => True
+    """
+    return text.startswith(target)
+
+
+@mcp.tool()
+def ends_with(text: str, target: str) -> bool:
+    """
+    Checks if a string ends with the given target string.
+
+    Parameters:
+        text (str): The string to check.
+        target (str): The string to search for.
+
+    Returns:
+        bool: True if the string ends with the target, else False.
+
+    Usage Example:
+        ends_with("abc", "c")
+        # => True
+    """
+    return text.endswith(target)
+
+
+@mcp.tool()
+def is_empty(value: Any) -> bool:
+    """
+    Checks if a value is empty. Works for lists, dicts, strings, etc.
+
+    Parameters:
+        value (Any): The value to check.
+
+    Returns:
+        bool: True if the value is empty, else False.
+        
+    Usage Example:
+        is_empty([])
+        # => True
+        is_empty({"a": 1})
+        # => False
+    """
+    if hasattr(value, '__len__'):
+        return len(value) == 0
+    return not bool(value)
+
+
+@mcp.tool()
+def is_equal(a: Any, b: Any) -> bool:
+    """
+    Performs a deep comparison between two values to determine if they are equivalent.
+
+    Parameters:
+        a (Any): The first value.
+        b (Any): The second value.
+
+    Returns:
+        bool: True if the values are equivalent, else False.
+
+    Usage Example:
+        is_equal({"x": 1}, {"x": 1})
+        # => True
+    """
+    return a == b
+
+
+@mcp.tool()
+def is_nil(value: Any) -> bool:
+    """
+    Checks if a value is None.
+
+    Parameters:
+        value (Any): The value to check.
+
+    Returns:
+        bool: True if the value is None, else False.
+
+    Usage Example:
+        is_nil(None)
+        # => True
+    """
+    return value is None
+
+
+@mcp.tool()
+def head(items: List[Any]) -> Optional[Any]:
+    """
+    Gets the first element of a list.
+
+    Parameters:
+        items (List[Any]): The list.
+
+    Returns:
+        Optional[Any]: The first element of the list, or None if the list is empty.
+
+    Usage Example:
+        head([1, 2, 3])
+        # => 1
+    """
+    return items[0] if items else None
+
+
+@mcp.tool()
+def tail(items: List[Any]) -> List[Any]:
+    """
+    Gets all but the first element of a list.
+
+    Parameters:
+        items (List[Any]): The list.
+
+    Returns:
+        List[Any]: A new list containing all but the first element.
+
+    Usage Example:
+        tail([1, 2, 3])
+        # => [2, 3]
+    """
+    return items[1:] if len(items) > 1 else []
+
+
+@mcp.tool()
+def last(items: List[Any]) -> Optional[Any]:
+    """
+    Gets the last element of a list.
+
+    Parameters:
+        items (List[Any]): The list.
+
+    Returns:
+        Optional[Any]: The last element of the list, or None if the list is empty.
+
+    Usage Example:
+        last([1, 2, 3])
+        # => 3
+    """
+    return items[-1] if items else None
+
+
+@mcp.tool()
+def initial(items: List[Any]) -> List[Any]:
+    """
+    Gets all but the last element of a list.
+
+    Parameters:
+        items (List[Any]): The list.
+
+    Returns:
+        List[Any]: A new list containing all but the last element.
+
+    Usage Example:
+        initial([1, 2, 3])
+        # => [1, 2]
+    """
+    return items[:-1]
+
+
+@mcp.tool()
+def drop(items: List[Any], n: int = 1) -> List[Any]:
+    """
+    Creates a slice of a list with n elements dropped from the beginning.
+
+    Parameters:
+        items (List[Any]): The list.
+        n (int): The number of elements to drop.
+
+    Returns:
+        List[Any]: The slice of the list.
+
+    Usage Example:
+        drop([1, 2, 3], 2)
+        # => [3]
+    """
+    return items[n:]
+
+
+@mcp.tool()
+def drop_right(items: List[Any], n: int = 1) -> List[Any]:
+    """
+    Creates a slice of a list with n elements dropped from the end.
+
+    Parameters:
+        items (List[Any]): The list.
+        n (int): The number of elements to drop.
+
+    Returns:
+        List[Any]: The slice of the list.
+
+    Usage Example:
+        drop_right([1, 2, 3], 2)
+        # => [1]
+    """
+    return items[:-n] if n > 0 else items[:]
+
+
+@mcp.tool()
+def take(items: List[Any], n: int = 1) -> List[Any]:
+    """
+    Creates a slice of a list with n elements taken from the beginning.
+
+    Parameters:
+        items (List[Any]): The list.
+        n (int): The number of elements to take.
+
+    Returns:
+        List[Any]: The slice of the list.
+
+    Usage Example:
+        take([1, 2, 3], 2)
+        # => [1, 2]
+    """
+    return items[:n]
+
+
+@mcp.tool()
+def take_right(items: List[Any], n: int = 1) -> List[Any]:
+    """
+    Creates a slice of a list with n elements taken from the end.
+
+    Parameters:
+        items (List[Any]): The list.
+        n (int): The number of elements to take.
+
+    Returns:
+        List[Any]: The slice of the list.
+
+    Usage Example:
+        take_right([1, 2, 3], 2)
+        # => [2, 3]
+    """
+    return items[-n:] if n > 0 else []
+
+
+@mcp.tool()
+def flatten(items: List[List[Any]]) -> List[Any]:
+    """
+    Flattens a list a single level deep.
+
+    Parameters:
+        items (List[List[Any]]): The list to flatten.
+
+    Returns:
+        List[Any]: The new flattened list.
+
+    Usage Example:
+        flatten([[1], [2, 3]])
+        # => [1, 2, 3]
+    """
+    return [item for sublist in items for item in sublist]
+
+
+@mcp.tool()
+def union(lists: List[List[Any]]) -> List[Any]:
+    """
+    Creates a list of unique values, in order, from all given lists.
+
+    Parameters:
+        lists (List[List[Any]]): The lists to process.
+
+    Returns:
+        List[Any]: The new list of combined values.
+
+    Usage Example:
+        union([[1, 2], [2, 3]])
+        # => [1, 2, 3]
+    """
+    result = []
+    seen = set()
+    for lst in lists:
+        for item in lst:
+            if item not in seen:
+                seen.add(item)
+                result.append(item)
+    return result
+
+
+@mcp.tool()
+def intersection(lists: List[List[Any]]) -> List[Any]:
+    """
+    Creates a list of unique values that are included in all given lists.
+
+    Parameters:
+        lists (List[List[Any]]): The lists to inspect.
+
+    Returns:
+        List[Any]: The new list of intersecting values.
+
+    Usage Example:
+        intersection([[1, 2], [2, 3]])
+        # => [2]
+    """
+    if not lists:
+        return []
+    result = set(lists[0])
+    for lst in lists[1:]:
+        result.intersection_update(lst)
     return list(result)
+
+
+@mcp.tool()
+def difference(items: List[Any], others: List[List[Any]]) -> List[Any]:
+    """
+    Creates a list of values from the first list that are not in the other lists.
+
+    Parameters:
+        items (List[Any]): The list to inspect.
+        others (List[List[Any]]): The lists of values to exclude.
+
+    Returns:
+        List[Any]: The new list of filtered values.
+
+    Usage Example:
+        difference([1, 2, 3], [[2, 3], [3, 4]])
+        # => [1]
+    """
+    exclude = set()
+    for other in others:
+        exclude.update(other)
+    return [item for item in items if item not in exclude]
+
+
+@mcp.tool()
+def xor(lists: List[List[Any]]) -> List[Any]:
+    """
+    Creates a list of unique values that is the symmetric difference of the given lists.
+
+    Parameters:
+        lists (List[List[Any]]): The lists to inspect.
+
+    Returns:
+        List[Any]: The new list of values.
+
+    Usage Example:
+        xor([[1, 2], [2, 3]])
+        # => [1, 3]
+    """
+    if not lists:
+        return []
+    result = set(lists[0])
+    for lst in lists[1:]:
+        result ^= set(lst)
+    return list(result)
+
+
+@mcp.tool()
+def pick(obj: Dict[str, Any], keys: List[str]) -> Dict[str, Any]:
+    """
+    Creates an object composed of the picked object properties.
+
+    Parameters:
+        obj (Dict[str, Any]): The source object.
+        keys (List[str]): The property keys to pick.
+
+    Returns:
+        Dict[str, Any]: The new object.
+
+    Usage Example:
+        pick({"a": 1, "b": 2}, ["a"])
+        # => {"a": 1}
+    """
+    return {key: obj[key] for key in keys if key in obj}
+
+
+@mcp.tool()
+def omit(obj: Dict[str, Any], keys: List[str]) -> Dict[str, Any]:
+    """
+    The opposite of pick; this method creates an object with properties of obj that are not omitted.
+
+    Parameters:
+        obj (Dict[str, Any]): The source object.
+        keys (List[str]): The property keys to omit.
+
+    Returns:
+        Dict[str, Any]: The new object.
+
+    Usage Example:
+        omit({"a": 1, "b": 2}, ["a"])
+        # => {"b": 2}
+    """
+    return {key: value for key, value in obj.items() if key not in keys}
+
+
+@mcp.tool()
+def invert(obj: Dict[Any, Any]) -> Dict[Any, Any]:
+    """
+    Creates an object with keys and values swapped.
+
+    Parameters:
+        obj (Dict[Any, Any]): The source object.
+
+    Returns:
+        Dict[Any, Any]: The new inverted object.
+
+    Usage Example:
+        invert({"a": 1, "b": 2})
+        # => {1: "a", 2: "b"}
+    """
+    return {value: key for key, value in obj.items()}
+
+
+@mcp.tool()
+def has(obj: Dict[str, Any], key: str) -> bool:
+    """
+    Checks if key is a direct property of object.
+
+    Parameters:
+        obj (Dict[str, Any]): The object to query.
+        key (str): The key to check.
+
+    Returns:
+        bool: True if key exists, else False.
+
+    Usage Example:
+        has({"a": 1}, "a")
+        # => True
+    """
+    return key in obj
+
+
+@mcp.tool()
+def shuffle(items: List[Any]) -> List[Any]:
+    """
+    Creates a list of shuffled values.
+
+    Parameters:
+        items (List[Any]): The list to shuffle.
+
+    Returns:
+        List[Any]: The new shuffled list.
+
+    Usage Example:
+        shuffle([1, 2, 3, 4])
+        # => [3, 1, 4, 2] (example output)
+    """
+    result = list(items)
+    random.shuffle(result)
+    return result
+
+
+@mcp.tool()
+def sample(items: List[Any]) -> Optional[Any]:
+    """
+    Gets a random element from a list.
+
+    Parameters:
+        items (List[Any]): The list to sample from.
+
+    Returns:
+        Optional[Any]: A random element from the list, or None if the list is empty.
+
+    Usage Example:
+        sample([1, 2, 3])
+        # => 2 (example output)
+    """
+    return random.choice(items) if items else None
+
+
+@mcp.tool()
+def sample_size(items: List[Any], n: int = 1) -> List[Any]:
+    """
+    Gets n random elements from a list.
+
+    Parameters:
+        items (List[Any]): The list to sample from.
+        n (int): The number of elements to sample.
+
+    Returns:
+        List[Any]: A list of n random elements.
+
+    Usage Example:
+        sample_size([1, 2, 3, 4, 5], 3)
+        # => [4, 1, 3] (example output)
+    """
+    return random.sample(items, min(n, len(items)))
+
+
+@mcp.tool()
+def key_by(items: List[Dict[str, Any]], key: str) -> Dict[str, Dict[str, Any]]:
+    """
+    Creates a dictionary with keys generated from a list of objects.
+
+    Parameters:
+        items (List[Dict[str, Any]]): The list of objects.
+        key (str): The property to use as the key.
+
+    Returns:
+        Dict[str, Dict[str, Any]]: The new dictionary.
+
+    Usage Example:
+        key_by([{"id": "a", "val": 1}, {"id": "b", "val": 2}], "id")
+        # => {"a": {"id": "a", "val": 1}, "b": {"id": "b", "val": 2}}
+    """
+    return {item[key]: item for item in items}
 
 
 def unwrap_result(result):
@@ -589,24 +1176,24 @@ async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> Any:
         params = step.get("params", {})
         if not tool_name:
             return {"error": f"Step {i}: Missing 'tool' name."}
-        # Get the tool (support both sync and async)
+
+        # Get the tool (it may be a coroutine)
         try:
-            tool_coro = mcp._tool_manager.get_tool(tool_name)
+            tool_or_coro = mcp._tool_manager.get_tool(tool_name)
+            if inspect.isawaitable(tool_or_coro):
+                tool = await tool_or_coro
+            else:
+                tool = tool_or_coro
         except Exception as e:
             return {"error": f"Step {i}: Tool '{tool_name}' not found: {e}"}
-        # Await if coroutine, else use directly
-        if hasattr(tool_coro, "__await__"):
-            try:
-                tool = await tool_coro
-            except Exception as e:
-                return {"error": f"Step {i}: Tool '{tool_name}' not found: {e}"}
-        else:
-            tool = tool_coro
+
         # Now 'tool' is always the resolved object, safe to access attributes
         if not hasattr(tool, "run") or not callable(getattr(tool, "run", None)):
             return {"error": f"Step {i}: Tool '{tool_name}' is not a valid tool object."}
+        
         param_schema = tool.parameters.get("properties", {})
         required = tool.parameters.get("required", [])
+        
         # Find the first required param not in params, or just the first param
         primary_param = None
         for k in required:

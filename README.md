@@ -258,36 +258,181 @@ Removes all items from a list where a property matches a value.
 
 ### chain
 Chains multiple tool calls, piping the output of one as the input to the next.
+The output from one tool is always used as the input to the next tool's primary parameter. You must not specify the primary parameter in `params` for any tool in the chain.
 
 **Parameters:**
 - `input` (Any): The initial input to the chain.
 - `tool_calls` (List[Dict[str, Any]]): Each dict must have:
-  - `tool` (str): The tool name to call.
-  - `params` (dict, optional): Additional parameters for the tool (other than the primary input; specifying the primary parameter is an error).
+  - `tool`: the tool name (str)
+  - `params`: dict of additional parameters (optional, default empty)
+  
+**Returns:**
+- `Any`: The result of the last tool in the chain.
+
+### camel_case
+Converts a string to camelCase.
+
+**Parameters:**
+- `text` (str): The string to convert.
 
 **Returns:**
-- The result of the last tool in the chain, or a descriptive error message if a tool is missing, incompatible, or if the primary parameter is specified in `params`.
+- `str`: The camelCased string.
 
-**Chaining Rule:**
-- The output from one tool is always used as the input to the next tool's primary parameter. You must not specify the primary parameter in `params` for any tool in the chain.
+### kebab_case
+Converts a string to kebab-case.
 
-**Usage Example:**
-```json
-{
-  "input": [1, [2, [3, 4], 5]],
-  "tool_calls": [
-    {"tool": "flatten_deep", "params": {}},
-    {"tool": "compact", "params": {}}
-  ]
-}
-```
+**Parameters:**
+- `text` (str): The string to convert.
 
-## Running Tests
+**Returns:**
+- `str`: The kebab-cased string.
 
-This project includes a test suite to verify its functionality. The tests use `pytest` and run in-memory without needing to keep the server running in a separate process.
+### snake_case
+Converts a string to snake_case.
 
-To run the tests, execute the following command from the root directory:
+**Parameters:**
+- `text` (str): The string to convert.
 
-```bash
-pytest
-``` 
+**Returns:**
+- `str`: The snake_cased string.
+
+### capitalize
+Converts the first character of a string to upper case and the remaining to lower case.
+
+**Parameters:**
+- `text` (str): The string to capitalize.
+
+**Returns:**
+- `str`: The capitalized string.
+
+### starts_with
+Checks if a string starts with the given target string.
+
+**Parameters:**
+- `text` (str): The string to check.
+- `target` (str): The string to search for.
+
+**Returns:**
+- `bool`: True if the string starts with the target, else False.
+
+### ends_with
+Checks if a string ends with the given target string.
+
+**Parameters:**
+- `text` (str): The string to check.
+- `target` (str): The string to search for.
+
+**Returns:**
+- `bool`: True if the string ends with the target, else False.
+
+### is_empty
+Checks if a value is empty.
+
+**Parameters:**
+- `value` (Any): The value to check.
+
+**Returns:**
+- `bool`: True if the value is empty, else False.
+
+### is_equal
+Performs a deep comparison between two values to determine if they are equivalent.
+
+**Parameters:**
+- `a` (Any): The first value.
+- `b` (Any): The second value.
+
+**Returns:**
+- `bool`: True if the values are equivalent, else False.
+
+### is_nil
+Checks if a value is None.
+
+**Parameters:**
+- `value` (Any): The value to check.
+
+**Returns:**
+- `bool`: True if the value is None, else False.
+
+### head
+Gets the first element of a list.
+
+**Parameters:**
+- `items` (List[Any]): The list.
+
+**Returns:**
+- `Optional[Any]`: The first element of the list, or None if the list is empty.
+
+### tail
+Gets all but the first element of a list.
+
+**Parameters:**
+- `items` (List[Any]): The list.
+
+**Returns:**
+- `List[Any]`: A new list containing all but the first element.
+
+### last
+Gets the last element of a list.
+
+**Parameters:**
+- `items` (List[Any]): The list.
+
+**Returns:**
+- `Optional[Any]`: The last element of the list, or None if the list is empty.
+
+### initial
+Gets all but the last element of a list.
+
+**Parameters:**
+- `items` (List[Any]): The list.
+
+**Returns:**
+- `List[Any]`: A new list containing all but the last element.
+
+### drop
+Creates a slice of a list with n elements dropped from the beginning.
+
+**Parameters:**
+- `items` (List[Any]): The list.
+- `n` (int): The number of elements to drop.
+
+**Returns:**
+- `List[Any]`: The slice of the list.
+
+### drop_right
+Creates a slice of a list with n elements dropped from the end.
+
+**Parameters:**
+- `items` (List[Any]): The list.
+- `n` (int): The number of elements to drop.
+
+**Returns:**
+- `List[Any]`: The slice of the list.
+
+### take
+Creates a slice of a list with n elements taken from the beginning.
+
+**Parameters:**
+- `items` (List[Any]): The list.
+- `n` (int): The number of elements to take.
+
+**Returns:**
+- `List[Any]`: The slice of the list.
+
+### take_right
+Creates a slice of a list with n elements taken from the end.
+
+**Parameters:**
+- `items` (List[Any]): The list.
+- `n` (int): The number of elements to take.
+
+**Returns:**
+- `List[Any]`: The slice of the list.
+
+## Contributing
+
+Contributions are welcome! If you have ideas for new tools or improvements, please open an issue or submit a pull request.
+
+## License
+
+Lever MCP is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
