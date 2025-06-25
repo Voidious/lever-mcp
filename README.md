@@ -52,6 +52,16 @@ To configure the server, add a new server configuration block in your editor's M
 
 Once configured, your AI coding assistant will be able to use the Lever MCP tools.
 
+### Usage in AI Coding Editors
+
+If you are integrating Lever MCP with an AI-assisted coding editor (such as Cursor or Windsurf), be sure to load the [lever-rules.md](./lever-rules.md) file into your editor's rules for the coding agent/AI assistant. This file provides best practices and guidance for the agent, ensuring it uses Lever MCP tools efficiently and according to recommended patterns:
+- Prefer built-in Lever MCP tools for data operations
+- Apply best practices for data transformation, list/set operations, and more
+- Use efficient, maintainable patterns for code generation
+- Handle errors and edge cases appropriately
+
+While human users and contributors may also find the document informative, its primary audience is the coding agent. Loading these rules is recommended for anyone developing or configuring an AI coding assistant to ensure high-quality, consistent use of Lever MCP's capabilities.
+
 ## Data Utility Tools
 
 All tools accept only property names (strings) for keys/predicates, not function names or callables. Each tool is exposed as an MCP tool with the following parameters and return types:
