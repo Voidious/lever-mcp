@@ -32,21 +32,21 @@ def mutate_string(text: str, mutation: str, data: Dict[str, Any] = {}) -> str:
               'Café' → 'Cafe').
             - 'kebab_case': Converts the string to kebab-case (e.g.,
               'foo bar' → 'foo-bar').
-            - 'snake_case': Converts the string to snake_case (e.g.,
-              'foo bar' → 'foo_bar').
-            - 'template': Interpolates variables in the string using {var} syntax.
-              Requires 'data' dict (e.g., 'Hello, {name}!' with
-              data={'name': 'World'} → 'Hello, World!').
-            - 'reverse': Reverses the string (e.g., 'hello' → 'olleh').
-            - 'trim': Removes leading and trailing whitespace (e.g., '
-              hello  ' → 'hello').
             - 'lower_case': Converts the string to all lowercase (e.g.,
               'Hello' → 'hello').
-            - 'upper_case': Converts the string to all uppercase (e.g.,
-              'Hello' → 'HELLO').
             - 'replace': Replaces all occurrences of a substring with another (requires
               data={'old': 'x', 'new': 'y'}). (e.g., 'foo bar foo',
               data={'old': 'foo', 'new': 'baz'} → 'baz bar baz')
+            - 'reverse': Reverses the string (e.g., 'hello' → 'olleh').
+            - 'snake_case': Converts the string to snake_case (e.g.,
+              'foo bar' → 'foo_bar').
+            - 'upper_case': Converts the string to all uppercase (e.g.,
+              'Hello' → 'HELLO').
+            - 'template': Interpolates variables in the string using {var} syntax.
+              Requires 'data' dict (e.g., 'Hello, {name}!' with
+              data={'name': 'World'} → 'Hello, World!').
+            - 'trim': Removes leading and trailing whitespace (e.g., '
+              hello  ' → 'hello').
         data (Dict[str, Any], optional): Data for 'template' and 'replace' mutations.
 
     Returns:
@@ -266,25 +266,25 @@ def mutate_list(
 @mcp.tool()
 def has_property(obj: Any, property: str, param: Optional[Any] = None) -> bool:
     """
-    Checks a property or relationship for the given object. Supports:
-        - 'ends_with': Checks if a string ends with the given target (param: str).
-        - 'has_key': Checks if a dict has a given key (param: str).
-        - 'is_empty': Checks if the value is empty.
-        - 'is_equal': Checks if two values are deeply equal (param: value to compare).
-        - 'is_nil': Checks if the value is None.
-        - 'starts_with': Checks if a string starts with the given target (param: str).
-        - 'contains': Checks if a string contains a substring or a list contains an
-          element (param: value to check).
-        - 'is_digit': Checks if a string consists only of digits.
-        - 'is_alpha': Checks if a string consists only of alphabetic characters.
-        - 'is_upper': Checks if a string is all uppercase.
-        - 'is_lower': Checks if a string is all lowercase.
+    Checks a property or relationship for the given object.
 
     Parameters:
         obj (Any): The object or value to check.
-        property (str): The property or operation to check. One of: 'starts_with',
-            'ends_with', 'is_empty', 'is_equal', 'is_nil', 'has_key', 'contains',
-            'is_digit', 'is_alpha', 'is_upper', 'is_lower'.
+        property (str): The property or operation to check. One of:
+            - 'contains': Checks if a string contains a substring or a list contains an
+              element (param: value to check).
+            - 'ends_with': Checks if a string ends with the given target (param: str).
+            - 'has_key': Checks if a dict has a given key (param: str).
+            - 'is_alpha': Checks if a string consists only of alphabetic characters.
+            - 'is_digit': Checks if a string consists only of digits.
+            - 'is_empty': Checks if the value is empty.
+            - 'is_equal': Checks if two values are deeply equal (param: value to
+              compare).
+            - 'is_lower': Checks if a string is all lowercase.
+            - 'is_nil': Checks if the value is None.
+            - 'is_upper': Checks if a string is all uppercase.
+            - 'starts_with': Checks if a string starts with the given target
+              (param: str).
         param (Any, optional): The parameter for the operation, if required.
 
     Returns:
@@ -337,27 +337,25 @@ def has_property(obj: Any, property: str, param: Optional[Any] = None) -> bool:
 def select_from_list(items: list, operation: str, param: Optional[Any] = None) -> Any:
     """
     Selects an element from a list using various operations.
-    Supports:
-        - 'find_by': Finds the first item where a property matches a value (param:
-          {'key': str, 'value': Any}).
-        - 'head': Gets the first element.
-        - 'last': Gets the last element.
-        - 'sample': Gets a random element.
-        - 'nth': Gets the nth element (param: integer index, supports negative for
-          reverse).
-        - 'min_by': Gets the item with the minimum value for a property (param: property
-          name).
-        - 'max_by': Gets the item with the maximum value for a property (param: property
-          name).
-        - 'index_of': Returns the index of the first item where a property matches a
-          value (param: {'key': str, 'value': Any}), or -1 if not found.
-        - 'random_except': Returns a random element from the list, excluding any that
-          match a given property value (param: {'key': str, 'value': Any}).
 
     Parameters:
         items (list): The list to select from.
-        operation (str): The operation to perform. One of: 'find_by', 'head', 'last',
-            'sample', 'nth', 'min_by', 'max_by', 'index_of', 'random_except'.
+        operation (str): The operation to perform. One of:
+            - 'find_by': Finds the first item where a property matches a value (param:
+              {'key': str, 'value': Any}).
+            - 'head': Gets the first element.
+            - 'index_of': Returns the index of the first item where a property matches a
+              value (param: {'key': str, 'value': Any}), or -1 if not found.
+            - 'last': Gets the last element.
+            - 'max_by': Gets the item with the maximum value for a property (param:
+              property name).
+            - 'min_by': Gets the item with the minimum value for a property (param:
+              property name).
+            - 'nth': Gets the nth element (param: integer index, supports negative for
+              reverse).
+            - 'random_except': Returns a random element from the list, excluding any
+              that match a given property value (param: {'key': str, 'value': Any}).
+            - 'sample': Gets a random element.
         param (Any, optional): Parameter for the operation (required for some
             operations).
 
@@ -366,10 +364,9 @@ def select_from_list(items: list, operation: str, param: Optional[Any] = None) -
 
     Usage Example:
         select_from_list([1, 2, 3], 'head')  # => 1
-        select_from_list(
-            [{'id': 1}, {'id': 2}], 'find_by', {'key': 'id', 'value': 2}
-        )  # => {'id': 2}
         select_from_list([10, 20, 30], 'nth', 1)  # => 20
+        select_from_list([{'id': 1}, {'id': 2}], 'find_by', {'key': 'id', 'value': 2})
+        # => {'id': 2}
     """
     if operation == "find_by":
         if not param or "key" not in param or "value" not in param:
@@ -458,17 +455,15 @@ def select_from_list(items: list, operation: str, param: Optional[Any] = None) -
 def compare_lists(a: list, b: list, operation: str, key: Optional[str] = None) -> list:
     """
     Compares two lists using various set-like operations.
-    Supports:
-        - 'difference': Values in a not in b (ignores key).
-        - 'difference_by': Items in a not in b by property (requires key).
-        - 'intersection': Unique values in both lists (ignores key).
-        - 'intersection_by': Items in a also in b by property (requires key).
 
     Parameters:
         a (list): The first list.
         b (list): The second list.
-        operation (str): The operation to perform. One of: 'difference_by',
-            'intersection_by', 'intersection', 'difference'.
+        operation (str): The operation to perform. One of:
+            - 'difference': Values in a not in b (ignores key).
+            - 'difference_by': Items in a not in b by property (requires key).
+            - 'intersection': Unique values in both lists (ignores key).
+            - 'intersection_by': Items in a also in b by property (requires key).
         key (str, optional): The property name for *_by operations.
 
     Returns:
@@ -519,37 +514,34 @@ def process_list(items: list, operation: str, key: str) -> dict:
     """
     Processes a list into a dictionary using grouping, counting, or keying by a
     property.
-    Supports:
-        - 'count_by': Counts occurrences of property values.
-        - 'group_by': Groups items by a property value.
-        - 'key_by': Creates a dictionary with keys from a property.
 
     Parameters:
         items (list): The list of items (dicts or objects).
-        operation (str): The operation to perform. One of: 'group_by', 'count_by',
-            'key_by'.
+        operation (str): The operation to perform. One of:
+            - 'count_by': Counts occurrences of property values.
+            - 'group_by': Groups items by a property value.
+            - 'key_by': Creates a dictionary with keys from a property.
         key (str): The property name to use.
 
     Returns:
         dict: The resulting dictionary.
 
     Usage Example:
-        process_list([
-            {'type': 'a'}, {'type': 'b'}, {'type': 'a'}
-        ], 'count_by', 'type')
-        # => {'a': 2, 'b': 1}
-
-        process_list([
-            {'type': 'fruit', 'name': 'apple'},
-            {'type': 'fruit', 'name': 'banana'},
-            {'type': 'vegetable', 'name': 'carrot'}
-        ], 'group_by', 'type')
-        # => {'fruit': [...], 'vegetable': [...]}
-
-        process_list([
-            {'id': 'a', 'val': 1}, {'id': 'b', 'val': 2}
-        ], 'key_by', 'id')
-        # => {'a': {...}, 'b': {...}}
+        process_list(
+            [{'type': 'a'}, {'type': 'b'}, {'type': 'a'}], 'count_by', 'type'
+        )  # => {'a': 2, 'b': 1}
+        process_list(
+            [
+                {'type': 'fruit', 'name': 'apple'},
+                {'type': 'fruit', 'name': 'banana'},
+                {'type': 'vegetable', 'name': 'carrot'}
+            ],
+            'group_by',
+            'type'
+        )  # => {'fruit': [...], 'vegetable': [...]}
+        process_list(
+            [{'id': 'a', 'val': 1}, {'id': 'b', 'val': 2}], 'key_by', 'id'
+        )  # => {'a': {...}, 'b': {...}}
     """
     if operation == "group_by":
         result = {}
@@ -572,7 +564,7 @@ def process_list(items: list, operation: str, key: str) -> dict:
 @mcp.tool()
 def process_dict(obj: dict, operation: str, param: Optional[list] = None) -> dict:
     """
-    Performs dictionary operations: invert, pick, or omit.
+    Performs dictionary operations.
 
     Parameters:
         obj (dict): The source dictionary.
@@ -586,12 +578,9 @@ def process_dict(obj: dict, operation: str, param: Optional[list] = None) -> dic
         dict: The resulting dictionary.
 
     Usage Example:
-        process_dict({'a': 'x', 'b': 'y'}, 'invert')
-        # => {'x': 'a', 'y': 'b'}
-        process_dict({'a': 1, 'b': 2}, 'omit', ['a'])
-        # => {'b': 2}
-        process_dict({'a': 1, 'b': 2}, 'pick', ['a'])
-        # => {'a': 1}
+        process_dict({'a': 'x', 'b': 'y'}, 'invert')  # => {'x': 'a', 'y': 'b'}
+        process_dict({'a': 1, 'b': 2}, 'omit', ['a'])  # => {'b': 2}
+        process_dict({'a': 1, 'b': 2}, 'pick', ['a'])  # => {'a': 1}
     """
     if operation == "invert":
         return {str(value): key for key, value in obj.items()}
@@ -603,6 +592,125 @@ def process_dict(obj: dict, operation: str, param: Optional[list] = None) -> dic
         if param is None:
             raise ValueError("'param' (list of keys) is required for 'omit' operation.")
         return {key: value for key, value in obj.items() if key not in param}
+    else:
+        raise ValueError(f"Unknown operation: {operation}")
+
+
+@mcp.tool()
+def generate(input: Any, operation: str, param: Any = None) -> Any:
+    """
+    Generates sequences or derived data from input using the specified operation.
+
+    Parameters:
+        input (Any): The input list or value.
+        operation (str): The operation to perform. One of:
+            - 'accumulate': Running totals (or with a binary function if param is
+              provided). param: None or a supported function name (e.g., 'mul')
+            - 'cartesian_product': Cartesian product of multiple input lists.
+              param: None
+            - 'combinations': All combinations of a given length (param: int, required)
+            - 'cycle': Repeat the sequence infinitely or up to param times.
+              param: int (max length, optional)
+            - 'permutations': All permutations of a given length (param: int, optional,
+              default=len(input))
+            - 'powerset': All possible subsets of a list. param: None
+            - 'range': Generate a list of numbers from start to end (optionally step).
+              param: [start, end, step?]
+            - 'repeat': Repeat a value or sequence a specified number of times.
+              param: int (number of times)
+            - 'unique_pairs': All unique pairs from a list. param: None
+            - 'windowed': Sliding windows of a given size. param: int (window size)
+            - 'zip_with_index': Tuples of (index, value). param: None
+        param (Any, optional): Parameter for the operation, if required.
+
+    Returns:
+        Any: The generated sequence or result.
+
+    Usage Example:
+        generate(None, 'range', [0, 5])  # => [0, 1, 2, 3, 4]
+        generate('x', 'repeat', 3)  # => ['x', 'x', 'x']
+        generate([1, 2, 3], 'powerset')
+        # => [[], [1], [2], [1, 2], [3], [1, 3], [2, 3], [1, 2, 3]]
+        generate([[1, 2], ['a', 'b']], 'cartesian_product')
+        # => [(1, 'a'), (1, 'b'), (2, 'a'), (2, 'b')]
+    """
+    import itertools
+    import operator
+
+    if operation == "range":
+        # param: [start, end, step?]
+        if not isinstance(param, list) or len(param) < 2:
+            raise ValueError(
+                "'param' must be [start, end] or [start, end, step] for 'range'."
+            )
+        start, end = param[0], param[1]
+        step = param[2] if len(param) > 2 else 1
+        return list(range(start, end, step))
+    elif operation == "cartesian_product":
+        # input: list of lists
+        return list(itertools.product(*input))
+    elif operation == "repeat":
+        # input: value or list, param: int
+        if not isinstance(param, int):
+            raise ValueError("'param' must be an integer for 'repeat'.")
+        return list(itertools.repeat(input, param))
+    elif operation == "powerset":
+        s = list(input)
+        if not s:
+            # Workaround for fastmcp bug that converts [[]] to []
+            return [[""]]
+        return [
+            list(combo)
+            for r in range(len(s) + 1)
+            for combo in itertools.combinations(s, r)
+        ]
+    elif operation == "windowed":
+        # input: list, param: int (window size)
+        if not isinstance(param, int) or param < 1:
+            raise ValueError("'param' must be a positive integer for 'windowed'.")
+        s = list(input)
+        return [tuple(s[i : i + param]) for i in range(len(s) - param + 1)]
+    elif operation == "cycle":
+        # input: list, param: int (max length, optional)
+        s = list(input)
+        if param is not None:
+            return [x for _, x in zip(range(param), itertools.cycle(s))]
+        else:
+            raise ValueError("'cycle' without a length limit is not supported.")
+    elif operation == "accumulate":
+        # input: list, param: None or function name
+        s = list(input)
+        if param is None:
+            return list(itertools.accumulate(s))
+        elif param == "mul":
+            return list(itertools.accumulate(s, operator.mul))
+        else:
+            raise ValueError("'accumulate' only supports param=None or 'mul'.")
+    elif operation == "zip_with_index":
+        # input: list
+        return list(enumerate(input))
+    elif operation == "unique_pairs":
+        # input: list
+        s = list(input)
+        return [tuple(pair) for pair in itertools.combinations(s, 2)]
+    elif operation == "permutations":
+        s = list(input)
+        r = param if isinstance(param, int) else None
+        if not s:
+            if r is None or r == 0:
+                # Workaround for fastmcp bug that converts [[]] to []
+                return [[""]]
+            else:
+                return []
+        return [list(p) for p in itertools.permutations(s, r)]
+    elif operation == "combinations":
+        s = list(input)
+        if not isinstance(param, int):
+            raise ValueError("'param' must be an integer for 'combinations'.")
+        # Special case: combinations([], n) is [] for n > 0
+        if not s:
+            return []
+        return [list(c) for c in itertools.combinations(s, param)]
     else:
         raise ValueError(f"Unknown operation: {operation}")
 
@@ -632,18 +740,15 @@ async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> Any:
         chain(
             [1, [2, [3, 4], 5]],
             [
-                {"tool": "flatten_deep", "params": {}},
-                {"tool": "compact", "params": {}}
+                {"tool": "mutate_list", "params": {"mutation": "flatten_deep"}},
+                {"tool": "mutate_list", "params": {"mutation": "compact"}},
+                {
+                    "tool": "mutate_list",
+                    "params": {"mutation": "sort_by", "param": None}
+                }
             ]
         )
-    # Or as a JSON payload:
-    # {
-    #   "input": [1, [2, [3, 4], 5]],
-    #   "tool_calls": [
-    #     {"tool": "flatten_deep", "params": {}},
-    #     {"tool": "compact", "params": {}}
-    #   ]
-    # }
+        # => [1, 2, 3, 4, 5]
     """
     value = input
     for i, step in enumerate(tool_calls):
@@ -747,10 +852,7 @@ def merge(dicts: list) -> dict:
         Dict[Any, Any]: A single dictionary containing the merged keys and values.
 
     Usage Example:
-        merge([
-            {"a": 1, "b": {"c": 2}},
-            {"b": {"d": 3}}
-        ])
+        merge([{"a": 1, "b": {"c": 2}}, {"b": {"d": 3}}])
         # => {'a': 1, 'b': {'c': 2, 'd': 3}}
     """
     import copy
@@ -784,8 +886,7 @@ def set_value(obj: dict, path, value):
         Dict[Any, Any]: The modified dictionary with the value set.
 
     Usage Example:
-        set_value({"a": {"b": 1}}, "a.b", 2)
-        # => {'a': {'b': 2}}
+        set_value({"a": {"b": 1}}, "a.b", 2)  # => {'a': {'b': 2}}
     """
     import re
 
@@ -816,10 +917,8 @@ def get_value(obj: dict, path, default=None):
         Any: The value at the specified path, or the default if not found.
 
     Usage Example:
-        get_value({"a": {"b": 2}}, "a.b")
-        # => 2
-        get_value({"a": {"b": 2}}, "a.c", 42)
-        # => 42
+        get_value({"a": {"b": 2}}, "a.b")  # => 2
+        get_value({"a": {"b": 2}}, "a.c", 42)  # => 42
     """
     import re
 

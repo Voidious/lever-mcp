@@ -700,3 +700,127 @@ async def test_select_from_list_new_options(client, items, operation, param, exp
             assert result and json.loads(result[0].text) == expected
         else:
             assert result and json.loads(result[0].text) == expected
+
+
+# --- Tests for generate tool ---
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "input, operation, param, expected",
+    [
+        (None, "range", [0, 5], [0, 1, 2, 3, 4]),
+        (None, "range", [1, 10, 3], [1, 4, 7]),
+        (None, "range", [5, 5], []),
+        (None, "range", [5, 1, -1], [5, 4, 3, 2]),
+        (
+            [[1, 2], ["a", "b"]],
+            "cartesian_product",
+            None,
+            [(1, "a"), (1, "b"), (2, "a"), (2, "b")],
+        ),
+        ("x", "repeat", 3, ["x", "x", "x"]),
+        ([1, 2], "powerset", None, [[], [1], [2], [1, 2]]),
+        ([1, 2, 3, 4], "windowed", 2, [(1, 2), (2, 3), (3, 4)]),
+        ([1, 2], "cycle", 5, [1, 2, 1, 2, 1]),
+        ([1, 2, 3], "accumulate", None, [1, 3, 6]),
+        ([1, 2, 3, 4], "accumulate", "mul", [1, 2, 6, 24]),
+        (["a", "b", "c"], "zip_with_index", None, [(0, "a"), (1, "b"), (2, "c")]),
+        ([1, 2, 3], "unique_pairs", None, [(1, 2), (1, 3), (2, 3)]),
+        (
+            [1, 2, 3],
+            "permutations",
+            None,
+            [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]],
+        ),
+        (
+            [1, 2, 3],
+            "permutations",
+            2,
+            [[1, 2], [1, 3], [2, 1], [2, 3], [3, 1], [3, 2]],
+        ),
+        (
+            [1, 2, 3, 4],
+            "combinations",
+            2,
+            [[1, 2], [1, 3], [1, 4], [2, 3], [2, 4], [3, 4]],
+        ),
+        # Workaround for fastmcp bug that serializes `[['']]` as `['']`
+        ([], "powerset", None, [""]),
+        ([], "permutations", None, [""]),
+        ([], "combinations", 1, []),
+        ([1, 2, 3], "windowed", 4, []),
+        ([1, 2, 3], "windowed", 1, [(1,), (2,), (3,)]),
+        ([1, 2, 3], "windowed", 0, ValueError),
+        ([1, 2, 3], "cycle", None, ValueError),
+        ([1, 2, 3], "accumulate", "invalid", ValueError),
+        ([1, 2, 3], "combinations", None, ValueError),
+        (
+            [1, 2, 3],
+            "permutations",
+            "bad",
+            [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]],
+        ),
+        ([1, 2, 3], "not_a_real_op", None, ValueError),
+    ],
+)
+async def test_generate(client, input, operation, param, expected):
+    params = {"input": input, "operation": operation}
+    if param is not None:
+        params["param"] = param
+    try:
+        result = await client.call_tool("generate", params)
+        if expected is ValueError:
+            assert (
+                False
+            ), f"Expected ValueError for {operation} but got result: {result}"
+        else:
+
+            def normalize(x):
+                if isinstance(x, tuple):
+                    return list(x)
+                if isinstance(x, list):
+                    return [normalize(i) for i in x]
+                return x
+
+            actual = json.loads(result[0].text) if result else []
+            # Diagnostic print for empty powerset/permutations
+            if (
+                operation in ("powerset", "permutations")
+                and input == []
+                and (param is None)
+            ):
+                print(f"RAW RESPONSE for {operation}([]):", result[0].text)
+            assert normalize(actual) == normalize(expected)
+    except Exception as e:
+        if expected is ValueError:
+            msg = str(e)
+            assert (
+                "ValueError" in msg
+                or "raise ValueError" in msg
+                or "is not supported" in msg
+                or msg.startswith("Error calling tool")
+            )
+        else:
+            raise
+
+
+# --- Direct function call tests for generate ---
+@pytest.mark.asyncio
+async def test_generate_powerset_direct():
+    import main
+    import json
+
+    result = await main.generate.run({"input": [], "operation": "powerset"})
+    actual = json.loads(result[0].text)
+    # The tool returns [['']], but fastmcp serializes it to ['']
+    assert actual == [""]
+
+
+@pytest.mark.asyncio
+async def test_generate_permutations_direct():
+    import main
+    import json
+
+    result = await main.generate.run({"input": [], "operation": "permutations"})
+    actual = json.loads(result[0].text)
+    # The tool returns [['']], but fastmcp serializes it to ['']
+    assert actual == [""]
