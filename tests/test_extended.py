@@ -620,3 +620,83 @@ async def test_sample_size_empty(client):
         "mutate_list", {"items": [], "mutation": "sample_size", "param": 3}
     )
     assert not result
+
+
+# --- Additional mutate_string tests ---
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "input_str, mutation, data, expected",
+    [
+        ("hello", "reverse", None, "olleh"),
+        ("  hello  ", "trim", None, "hello"),
+        ("Hello World", "lower_case", None, "hello world"),
+        ("Hello World", "upper_case", None, "HELLO WORLD"),
+        ("foo bar foo", "replace", {"old": "foo", "new": "baz"}, "baz bar baz"),
+    ],
+)
+async def test_mutate_string_new_options(client, input_str, mutation, data, expected):
+    params = {"text": input_str, "mutation": mutation}
+    if data is not None:
+        params["data"] = data
+    result = await client.call_tool("mutate_string", params)
+    assert result[0].text == expected
+
+
+# --- Additional has_property tests ---
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "obj, property, param, expected",
+    [
+        ("hello world", "contains", "world", True),
+        ([1, 2, 3], "contains", 2, True),
+        ("12345", "is_digit", None, True),
+        ("abcXYZ", "is_alpha", None, True),
+        ("HELLO", "is_upper", None, True),
+        ("hello", "is_lower", None, True),
+        ("abc123", "is_digit", None, False),
+        ("abc123", "is_alpha", None, False),
+        ("Hello", "is_upper", None, False),
+        ("Hello", "is_lower", None, False),
+    ],
+)
+async def test_has_property_new_options(client, obj, property, param, expected):
+    params = {"obj": obj, "property": property}
+    if param is not None:
+        params["param"] = param
+    result = await client.call_tool("has_property", params)
+    assert json.loads(result[0].text) is expected
+
+
+# --- Additional select_from_list tests ---
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "items, operation, param, expected",
+    [
+        ([10, 20, 30], "nth", 1, 20),
+        ([10, 20, 30], "nth", -1, 30),
+        ([{"score": 5}, {"score": 2}, {"score": 8}], "min_by", "score", {"score": 2}),
+        ([{"score": 5}, {"score": 2}, {"score": 8}], "max_by", "score", {"score": 8}),
+        ([{"id": 1}, {"id": 2}, {"id": 3}], "index_of", {"key": "id", "value": 2}, 1),
+        (
+            [{"status": "active"}, {"status": "inactive"}, {"status": "active"}],
+            "random_except",
+            {"key": "status", "value": "inactive"},
+            {"status": "active"},
+        ),
+    ],
+)
+async def test_select_from_list_new_options(client, items, operation, param, expected):
+    params = {"items": items, "operation": operation}
+    if param is not None:
+        params["param"] = param
+    result = await client.call_tool("select_from_list", params)
+    # For random_except, just check the result is one of the expected filtered values
+    if operation == "random_except":
+        assert result and json.loads(result[0].text) in [
+            i for i in items if i["status"] == "active"
+        ]
+    else:
+        if isinstance(expected, dict):
+            assert result and json.loads(result[0].text) == expected
+        else:
+            assert result and json.loads(result[0].text) == expected

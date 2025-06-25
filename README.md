@@ -71,20 +71,22 @@ Mutates a string according to the specified mutation type.
 
 **Parameters:**
 - `text` (str): The input string to mutate.
-- `mutation` (str): The type of mutation to perform. One of: 'deburr', 'template', 'camel_case', 'kebab_case', 'snake_case', 'capitalize'.
-- `data` (dict, optional): Data for 'template' mutation.
+- `mutation` (str): The type of mutation to perform. One of: 'deburr', 'template', 'camel_case', 'kebab_case', 'snake_case', 'capitalize', 'reverse', 'trim', 'lower_case', 'upper_case', 'replace'.
+- `data` (dict, optional): Data for 'template' and 'replace' mutations.
 
 **Returns:**
 - `str`: The mutated string.
 
 **Usage Example:**
 ```python
-mutate_string('foo bar', 'camel_case')
-# => 'fooBar'
-mutate_string('Café déjà vu', 'deburr')
-# => 'Cafe deja vu'
-mutate_string('Hello, {name}!', 'template', {'name': 'World'})
-# => 'Hello, World!'
+mutate_string('foo bar', 'camel_case')  # => 'fooBar'
+mutate_string('Café déjà vu', 'deburr')  # => 'Cafe deja vu'
+mutate_string('Hello, {name}!', 'template', {'name': 'World'})  # => 'Hello, World!'
+mutate_string('hello', 'reverse')  # => 'olleh'
+mutate_string('  hello  ', 'trim')  # => 'hello'
+mutate_string('Hello World', 'lower_case')  # => 'hello world'
+mutate_string('Hello World', 'upper_case')  # => 'HELLO WORLD'
+mutate_string('foo bar foo', 'replace', {'old': 'foo', 'new': 'baz'})  # => 'baz bar baz'
 ```
 
 ### mutate_list
@@ -113,7 +115,7 @@ Checks a property or relationship for the given object.
 
 **Parameters:**
 - `obj` (any): The object or value to check.
-- `property` (str): One of: 'starts_with', 'ends_with', 'is_empty', 'is_equal', 'is_nil', 'has_key'.
+- `property` (str): One of: 'starts_with', 'ends_with', 'is_empty', 'is_equal', 'is_nil', 'has_key', 'contains', 'is_digit', 'is_alpha', 'is_upper', 'is_lower'.
 - `param` (any, optional): The parameter for the operation, if required.
 
 **Returns:**
@@ -121,12 +123,15 @@ Checks a property or relationship for the given object.
 
 **Usage Example:**
 ```python
-has_property('abc', 'starts_with', 'a')
-# => True
-has_property({'a': 1}, 'has_key', 'a')
-# => True
-has_property([], 'is_empty')
-# => True
+has_property('abc', 'starts_with', 'a')  # => True
+has_property({'a': 1}, 'has_key', 'a')  # => True
+has_property([], 'is_empty')  # => True
+has_property('hello world', 'contains', 'world')  # => True
+has_property([1, 2, 3], 'contains', 2)  # => True
+has_property('12345', 'is_digit')  # => True
+has_property('abcXYZ', 'is_alpha')  # => True
+has_property('HELLO', 'is_upper')  # => True
+has_property('hello', 'is_lower')  # => True
 ```
 
 ### select_from_list
@@ -134,20 +139,21 @@ Selects an element from a list using various operations.
 
 **Parameters:**
 - `items` (list): The list to select from.
-- `operation` (str): One of: 'find_by', 'head', 'last', 'sample'.
-- `param` (any, optional): Parameter for the operation (required for 'find_by').
+- `operation` (str): One of: 'find_by', 'head', 'last', 'sample', 'nth', 'min_by', 'max_by', 'index_of', 'random_except'.
+- `param` (any, optional): Parameter for the operation (required for some operations).
 
 **Returns:**
 - `any`: The selected element or None if not found.
 
 **Usage Example:**
 ```python
-select_from_list([{'id': 1}, {'id': 2}], 'find_by', {'key': 'id', 'value': 2})
-# => {'id': 2}
-select_from_list([1, 2, 3], 'head')
-# => 1
-select_from_list([1, 2, 3], 'sample')
-# => 2 (example output)
+select_from_list([{'id': 1}, {'id': 2}], 'find_by', {'key': 'id', 'value': 2})  # => {'id': 2}
+select_from_list([1, 2, 3], 'head')  # => 1
+select_from_list([1, 2, 3], 'nth', 1)  # => 2
+select_from_list([{'score': 5}, {'score': 2}, {'score': 8}], 'min_by', 'score')  # => {'score': 2}
+select_from_list([{'score': 5}, {'score': 2}, {'score': 8}], 'max_by', 'score')  # => {'score': 8}
+select_from_list([{'id': 1}, {'id': 2}, {'id': 3}], 'index_of', {'key': 'id', 'value': 2})  # => 1
+select_from_list([{'status': 'active'}, {'status': 'inactive'}, {'status': 'active'}], 'random_except', {'key': 'status', 'value': 'inactive'})  # => {'status': 'active'}
 ```
 
 ### compare_lists

@@ -37,18 +37,29 @@ def mutate_string(text: str, mutation: str, data: Dict[str, Any] = {}) -> str:
             - 'template': Interpolates variables in the string using {var} syntax.
               Requires 'data' dict (e.g., 'Hello, {name}!' with
               data={'name': 'World'} → 'Hello, World!').
-        data (Dict[str, Any], optional): Data for 'template' mutation.
+            - 'reverse': Reverses the string (e.g., 'hello' → 'olleh').
+            - 'trim': Removes leading and trailing whitespace (e.g., '
+              hello  ' → 'hello').
+            - 'lower_case': Converts the string to all lowercase (e.g.,
+              'Hello' → 'hello').
+            - 'upper_case': Converts the string to all uppercase (e.g.,
+              'Hello' → 'HELLO').
+            - 'replace': Replaces all occurrences of a substring with another (requires
+              data={'old': 'x', 'new': 'y'}). (e.g., 'foo bar foo',
+              data={'old': 'foo', 'new': 'baz'} → 'baz bar baz')
+        data (Dict[str, Any], optional): Data for 'template' and 'replace' mutations.
 
     Returns:
         str: The mutated string.
 
     Usage Example:
-        mutate_string('foo bar', 'camel_case')
-        # => 'fooBar'
-        mutate_string('Café déjà vu', 'deburr')
-        # => 'Cafe deja vu'
-        mutate_string('Hello, {name}!', 'template', {'name': 'World'})
-        # => 'Hello, World!'
+        mutate_string('foo bar', 'camel_case')  # => 'fooBar'
+        mutate_string(
+            'Hello, {name}!', 'template', {'name': 'World'}
+        )  # => 'Hello, World!'
+        mutate_string(
+            'foo bar foo', 'replace', {'old': 'foo', 'new': 'baz'
+        })  # => 'baz bar baz'
     """
     if mutation == "deburr":
         return "".join(
@@ -76,6 +87,20 @@ def mutate_string(text: str, mutation: str, data: Dict[str, Any] = {}) -> str:
         return re.sub(r"(\s|-)+", "_", s).lower().strip("-_")
     elif mutation == "capitalize":
         return text.capitalize()
+    elif mutation == "reverse":
+        return text[::-1]
+    elif mutation == "trim":
+        return text.strip()
+    elif mutation == "lower_case":
+        return text.lower()
+    elif mutation == "upper_case":
+        return text.upper()
+    elif mutation == "replace":
+        if not data or "old" not in data or "new" not in data:
+            raise ValueError(
+                "'data' with 'old' and 'new' is required for 'replace' mutation."
+            )
+        return text.replace(data["old"], data["new"])
     else:
         raise ValueError(f"Unknown mutation type: {mutation}")
 
@@ -123,31 +148,10 @@ def mutate_list(
         List[Any]: The mutated list.
 
     Usage Example:
-        mutate_list([[1, [2, 3], 4], 5], 'flatten_deep')
-        # => [1, 2, 3, 4, 5]
-
-        mutate_list([
-            {'id': 1, 'name': 'Alice'},
-            {'id': 2, 'name': 'Bob'},
-            {'id': 1, 'name': 'Alice'}
-        ], 'uniq_by', 'id')
-        # => [{'id': 1, 'name': 'Alice'}, {'id': 2, 'name': 'Bob'}]
-
-        mutate_list([
-            {'id': 1, 'score': 90},
-            {'id': 2, 'score': 80},
-            {'id': 3, 'score': 95}
-        ], 'sort_by', 'score')
-        # => [{'id': 2, 'score': 80}, {'id': 1, 'score': 90}, {'id': 3, 'score': 95}]
-
-        mutate_list([1, 2, 3, 4, 5], 'chunk', 2)
-        # => [[1, 2], [3, 4], [5]]
-
-        mutate_list([
-            {'id': 1, 'name': 'Alice'},
-            {'id': 2, 'name': 'Bob'}
-        ], 'pluck', 'name')
-        # => ['Alice', 'Bob']
+        mutate_list([[1, [2, 3], 4], 5], 'flatten_deep')  # => [1, 2, 3, 4, 5]
+        mutate_list(
+            [{'id': 1, 'name': 'Alice'}, {'id': 2, 'name': 'Bob'}], 'pluck', 'name'
+        )  # => ['Alice', 'Bob']
     """
     if mutation == "flatten_deep":
         result = []
@@ -269,29 +273,27 @@ def has_property(obj: Any, property: str, param: Optional[Any] = None) -> bool:
         - 'is_equal': Checks if two values are deeply equal (param: value to compare).
         - 'is_nil': Checks if the value is None.
         - 'starts_with': Checks if a string starts with the given target (param: str).
+        - 'contains': Checks if a string contains a substring or a list contains an
+          element (param: value to check).
+        - 'is_digit': Checks if a string consists only of digits.
+        - 'is_alpha': Checks if a string consists only of alphabetic characters.
+        - 'is_upper': Checks if a string is all uppercase.
+        - 'is_lower': Checks if a string is all lowercase.
 
     Parameters:
         obj (Any): The object or value to check.
         property (str): The property or operation to check. One of: 'starts_with',
-            'ends_with', 'is_empty', 'is_equal', 'is_nil', 'has_key'.
+            'ends_with', 'is_empty', 'is_equal', 'is_nil', 'has_key', 'contains',
+            'is_digit', 'is_alpha', 'is_upper', 'is_lower'.
         param (Any, optional): The parameter for the operation, if required.
 
     Returns:
         bool: The result of the check.
 
     Usage Example:
-        has_property('abc', 'ends_with', 'c')
-        # => True
-        has_property({'a': 1}, 'has_key', 'a')
-        # => True
-        has_property([], 'is_empty')
-        # => True
-        has_property({'x': 1}, 'is_equal', {'x': 1})
-        # => True
-        has_property(None, 'is_nil')
-        # => True
-        has_property('abc', 'starts_with', 'a')
-        # => True
+        has_property('abc', 'ends_with', 'c')  # => True
+        has_property({'a': 1}, 'has_key', 'a')  # => True
+        has_property('12345', 'is_digit')  # => True
     """
     if property == "starts_with":
         if not isinstance(obj, str) or param is None:
@@ -313,6 +315,20 @@ def has_property(obj: Any, property: str, param: Optional[Any] = None) -> bool:
         if not isinstance(obj, dict) or param is None:
             return False
         return param in obj
+    elif property == "contains":
+        if isinstance(obj, str) and param is not None:
+            return param in obj
+        elif isinstance(obj, list) and param is not None:
+            return param in obj
+        return False
+    elif property == "is_digit":
+        return isinstance(obj, str) and obj.isdigit()
+    elif property == "is_alpha":
+        return isinstance(obj, str) and obj.isalpha()
+    elif property == "is_upper":
+        return isinstance(obj, str) and obj.isupper()
+    elif property == "is_lower":
+        return isinstance(obj, str) and obj.islower()
     else:
         raise ValueError(f"Unknown property: {property}")
 
@@ -327,30 +343,33 @@ def select_from_list(items: list, operation: str, param: Optional[Any] = None) -
         - 'head': Gets the first element.
         - 'last': Gets the last element.
         - 'sample': Gets a random element.
+        - 'nth': Gets the nth element (param: integer index, supports negative for
+          reverse).
+        - 'min_by': Gets the item with the minimum value for a property (param: property
+          name).
+        - 'max_by': Gets the item with the maximum value for a property (param: property
+          name).
+        - 'index_of': Returns the index of the first item where a property matches a
+          value (param: {'key': str, 'value': Any}), or -1 if not found.
+        - 'random_except': Returns a random element from the list, excluding any that
+          match a given property value (param: {'key': str, 'value': Any}).
 
     Parameters:
         items (list): The list to select from.
         operation (str): The operation to perform. One of: 'find_by', 'head', 'last',
-            'sample'.
-        param (Any, optional): Parameter for the operation (required for 'find_by').
+            'sample', 'nth', 'min_by', 'max_by', 'index_of', 'random_except'.
+        param (Any, optional): Parameter for the operation (required for some
+            operations).
 
     Returns:
         Any: The selected element or None if not found.
 
     Usage Example:
-        select_from_list([
-            {'id': 1}, {'id': 2}
-        ], 'find_by', {'key': 'id', 'value': 2})
-        # => {'id': 2}
-
-        select_from_list([1, 2, 3], 'head')
-        # => 1
-
-        select_from_list([1, 2, 3], 'last')
-        # => 3
-
-        select_from_list([1, 2, 3], 'sample')
-        # => 2 (example output)
+        select_from_list([1, 2, 3], 'head')  # => 1
+        select_from_list(
+            [{'id': 1}, {'id': 2}], 'find_by', {'key': 'id', 'value': 2}
+        )  # => {'id': 2}
+        select_from_list([10, 20, 30], 'nth', 1)  # => 20
     """
     if operation == "find_by":
         if not param or "key" not in param or "value" not in param:
@@ -374,6 +393,63 @@ def select_from_list(items: list, operation: str, param: Optional[Any] = None) -
         import random
 
         return random.choice(items)
+    elif operation == "nth":
+        if not isinstance(param, int):
+            raise ValueError("'param' must be an integer for 'nth'.")
+        if not items:
+            return None
+        idx = param
+        if -len(items) <= idx < len(items):
+            return items[idx]
+        return None
+    elif operation == "min_by":
+        if not items or not param:
+            return None
+        key = param
+
+        def min_key(x):
+            v = x.get(key) if isinstance(x, dict) else getattr(x, key, None)
+            return v if v is not None else float("inf")
+
+        return min(items, key=min_key)
+    elif operation == "max_by":
+        if not items or not param:
+            return None
+        key = param
+
+        def max_key(x):
+            v = x.get(key) if isinstance(x, dict) else getattr(x, key, None)
+            return v if v is not None else float("-inf")
+
+        return max(items, key=max_key)
+    elif operation == "index_of":
+        if not param or "key" not in param or "value" not in param:
+            raise ValueError(
+                "'param' with 'key' and 'value' is required for 'index_of'."
+            )
+        key = param["key"]
+        value = param["value"]
+        for idx, item in enumerate(items):
+            v = item.get(key) if isinstance(item, dict) else getattr(item, key, None)
+            if v == value:
+                return idx
+        return -1
+    elif operation == "random_except":
+        if not items or not param or "key" not in param or "value" not in param:
+            return None
+        key = param["key"]
+        value = param["value"]
+        filtered = [
+            item
+            for item in items
+            if (item.get(key) if isinstance(item, dict) else getattr(item, key, None))
+            != value
+        ]
+        if not filtered:
+            return None
+        import random
+
+        return random.choice(filtered)
     else:
         raise ValueError(f"Unknown operation: {operation}")
 
@@ -399,25 +475,10 @@ def compare_lists(a: list, b: list, operation: str, key: Optional[str] = None) -
         list: The result of the comparison.
 
     Usage Example:
-        compare_lists([1, 2, 3], [2, 4], 'difference')
-        # => [1, 3]
-
-        compare_lists([
-            {'id': 1}, {'id': 2}, {'id': 3}
-        ], [
-            {'id': 2}
-        ], 'difference_by', 'id')
-        # => [{'id': 1}, {'id': 3}]
-
-        compare_lists([1, 2, 3], [2, 3, 4], 'intersection')
-        # => [2, 3]
-
-        compare_lists([
-            {'id': 1}, {'id': 2}, {'id': 3}
-        ], [
-            {'id': 2}, {'id': 4}
-        ], 'intersection_by', 'id')
-        # => [{'id': 2}]
+        compare_lists([1, 2, 3], [2, 4], 'difference')  # => [1, 3]
+        compare_lists(
+            [{'id': 1}, {'id': 2}, {'id': 3}], [{'id': 2}], 'difference_by', 'id'
+        )  # => [{'id': 1}, {'id': 3}]
     """
     if operation == "difference_by":
         if key is None:
