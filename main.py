@@ -18,7 +18,7 @@ mcp = LeverMCP("Lever MCP")
 
 
 @mcp.tool()
-def mutate_string(text: str, mutation: str, data: Dict[str, Any] = {}) -> str:
+def mutate_string(text: str, mutation: str, data: Dict[str, Any] = {}) -> dict:
     """
     Mutates a string according to the specified mutation type.
 
@@ -51,59 +51,63 @@ def mutate_string(text: str, mutation: str, data: Dict[str, Any] = {}) -> str:
         data (Dict[str, Any], optional): Data for 'template' and 'replace' mutations.
 
     Returns:
-        str: The mutated string.
+        dict: The mutated string wrapped in a dictionary with a 'value' key.
 
     Usage Example:
-        mutate_string('foo bar', 'camel_case')  # => 'fooBar'
+        mutate_string('foo bar', 'camel_case')  # => {'value': 'fooBar'}
         mutate_string(
             'Hello, {name}!', 'template', {'name': 'World'}
-        )  # => 'Hello, World!'
+        )  # => {'value': 'Hello, World!'}
         mutate_string(
             'foo bar foo', 'replace', {'old': 'foo', 'new': 'baz'
-        })  # => 'baz bar baz'
+        })  # => {'value': 'baz bar baz'}
     """
-    if mutation == "deburr":
-        return "".join(
-            c
-            for c in unicodedata.normalize("NFKD", text)
-            if not unicodedata.combining(c)
-        )
-    elif mutation == "template":
-        if not data:
-            raise ValueError("'data' argument is required for 'template' mutation.")
-
-        def replacer(match):
-            key = match.group(1)
-            return str(data.get(key, match.group(0)))
-
-        return re.sub(r"\{(\w+)\}", replacer, text)
-    elif mutation == "camel_case":
-        s = re.sub(r"(_|-)+", " ", text).title().replace(" ", "")
-        return s[0].lower() + s[1:] if s else ""
-    elif mutation == "kebab_case":
-        s = re.sub(r"([a-z0-9])([A-Z])", r"\1-\2", text)
-        return re.sub(r"(\s|_|-)+", "-", s).lower().strip("-_")
-    elif mutation == "snake_case":
-        s = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", text)
-        return re.sub(r"(\s|-)+", "_", s).lower().strip("-_")
-    elif mutation == "capitalize":
-        return text.capitalize()
-    elif mutation == "reverse":
-        return text[::-1]
-    elif mutation == "trim":
-        return text.strip()
-    elif mutation == "lower_case":
-        return text.lower()
-    elif mutation == "upper_case":
-        return text.upper()
-    elif mutation == "replace":
-        if not data or "old" not in data or "new" not in data:
-            raise ValueError(
-                "'data' with 'old' and 'new' is required for 'replace' mutation."
+    try:
+        if mutation == "deburr":
+            result = "".join(
+                c
+                for c in unicodedata.normalize("NFKD", text)
+                if not unicodedata.combining(c)
             )
-        return text.replace(data["old"], data["new"])
-    else:
-        raise ValueError(f"Unknown mutation type: {mutation}")
+        elif mutation == "template":
+            if not data:
+                raise ValueError("'data' argument is required for 'template' mutation.")
+
+            def replacer(match):
+                key = match.group(1)
+                return str(data.get(key, match.group(0)))
+
+            result = re.sub(r"\{(\w+)\}", replacer, text)
+        elif mutation == "camel_case":
+            s = re.sub(r"(_|-)+", " ", text).title().replace(" ", "")
+            result = s[0].lower() + s[1:] if s else ""
+        elif mutation == "kebab_case":
+            s = re.sub(r"([a-z0-9])([A-Z])", r"\1-\2", text)
+            result = re.sub(r"(\s|_|-)+", "-", s).lower().strip("-_")
+        elif mutation == "snake_case":
+            s = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", text)
+            result = re.sub(r"(\s|-)+", "_", s).lower().strip("-_")
+        elif mutation == "capitalize":
+            result = text.capitalize()
+        elif mutation == "reverse":
+            result = text[::-1]
+        elif mutation == "trim":
+            result = text.strip()
+        elif mutation == "lower_case":
+            result = text.lower()
+        elif mutation == "upper_case":
+            result = text.upper()
+        elif mutation == "replace":
+            if not data or "old" not in data or "new" not in data:
+                raise ValueError(
+                    "'data' with 'old' and 'new' is required for 'replace' mutation."
+                )
+            result = text.replace(data["old"], data["new"])
+        else:
+            raise ValueError(f"Unknown mutation type: {mutation}")
+        return {"value": result}
+    except Exception as e:
+        return {"value": None, "error": str(e)}
 
 
 @mcp.tool()
@@ -111,7 +115,7 @@ def mutate_list(
     items: List[Any],
     mutation: str,
     param: Any = None,
-) -> List[Any]:
+) -> dict:
     """
     Mutates a list according to the specified mutation type.
 
@@ -146,126 +150,143 @@ def mutate_list(
         param (Any, optional): A parameter for mutations that require one.
 
     Returns:
-        List[Any]: The mutated list.
+        dict: The mutated list wrapped in a dictionary with a 'value' key.
 
     Usage Example:
-        mutate_list([[1, [2, 3], 4], 5], 'flatten_deep')  # => [1, 2, 3, 4, 5]
+        mutate_list(
+            [[1, [2, 3], 4], 5], 'flatten_deep'
+        )  # => {'value': [1, 2, 3, 4, 5]}
         mutate_list(
             [{'id': 1, 'name': 'Alice'}, {'id': 2, 'name': 'Bob'}], 'pluck', 'name'
-        )  # => ['Alice', 'Bob']
+        )  # => {'value': ['Alice', 'Bob']}
     """
-    if mutation == "flatten_deep":
-        result = []
+    try:
+        if mutation == "flatten_deep":
+            result = []
 
-        def _flatten(lst):
-            for i in lst:
-                if isinstance(i, list):
-                    _flatten(i)
+            def _flatten(lst):
+                for i in lst:
+                    if isinstance(i, list):
+                        _flatten(i)
+                    else:
+                        result.append(i)
+
+            _flatten(items)
+            return {"value": result}
+        elif mutation == "sort_by":
+
+            def get_sort_key(x):
+                v = x.get(param, "") if isinstance(x, dict) else getattr(x, param, "")
+                if isinstance(v, dict):
+                    return json.dumps(v, sort_keys=True)
+                return v
+
+            return {"value": sorted(items, key=get_sort_key)}
+        elif mutation == "uniq_by":
+            seen = set()
+            result = []
+            for item in items:
+                k = (
+                    item.get(param)
+                    if isinstance(item, dict)
+                    else getattr(item, param, None)
+                )
+                if isinstance(k, dict):
+                    k_hash = json.dumps(k, sort_keys=True)
                 else:
-                    result.append(i)
-
-        _flatten(items)
-        return result
-    elif mutation == "sort_by":
-
-        def get_sort_key(x):
-            v = x.get(param, "") if isinstance(x, dict) else getattr(x, param, "")
-            if isinstance(v, dict):
-                return json.dumps(v, sort_keys=True)
-            return v
-
-        return sorted(items, key=get_sort_key)
-    elif mutation == "uniq_by":
-        seen = set()
-        result = []
-        for item in items:
-            k = (
-                item.get(param)
-                if isinstance(item, dict)
-                else getattr(item, param, None)
-            )
-            if isinstance(k, dict):
-                k_hash = json.dumps(k, sort_keys=True)
-            else:
-                k_hash = k
-            if k_hash not in seen:
-                seen.add(k_hash)
-                result.append(item)
-        return result
-    elif mutation == "partition":
-        trues, falses = [], []
-        for item in items:
-            result = (
-                item.get(param)
-                if isinstance(item, dict)
-                else getattr(item, param, False)
-            )
-            (trues if result else falses).append(item)
-        return [trues, falses]
-    elif mutation == "pluck":
-        return [
-            item.get(param) if isinstance(item, dict) else getattr(item, param, None)
-            for item in items
-        ]
-    elif mutation == "compact":
-        return [item for item in items if item]
-    elif mutation == "chunk":
-        size = int(param)
-        return [items[i : i + size] for i in range(0, len(items), size)]
-    elif mutation == "zip_lists":
-        return [list(t) for t in zip(*items)]
-    elif mutation == "unzip_list":
-        return [list(t) for t in zip(*items)]
-    elif mutation == "remove_by":
-        key = param["key"]
-        value = param["value"]
-        return [
-            item
-            for item in items
-            if (item.get(key) if isinstance(item, dict) else getattr(item, key, None))
-            != value
-        ]
-    elif mutation == "tail":
-        return items[1:] if len(items) > 1 else []
-    elif mutation == "initial":
-        return items[:-1] if items else []
-    elif mutation == "drop":
-        return items[int(param) :]
-    elif mutation == "drop_right":
-        return items[: -int(param)] if int(param) > 0 else items[:]
-    elif mutation == "take":
-        return items[: int(param)]
-    elif mutation == "take_right":
-        return items[-int(param) :] if int(param) > 0 else []
-    elif mutation == "flatten":
-        return [item for sublist in items for item in sublist]
-    elif mutation == "union":
-        result = []
-        seen = set()
-        for sublist in items:
-            for item in sublist:
-                if item not in seen:
-                    seen.add(item)
+                    k_hash = k
+                if k_hash not in seen:
+                    seen.add(k_hash)
                     result.append(item)
-        return result
-    elif mutation == "xor":
-        counts = {}
-        for sublist in items:
-            for item in sublist:
-                counts[item] = counts.get(item, 0) + 1
-        return [item for item, count in counts.items() if count == 1]
-    elif mutation == "shuffle":
-        result = list(items)
-        random.shuffle(result)
-        return result
-    elif mutation == "sample_size":
-        return random.sample(items, min(int(param), len(items)))
-    else:
-        raise ValueError(f"Unknown mutation type: {mutation}")
+            return {"value": result}
+        elif mutation == "partition":
+            trues, falses = [], []
+            for item in items:
+                result = (
+                    item.get(param)
+                    if isinstance(item, dict)
+                    else getattr(item, param, False)
+                )
+                (trues if result else falses).append(item)
+            return {"value": [trues, falses]}
+        elif mutation == "pluck":
+            return {
+                "value": [
+                    (
+                        item.get(param)
+                        if isinstance(item, dict)
+                        else getattr(item, param, None)
+                    )
+                    for item in items
+                ]
+            }
+        elif mutation == "compact":
+            return {"value": [item for item in items if item]}
+        elif mutation == "chunk":
+            size = int(param)
+            return {"value": [items[i : i + size] for i in range(0, len(items), size)]}
+        elif mutation == "zip_lists":
+            return {"value": [list(t) for t in zip(*items)]}
+        elif mutation == "unzip_list":
+            return {"value": [list(t) for t in zip(*items)]}
+        elif mutation == "remove_by":
+            key = param["key"]
+            value = param["value"]
+            return {
+                "value": [
+                    item
+                    for item in items
+                    if (
+                        item.get(key)
+                        if isinstance(item, dict)
+                        else getattr(item, key, None)
+                    )
+                    != value
+                ]
+            }
+        elif mutation == "tail":
+            return {"value": items[1:] if len(items) > 1 else []}
+        elif mutation == "initial":
+            return {"value": items[:-1] if items else []}
+        elif mutation == "drop":
+            return {"value": items[int(param) :]}
+        elif mutation == "drop_right":
+            return {"value": items[: -int(param)] if int(param) > 0 else items[:]}
+        elif mutation == "take":
+            return {"value": items[: int(param)]}
+        elif mutation == "take_right":
+            return {"value": items[-int(param) :] if int(param) > 0 else []}
+        elif mutation == "flatten":
+            return {"value": [item for sublist in items for item in sublist]}
+        elif mutation == "union":
+            result = []
+            seen = set()
+            for sublist in items:
+                for item in sublist:
+                    if item not in seen:
+                        seen.add(item)
+                        result.append(item)
+            return {"value": result}
+        elif mutation == "xor":
+            counts = {}
+            for sublist in items:
+                for item in sublist:
+                    counts[item] = counts.get(item, 0) + 1
+            return {"value": [item for item, count in counts.items() if count == 1]}
+        elif mutation == "shuffle":
+            result = list(items)
+            random.shuffle(result)
+            return {"value": result}
+        elif mutation == "sample_size":
+            return {"value": random.sample(items, min(int(param), len(items)))}
+        else:
+            raise ValueError(f"Unknown mutation type: {mutation}")
+    except Exception as e:
+        return {"value": None, "error": str(e)}
 
 
 @mcp.tool()
-def has_property(obj: Any, property: str, param: Optional[Any] = None) -> bool:
+def has_property(obj: Any, property: str, param: Optional[Any] = None) -> dict:
     """
     Checks a property or relationship for the given object.
 
@@ -289,53 +310,56 @@ def has_property(obj: Any, property: str, param: Optional[Any] = None) -> bool:
         param (Any, optional): The parameter for the operation, if required.
 
     Returns:
-        bool: The result of the check.
+        dict: The result of the check.
 
     Usage Example:
         has_property('abc', 'ends_with', 'c')  # => True
         has_property({'a': 1}, 'has_key', 'a')  # => True
         has_property('12345', 'is_digit')  # => True
     """
-    if property == "starts_with":
-        if not isinstance(obj, str) or param is None:
-            return False
-        return obj.startswith(param)
-    elif property == "ends_with":
-        if not isinstance(obj, str) or param is None:
-            return False
-        return obj.endswith(param)
-    elif property == "is_empty":
-        if hasattr(obj, "__len__"):
-            return len(obj) == 0
-        return not bool(obj)
-    elif property == "is_equal":
-        return obj == param
-    elif property == "is_nil":
-        return obj is None
-    elif property == "has_key":
-        if not isinstance(obj, dict) or param is None:
-            return False
-        return param in obj
-    elif property == "contains":
-        if isinstance(obj, str) and param is not None:
-            return param in obj
-        elif isinstance(obj, list) and param is not None:
-            return param in obj
-        return False
-    elif property == "is_digit":
-        return isinstance(obj, str) and obj.isdigit()
-    elif property == "is_alpha":
-        return isinstance(obj, str) and obj.isalpha()
-    elif property == "is_upper":
-        return isinstance(obj, str) and obj.isupper()
-    elif property == "is_lower":
-        return isinstance(obj, str) and obj.islower()
-    else:
-        raise ValueError(f"Unknown property: {property}")
+    try:
+        if property == "starts_with":
+            if not isinstance(obj, str) or param is None:
+                return {"value": False}
+            return {"value": bool(obj.startswith(param))}
+        elif property == "ends_with":
+            if not isinstance(obj, str) or param is None:
+                return {"value": False}
+            return {"value": bool(obj.endswith(param))}
+        elif property == "is_empty":
+            if hasattr(obj, "__len__"):
+                return {"value": bool(len(obj) == 0)}
+            return {"value": bool(not obj)}
+        elif property == "is_equal":
+            return {"value": bool(obj == param)}
+        elif property == "is_nil":
+            return {"value": bool(obj is None)}
+        elif property == "has_key":
+            if not isinstance(obj, dict) or param is None:
+                return {"value": False}
+            return {"value": bool(param in obj)}
+        elif property == "contains":
+            if isinstance(obj, str) and param is not None:
+                return {"value": bool(param in obj)}
+            elif isinstance(obj, list) and param is not None:
+                return {"value": bool(param in obj)}
+            return {"value": False}
+        elif property == "is_digit":
+            return {"value": bool(isinstance(obj, str) and obj.isdigit())}
+        elif property == "is_alpha":
+            return {"value": bool(isinstance(obj, str) and obj.isalpha())}
+        elif property == "is_upper":
+            return {"value": bool(isinstance(obj, str) and obj.isupper())}
+        elif property == "is_lower":
+            return {"value": bool(isinstance(obj, str) and obj.islower())}
+        else:
+            raise ValueError(f"Unknown property: {property}")
+    except Exception as e:
+        return {"value": None, "error": str(e)}
 
 
 @mcp.tool()
-def select_from_list(items: list, operation: str, param: Optional[Any] = None) -> Any:
+def select_from_list(items: list, operation: str, param: Optional[Any] = None) -> dict:
     """
     Selects an element from a list using various operations.
 
@@ -369,91 +393,105 @@ def select_from_list(items: list, operation: str, param: Optional[Any] = None) -
         select_from_list([{'id': 1}, {'id': 2}], 'find_by', {'key': 'id', 'value': 2})
         # => {'id': 2}
     """
-    if operation == "find_by":
-        if not param or "key" not in param or "value" not in param:
-            raise ValueError(
-                "'param' with 'key' and 'value' is required for 'find_by'."
-            )
-        key = param["key"]
-        value = param["value"]
-        for item in items:
-            v = item.get(key) if isinstance(item, dict) else getattr(item, key, None)
-            if v == value:
-                return item
-        return None
-    elif operation == "head":
-        return items[0] if items else None
-    elif operation == "last":
-        return items[-1] if items else None
-    elif operation == "sample":
-        if not items:
-            return None
-        import random
+    try:
+        if operation == "find_by":
+            if not param or "key" not in param or "value" not in param:
+                raise ValueError(
+                    "'param' with 'key' and 'value' is required for 'find_by'."
+                )
+            key = param["key"]
+            value = param["value"]
+            # Enforce all items must be dicts
+            if not all(isinstance(item, dict) for item in items):
+                return {"value": None, "error": "All items must be dicts for find_by."}
+            for item in items:
+                v = item.get(key)
+                if v == value:
+                    return {"value": item}
+            return {"value": None}
+        elif operation == "head":
+            return {"value": items[0] if items else None}
+        elif operation == "last":
+            return {"value": items[-1] if items else None}
+        elif operation == "sample":
+            if not items:
+                return {"value": None}
+            import random
 
-        return random.choice(items)
-    elif operation == "nth":
-        if not isinstance(param, int):
-            raise ValueError("'param' must be an integer for 'nth'.")
-        if not items:
-            return None
-        idx = param
-        if -len(items) <= idx < len(items):
-            return items[idx]
-        return None
-    elif operation == "min_by":
-        if not items or not param:
-            return None
-        key = param
+            return {"value": random.choice(items)}
+        elif operation == "nth":
+            if not isinstance(param, int):
+                raise ValueError("'param' must be an integer for 'nth'.")
+            if not items:
+                return {"value": None}
+            idx = param
+            if -len(items) <= idx < len(items):
+                return {"value": items[idx]}
+            return {"value": None}
+        elif operation == "min_by":
+            if not items or not param:
+                return {"value": None}
+            key = param
 
-        def min_key(x):
-            v = x.get(key) if isinstance(x, dict) else getattr(x, key, None)
-            return v if v is not None else float("inf")
+            def min_key(x):
+                v = x.get(key) if isinstance(x, dict) else getattr(x, key, None)
+                return v if v is not None else float("inf")
 
-        return min(items, key=min_key)
-    elif operation == "max_by":
-        if not items or not param:
-            return None
-        key = param
+            return {"value": min(items, key=min_key)}
+        elif operation == "max_by":
+            if not items or not param:
+                return {"value": None}
+            key = param
 
-        def max_key(x):
-            v = x.get(key) if isinstance(x, dict) else getattr(x, key, None)
-            return v if v is not None else float("-inf")
+            def max_key(x):
+                v = x.get(key) if isinstance(x, dict) else getattr(x, key, None)
+                return v if v is not None else float("-inf")
 
-        return max(items, key=max_key)
-    elif operation == "index_of":
-        if not param or "key" not in param or "value" not in param:
-            raise ValueError(
-                "'param' with 'key' and 'value' is required for 'index_of'."
-            )
-        key = param["key"]
-        value = param["value"]
-        for idx, item in enumerate(items):
-            v = item.get(key) if isinstance(item, dict) else getattr(item, key, None)
-            if v == value:
-                return idx
-        return -1
-    elif operation == "random_except":
-        if not items or not param or "key" not in param or "value" not in param:
-            return None
-        key = param["key"]
-        value = param["value"]
-        filtered = [
-            item
-            for item in items
-            if (item.get(key) if isinstance(item, dict) else getattr(item, key, None))
-            != value
-        ]
-        if not filtered:
-            return None
-        import random
+            return {"value": max(items, key=max_key)}
+        elif operation == "index_of":
+            if not param or "key" not in param or "value" not in param:
+                raise ValueError(
+                    "'param' with 'key' and 'value' is required for 'index_of'."
+                )
+            key = param["key"]
+            value = param["value"]
+            for idx, item in enumerate(items):
+                v = (
+                    item.get(key)
+                    if isinstance(item, dict)
+                    else getattr(item, key, None)
+                )
+                if v == value:
+                    return {"value": idx}
+            return {"value": -1}
+        elif operation == "random_except":
+            if not items or not param or "key" not in param or "value" not in param:
+                return {"value": None}
+            key = param["key"]
+            value = param["value"]
+            filtered = [
+                item
+                for item in items
+                if (
+                    item.get(key)
+                    if isinstance(item, dict)
+                    else getattr(item, key, None)
+                )
+                != value
+            ]
+            if not filtered:
+                return {"value": None}
+            import random
 
-        return random.choice(filtered)
-    else:
-        raise ValueError(f"Unknown operation: {operation}")
+            return {"value": random.choice(filtered)}
+        else:
+            raise ValueError(f"Unknown operation: {operation}")
+    except Exception as e:
+        return {"value": None, "error": str(e)}
 
 
 @mcp.tool()
-def compare_lists(a: list, b: list, operation: str, key: Optional[str] = None) -> list:
+def compare_lists(a: list, b: list, operation: str, key: Optional[str] = None) -> dict:
     """
     Compares two lists using various set-like operations.
 
@@ -476,38 +514,53 @@ def compare_lists(a: list, b: list, operation: str, key: Optional[str] = None) -
             [{'id': 1}, {'id': 2}, {'id': 3}], [{'id': 2}], 'difference_by', 'id'
         )  # => [{'id': 1}, {'id': 3}]
     """
-    if operation == "difference_by":
-        if key is None:
-            raise ValueError("'key' is required for 'difference_by'.")
-        b_keys = set(
-            item.get(key) if isinstance(item, dict) else getattr(item, key, None)
-            for item in b
-        )
-        return [
-            item
-            for item in a
-            if (item.get(key) if isinstance(item, dict) else getattr(item, key, None))
-            not in b_keys
-        ]
-    elif operation == "intersection_by":
-        if key is None:
-            raise ValueError("'key' is required for 'intersection_by'.")
-        b_keys = set(
-            item.get(key) if isinstance(item, dict) else getattr(item, key, None)
-            for item in b
-        )
-        return [
-            item
-            for item in a
-            if (item.get(key) if isinstance(item, dict) else getattr(item, key, None))
-            in b_keys
-        ]
-    elif operation == "intersection":
-        return list(set(a) & set(b))
-    elif operation == "difference":
-        return [item for item in a if item not in b]
-    else:
-        raise ValueError(f"Unknown operation: {operation}")
+    try:
+        if operation == "difference_by":
+            if key is None:
+                raise ValueError("'key' is required for 'difference_by'.")
+            b_keys = set(
+                item.get(key) if isinstance(item, dict) else getattr(item, key, None)
+                for item in b
+            )
+            return {
+                "value": [
+                    item
+                    for item in a
+                    if (
+                        item.get(key)
+                        if isinstance(item, dict)
+                        else getattr(item, key, None)
+                    )
+                    not in b_keys
+                ]
+            }
+        elif operation == "intersection_by":
+            if key is None:
+                raise ValueError("'key' is required for 'intersection_by'.")
+            b_keys = set(
+                item.get(key) if isinstance(item, dict) else getattr(item, key, None)
+                for item in b
+            )
+            return {
+                "value": [
+                    item
+                    for item in a
+                    if (
+                        item.get(key)
+                        if isinstance(item, dict)
+                        else getattr(item, key, None)
+                    )
+                    in b_keys
+                ]
+            }
+        elif operation == "intersection":
+            return {"value": [item for item in a if item in b]}
+        elif operation == "difference":
+            return {"value": [item for item in a if item not in b]}
+        else:
+            raise ValueError(f"Unknown operation: {operation}")
+    except Exception as e:
+        return {"value": None, "error": str(e)}
 
 
 @mcp.tool()
@@ -544,22 +597,36 @@ def process_list(items: list, operation: str, key: str) -> dict:
             [{'id': 'a', 'val': 1}, {'id': 'b', 'val': 2}], 'key_by', 'id'
         )  # => {'a': {...}, 'b': {...}}
     """
-    if operation == "group_by":
-        result = {}
-        for item in items:
-            k = item.get(key) if isinstance(item, dict) else getattr(item, key, None)
-            result.setdefault(k, []).append(item)
-        return result
-    elif operation == "count_by":
-        result = {}
-        for item in items:
-            k = item.get(key) if isinstance(item, dict) else getattr(item, key, None)
-            result[k] = result.get(k, 0) + 1
-        return result
-    elif operation == "key_by":
-        return {item[key]: item for item in items}
-    else:
-        raise ValueError(f"Unknown operation: {operation}")
+    try:
+        if operation in ("group_by", "count_by", "key_by") and not key:
+            return {
+                "value": None,
+                "error": f"Missing required key parameter for operation '{operation}'.",
+            }
+        if operation in ("group_by", "count_by", "key_by"):
+            if not all(isinstance(item, dict) for item in items):
+                return {
+                    "value": None,
+                    "error": f"All items must be dicts for operation '{operation}'.",
+                }
+        if operation == "group_by":
+            result = {}
+            for item in items:
+                k = item.get(key)
+                result.setdefault(k, []).append(item)
+            return {"value": result}
+        elif operation == "count_by":
+            result = {}
+            for item in items:
+                k = item.get(key)
+                result[k] = result.get(k, 0) + 1
+            return {"value": result}
+        elif operation == "key_by":
+            return {"value": {item[key]: item for item in items}}
+        else:
+            raise ValueError(f"Unknown operation: {operation}")
+    except Exception as e:
+        return {"value": None, "error": str(e)}
 
 
 @mcp.tool()
@@ -583,22 +650,31 @@ def process_dict(obj: dict, operation: str, param: Optional[list] = None) -> dic
         process_dict({'a': 1, 'b': 2}, 'omit', ['a'])  # => {'b': 2}
         process_dict({'a': 1, 'b': 2}, 'pick', ['a'])  # => {'a': 1}
     """
-    if operation == "invert":
-        return {str(value): key for key, value in obj.items()}
-    elif operation == "pick":
-        if param is None:
-            raise ValueError("'param' (list of keys) is required for 'pick' operation.")
-        return {key: obj[key] for key in param if key in obj}
-    elif operation == "omit":
-        if param is None:
-            raise ValueError("'param' (list of keys) is required for 'omit' operation.")
-        return {key: value for key, value in obj.items() if key not in param}
-    else:
-        raise ValueError(f"Unknown operation: {operation}")
+    try:
+        if operation == "invert":
+            return {"value": {str(value): key for key, value in obj.items()}}
+        elif operation == "pick":
+            if param is None:
+                raise ValueError(
+                    "'param' (list of keys) is required for 'pick' operation."
+                )
+            return {"value": {key: obj[key] for key in param if key in obj}}
+        elif operation == "omit":
+            if param is None:
+                raise ValueError(
+                    "'param' (list of keys) is required for 'omit' operation."
+                )
+            return {
+                "value": {key: value for key, value in obj.items() if key not in param}
+            }
+        else:
+            raise ValueError(f"Unknown operation: {operation}")
+    except Exception as e:
+        return {"value": None, "error": str(e)}
 
 
 @mcp.tool()
-def generate(input: Any, operation: str, param: Any = None) -> Any:
+def generate(input: Any, operation: str, param: Any = None) -> dict:
     """
     Generates sequences or derived data from input using the specified operation.
 
@@ -638,86 +714,79 @@ def generate(input: Any, operation: str, param: Any = None) -> Any:
     import itertools
     import operator
 
-    if operation == "range":
-        # param: [start, end, step?]
-        if not isinstance(param, list) or len(param) < 2:
-            raise ValueError(
-                "'param' must be [start, end] or [start, end, step] for 'range'."
-            )
-        start, end = param[0], param[1]
-        step = param[2] if len(param) > 2 else 1
-        return list(range(start, end, step))
-    elif operation == "cartesian_product":
-        # input: list of lists
-        return list(itertools.product(*input))
-    elif operation == "repeat":
-        # input: value or list, param: int
-        if not isinstance(param, int):
-            raise ValueError("'param' must be an integer for 'repeat'.")
-        return list(itertools.repeat(input, param))
-    elif operation == "powerset":
-        s = list(input)
-        if not s:
-            # Workaround for fastmcp bug that converts [[]] to []
-            return [[""]]
-        return [
-            list(combo)
-            for r in range(len(s) + 1)
-            for combo in itertools.combinations(s, r)
-        ]
-    elif operation == "windowed":
-        # input: list, param: int (window size)
-        if not isinstance(param, int) or param < 1:
-            raise ValueError("'param' must be a positive integer for 'windowed'.")
-        s = list(input)
-        return [tuple(s[i : i + param]) for i in range(len(s) - param + 1)]
-    elif operation == "cycle":
-        # input: list, param: int (max length, optional)
-        s = list(input)
-        if param is not None:
-            return [x for _, x in zip(range(param), itertools.cycle(s))]
-        else:
-            raise ValueError("'cycle' without a length limit is not supported.")
-    elif operation == "accumulate":
-        # input: list, param: None or function name
-        s = list(input)
-        if param is None:
-            return list(itertools.accumulate(s))
-        elif param == "mul":
-            return list(itertools.accumulate(s, operator.mul))
-        else:
-            raise ValueError("'accumulate' only supports param=None or 'mul'.")
-    elif operation == "zip_with_index":
-        # input: list
-        return list(enumerate(input))
-    elif operation == "unique_pairs":
-        # input: list
-        s = list(input)
-        return [tuple(pair) for pair in itertools.combinations(s, 2)]
-    elif operation == "permutations":
-        s = list(input)
-        r = param if isinstance(param, int) else None
-        if not s:
-            if r is None or r == 0:
-                # Workaround for fastmcp bug that converts [[]] to []
-                return [[""]]
+    try:
+        if operation == "range":
+            if not isinstance(param, list) or len(param) < 2:
+                raise ValueError(
+                    "'param' must be [start, end] or [start, end, step] for 'range'."
+                )
+            start, end = param[0], param[1]
+            step = param[2] if len(param) > 2 else 1
+            return {"value": list(range(start, end, step))}
+        elif operation == "cartesian_product":
+            return {"value": list(itertools.product(*input))}
+        elif operation == "repeat":
+            if not isinstance(param, int):
+                raise ValueError("'param' must be an integer for 'repeat'.")
+            return {"value": list(itertools.repeat(input, param))}
+        elif operation == "powerset":
+            s = list(input)
+            if not s:
+                return {"value": [[]]}
+            return {
+                "value": [
+                    list(combo)
+                    for r in range(len(s) + 1)
+                    for combo in itertools.combinations(s, r)
+                ]
+            }
+        elif operation == "windowed":
+            if not isinstance(param, int) or param < 1:
+                raise ValueError("'param' must be a positive integer for 'windowed'.")
+            s = list(input)
+            return {
+                "value": [list(s[i : i + param]) for i in range(len(s) - param + 1)]
+            }
+        elif operation == "cycle":
+            s = list(input)
+            if param is not None:
+                return {"value": [s[i % len(s)] for i in range(param)] if s else []}
             else:
-                return []
-        return [list(p) for p in itertools.permutations(s, r)]
-    elif operation == "combinations":
-        s = list(input)
-        if not isinstance(param, int):
-            raise ValueError("'param' must be an integer for 'combinations'.")
-        # Special case: combinations([], n) is [] for n > 0
-        if not s:
-            return []
-        return [list(c) for c in itertools.combinations(s, param)]
-    else:
-        raise ValueError(f"Unknown operation: {operation}")
+                raise ValueError("'cycle' without a length limit is not supported.")
+        elif operation == "accumulate":
+            s = list(input)
+            if param is None:
+                return {"value": list(itertools.accumulate(s))}
+            elif param == "mul":
+                return {"value": list(itertools.accumulate(s, operator.mul))}
+            else:
+                raise ValueError("'accumulate' only supports param=None or 'mul'.")
+        elif operation == "zip_with_index":
+            return {"value": [[i, v] for i, v in enumerate(input)]}
+        elif operation == "unique_pairs":
+            s = list(input)
+            return {"value": [list(pair) for pair in itertools.combinations(s, 2)]}
+        elif operation == "permutations":
+            s = list(input)
+            r = param if isinstance(param, int) else None
+            if not s:
+                return {"value": [[]]}
+            return {"value": [list(p) for p in itertools.permutations(s, r)]}
+        elif operation == "combinations":
+            s = list(input)
+            if not isinstance(param, int):
+                raise ValueError("'param' must be an integer for 'combinations'.")
+            if not s:
+                return {"value": []}
+            return {"value": [list(c) for c in itertools.combinations(s, param)]}
+        else:
+            raise ValueError(f"Unknown operation: {operation}")
+    except Exception as e:
+        return {"value": None, "error": str(e)}
 
 
 @mcp.tool()
-async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> Any:
+async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> dict:
     """
     Chains multiple tool calls, piping the output of one as the input to the next.
 
@@ -756,9 +825,7 @@ async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> Any:
         tool_name = step.get("tool")
         params = step.get("params", {})
         if not tool_name:
-            return {"error": f"Step {i}: Missing 'tool' name."}
-
-        # Get the tool (it may be a coroutine)
+            return {"value": None, "error": f"Step {i}: Missing 'tool' name."}
         try:
             tool_or_coro = mcp._tool_manager.get_tool(tool_name)
             if inspect.isawaitable(tool_or_coro):
@@ -766,18 +833,17 @@ async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> Any:
             else:
                 tool = tool_or_coro
         except Exception as e:
-            return {"error": f"Step {i}: Tool '{tool_name}' not found: {e}"}
-
-        # Now 'tool' is always the resolved object, safe to access attributes
+            return {
+                "value": None,
+                "error": f"Step {i}: Tool '{tool_name}' not found: {e}",
+            }
         if not hasattr(tool, "run") or not callable(getattr(tool, "run", None)):
             return {
-                "error": f"Step {i}: Tool '{tool_name}' is not a valid tool object."
+                "value": None,
+                "error": f"Step {i}: Tool '{tool_name}' is not a valid tool object.",
             }
-
         param_schema = tool.parameters.get("properties", {})
         required = tool.parameters.get("required", [])
-
-        # Find the first required param not in params, or just the first param
         primary_param = None
         for k in required:
             primary_param = k
@@ -790,54 +856,73 @@ async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> Any:
         if primary_param:
             if primary_param in arguments:
                 return {
+                    "value": None,
                     "error": f"Step {i}: Chaining does not allow specifying the "
                     f"primary parameter '{primary_param}' in params. The output from "
-                    "the previous tool is always used as input."
+                    "the previous tool is always used as input.",
                 }
             arguments[primary_param] = value
         elif len(param_schema) == 1:
             only_param = next(iter(param_schema))
             if only_param in arguments:
                 return {
+                    "value": None,
                     "error": f"Step {i}: Chaining does not allow specifying the "
                     f"primary parameter '{only_param}' in params. The output from the "
-                    "previous tool is always used as input."
+                    "previous tool is always used as input.",
                 }
             arguments[only_param] = value
         elif not param_schema:
             arguments = {}
-        # Call the tool's run method (must be awaited)
         try:
             result = await tool.run(arguments)
         except Exception as e:
-            return {"error": f"Step {i}: Error calling tool '{tool_name}': {e}"}
-        value = unwrap_result(result)
-    return value
+            return {
+                "value": None,
+                "error": f"Step {i}: Error calling tool '{tool_name}': {e}",
+            }
+        unwrapped = unwrap_result(result)
+        if isinstance(unwrapped, dict):
+            if "error" in unwrapped:
+                return {
+                    "value": None,
+                    "error": (
+                        f"Step {i}: Error calling tool '{tool_name}': "
+                        f"{unwrapped['error']}"
+                    ),
+                }
+            elif "value" in unwrapped:
+                value = unwrapped["value"]
+            else:
+                value = unwrapped
+    return {"value": value}
 
 
 def unwrap_result(result):
+    """
+    Unwraps the result from a tool call. The result from the client is typically
+    a list containing a single Content object. This function extracts the text
+    from that object and decodes it from JSON.
+    """
     import json
 
-    # If result is a list of content objects, extract their values
-    if isinstance(result, list) and result:
-        if all(hasattr(x, "text") for x in result):
-            values = []
-            for content in result:
-                if hasattr(content, "text"):
-                    try:
-                        values.append(json.loads(content.text))  # type: ignore[attr-defined]  # noqa
-                    except Exception:
-                        values.append(content.text)  # type: ignore[attr-defined]
-                else:
-                    values.append(content)
-            return values if len(values) > 1 else values[0]
-    # If result is a single content object
+    # The result from client.call_tool is a list of Content objects.
+    # For our tools, it's typically a single object in the list.
+    if isinstance(result, list) and result and hasattr(result[0], "text"):
+        try:
+            # The text attribute contains the JSON string of the actual return value.
+            return json.loads(result[0].text)  # type: ignore[attr-defined]
+        except (json.JSONDecodeError, TypeError):
+            # If it's not valid JSON, return the text as is.
+            return result[0].text  # type: ignore[attr-defined]
+
+    # Fallback for single Content object or other types passed from tests
     if hasattr(result, "text"):
         try:
             return json.loads(result.text)  # type: ignore[attr-defined]
-        except Exception:
+        except (json.JSONDecodeError, TypeError):
             return result.text  # type: ignore[attr-defined]
-    # Otherwise, return as is
+
     return result
 
 
@@ -868,8 +953,10 @@ def merge(dicts: list) -> dict:
 
     result = {}
     for d in dicts:
+        if not isinstance(d, dict):
+            return {"value": None, "error": "All items in dicts must be dictionaries."}
         result = deep_merge(result, d)
-    return result
+    return {"value": result}
 
 
 @mcp.tool()
@@ -893,13 +980,20 @@ def set_value(obj: dict, path, value):
 
     if isinstance(path, str):
         path = re.findall(r"[^.\[\]]+", path)
+    # Check that path is a list of strings
+    if isinstance(path, list):
+        if not all(isinstance(p, str) for p in path):
+            return {
+                "value": None,
+                "error": "All elements of path list must be strings.",
+            }
     d = obj
     for p in path[:-1]:
         if p not in d or not isinstance(d[p], dict):
             d[p] = {}
         d = d[p]
     d[path[-1]] = value
-    return obj
+    return {"value": obj}
 
 
 @mcp.tool()
@@ -925,13 +1019,20 @@ def get_value(obj: dict, path, default=None):
 
     if isinstance(path, str):
         path = re.findall(r"[^.\[\]]+", path)
+    # Check that path is a list of strings
+    if isinstance(path, list):
+        if not all(isinstance(p, str) for p in path):
+            return {
+                "value": None,
+                "error": "All elements of path list must be strings.",
+            }
     d = obj
     for p in path:
         if isinstance(d, dict) and p in d:
             d = d[p]
         else:
-            return default
-    return d
+            return {"value": default}
+    return {"value": d}
 
 
 if __name__ == "__main__":

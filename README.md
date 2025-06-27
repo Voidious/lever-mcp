@@ -122,13 +122,13 @@ Mutates a string according to the specified mutation type.
 - `data` (Dict[str, Any], optional): Data for 'template' and 'replace' mutations.
 
 **Returns:**
-- `str`: The mutated string.
+- `dict`: The mutated string wrapped in a dictionary with 'value' key.
 
 **Usage Example:**
 ```python
-mutate_string('foo bar', 'camel_case')  # => 'fooBar'
-mutate_string('Hello, {name}!', 'template', {'name': 'World'})  # => 'Hello, World!'
-mutate_string('foo bar foo', 'replace', {'old': 'foo', 'new': 'baz'})  # => 'baz bar baz'
+mutate_string('foo bar', 'camel_case')  # => {'value': 'fooBar'}
+mutate_string('Hello, {name}!', 'template', {'name': 'World'})  # => {'value': 'Hello, World!'}
+mutate_string('foo bar foo', 'replace', {'old': 'foo', 'new': 'baz'})  # => {'value': 'baz bar baz'}
 ```
 
 ### mutate_list
@@ -161,12 +161,12 @@ Mutates a list according to the specified mutation type.
 - `param` (Any, optional): A parameter for mutations that require one.
 
 **Returns:**
-- `List[Any]`: The mutated list.
+- `dict`: The mutated list wrapped in a dictionary with 'value' key.
 
 **Usage Example:**
 ```python
-mutate_list([[1, [2, 3], 4], 5], 'flatten_deep')  # => [1, 2, 3, 4, 5]
-mutate_list([{'id': 1}, {'id': 2}], 'pluck', 'id')  # => [1, 2]
+mutate_list([[1, [2, 3], 4], 5], 'flatten_deep')  # => {'value': [1, 2, 3, 4, 5]}
+mutate_list([{'id': 1}, {'id': 2}], 'pluck', 'id')  # => {'value': [1, 2]}
 ```
 
 ### has_property
@@ -189,13 +189,13 @@ Checks a property or relationship for the given object.
 - `param` (Any, optional): The parameter for the operation, if required.
 
 **Returns:**
-- `bool`: The result of the check.
+- `dict`: The result of the check wrapped in a dictionary with 'value' key.
 
 **Usage Example:**
 ```python
-has_property('abc', 'ends_with', 'c')  # => True
-has_property({'a': 1}, 'has_key', 'a')  # => True
-has_property('12345', 'is_digit')  # => True
+has_property('abc', 'ends_with', 'c')  # => {'value': True}
+has_property({'a': 1}, 'has_key', 'a')  # => {'value': True}
+has_property('12345', 'is_digit')  # => {'value': True}
 ```
 
 ### select_from_list
@@ -216,13 +216,13 @@ Selects an element from a list using various operations.
 - `param` (Any, optional): Parameter for the operation (required for some operations).
 
 **Returns:**
-- `any`: The selected element or None if not found.
+- `dict`: The selected element wrapped in a dictionary with 'value' key.
 
 **Usage Example:**
 ```python
-select_from_list([1, 2, 3], 'head')  # => 1
-select_from_list([10, 20, 30], 'nth', 1)  # => 20
-select_from_list([{'id': 1}, {'id': 2}], 'find_by', {'key': 'id', 'value': 2}) # => {'id': 2}
+select_from_list([1, 2, 3], 'head')  # => {'value': 1}
+select_from_list([10, 20, 30], 'nth', 1)  # => {'value': 20}
+select_from_list([{'id': 1}, {'id': 2}], 'find_by', {'key': 'id', 'value': 2})  # => {'value': {'id': 2}}
 ```
 
 ### compare_lists
@@ -239,12 +239,12 @@ Compares two lists using various set-like operations.
 - `key` (str, optional): The property name for *_by operations.
 
 **Returns:**
-- `list`: The result of the comparison.
+- `dict`: The result of the comparison wrapped in a dictionary with 'value' key.
 
 **Usage Example:**
 ```python
-compare_lists([1, 2, 3], [2, 4], 'difference')  # => [1, 3]
-compare_lists([{'id': 1}, {'id': 2}], [{'id': 2}], 'difference_by', 'id')  # => [{'id': 1}]
+compare_lists([1, 2, 3], [2, 4], 'difference')  # => {'value': [1, 3]}
+compare_lists([{'id': 1}, {'id': 2}], [{'id': 2}], 'difference_by', 'id')  # => {'value': [{'id': 1}]}
 ```
 
 ### process_list
@@ -259,12 +259,12 @@ Processes a list into a dictionary using grouping, counting, or keying by a prop
 - `key` (str): The property name to use.
 
 **Returns:**
-- `dict`: The resulting dictionary.
+- `dict`: The resulting dictionary wrapped in a dictionary with 'value' key.
 
 **Usage Example:**
 ```python
-process_list([{'type': 'a'}, {'type': 'b'}, {'type': 'a'}], 'count_by', 'type')  # => {'a': 2, 'b': 1}
-process_list([{'id': 'a'}, {'id': 'b'}], 'key_by', 'id')  # => {'a': {'id': 'a'}, 'b': {'id': 'b'}}
+process_list([{'type': 'a'}, {'type': 'b'}, {'type': 'a'}], 'count_by', 'type')  # => {'value': {'a': 2, 'b': 1}}
+process_list([{'id': 'a'}, {'id': 'b'}], 'key_by', 'id')  # => {'value': {'a': {'id': 'a'}, 'b': {'id': 'b'}}}
 ```
 
 ### process_dict
@@ -279,13 +279,13 @@ Performs dictionary operations.
 - `param` (list, optional): Keys to pick or omit (required for 'pick' and 'omit').
 
 **Returns:**
-- `dict`: The resulting dictionary.
+- `dict`: The resulting dictionary wrapped in a dictionary with 'value' key.
 
 **Usage Example:**
 ```python
-process_dict({'a': 'x', 'b': 'y'}, 'invert')  # => {'x': 'a', 'y': 'b'}
-process_dict({'a': 1, 'b': 2}, 'omit', ['a'])  # => {'b': 2}
-process_dict({'a': 1, 'b': 2}, 'pick', ['a'])  # => {'a': 1}
+process_dict({'a': 'x', 'b': 'y'}, 'invert')  # => {'value': {'x': 'a', 'y': 'b'}}
+process_dict({'a': 1, 'b': 2}, 'omit', ['a'])  # => {'value': {'b': 2}}
+process_dict({'a': 1, 'b': 2}, 'pick', ['a'])  # => {'value': {'a': 1}}
 ```
 
 ### generate
@@ -308,14 +308,14 @@ Generates sequences or derived data from input using the specified operation.
 - `param` (Any, optional): Parameter for the operation, if required.
 
 **Returns:**
-- `Any`: The generated sequence or result.
+- `dict`: The generated sequence or result wrapped in a dictionary with 'value' key.
 
 **Usage Example:**
 ```python
-generate(None, 'range', [0, 5])  # => [0, 1, 2, 3, 4]
-generate('x', 'repeat', 3)  # => ['x', 'x', 'x']
-generate([1, 2, 3], 'powerset') # => [[], [1], [2], [1, 2], [3], [1, 3], [2, 3], [1, 2, 3]]
-generate([[1, 2], ['a', 'b']], 'cartesian_product') # => [[1, 'a'], [1, 'b'], [2, 'a'], [2, 'b']]
+generate(None, 'range', [0, 5])  # => {'value': [0, 1, 2, 3, 4]}
+generate('x', 'repeat', 3)  # => {'value': ['x', 'x', 'x']}
+generate([1, 2, 3], 'powerset') # => {'value': [[], [1], [2], [1, 2], [3], [1, 3], [2, 3], [1, 2, 3]]}
+generate([[1, 2], ['a', 'b']], 'cartesian_product') # => {'value': [[1, 'a'], [1, 'b'], [2, 'a'], [2, 'b']]}
 ```
 
 ### chain
@@ -328,7 +328,7 @@ Chains multiple tool calls, piping the output of one as the input to the next.
   - `params` (dict, optional): Additional parameters
 
 **Returns:**
-- `any`: The result of the last tool in the chain.
+- `dict`: The result of the last tool in the chain wrapped in a dictionary with 'value' key.
 
 **Usage Example:**
 ```python
@@ -340,7 +340,7 @@ chain(
         {"tool": "mutate_list", "params": {"mutation": "sort_by", "param": None}}
     ]
 )
-# => [1, 2, 3, 4, 5]
+# => {'value': [1, 2, 3, 4, 5]}
 ```
 
 ### merge
@@ -350,12 +350,12 @@ Deep merges a list of dictionaries.
 - `dicts` (list): A list of dictionaries to merge.
 
 **Returns:**
-- `dict`: A single dictionary containing the merged keys and values.
+- `dict`: A single dictionary containing the merged keys and values wrapped in a dictionary with 'value' key.
 
 **Usage Example:**
 ```python
 merge([{"a": 1, "b": {"c": 2}}, {"b": {"d": 3}}])
-# => {'a': 1, 'b': {'c': 2, 'd': 3}}
+# => {'value': {'a': 1, 'b': {'c': 2, 'd': 3}}}
 ```
 
 ### set_value
@@ -367,11 +367,11 @@ Sets a deep property in a dictionary by path (dot/bracket notation or list).
 - `value` (any): The value to set.
 
 **Returns:**
-- `dict`: The modified dictionary.
+- `dict`: The modified dictionary wrapped in a dictionary with 'value' key.
 
 **Usage Example:**
 ```python
-set_value({"a": {"b": 1}}, "a.b", 2)  # => {'a': {'b': 2}}
+set_value({"a": {"b": 1}}, "a.b", 2)  # => {'value': {'a': {'b': 2}}}
 ```
 
 ### get_value
@@ -383,17 +383,13 @@ Gets a deep property from a dictionary by path (dot/bracket notation or list).
 - `default` (any, optional): The value to return if the path does not exist.
 
 **Returns:**
-- `any`: The value at the specified path, or the default.
+- `dict`: The value at the specified path, or the default wrapped in a dictionary with 'value' key.
 
 **Usage Example:**
 ```python
-get_value({"a": {"b": 2}}, "a.b")  # => 2
-get_value({"a": {"b": 2}}, "a.c", 42)  # => 42
+get_value({"a": {"b": 2}}, "a.b")  # => {'value': 2}
+get_value({"a": {"b": 2}}, "a.c", 42)  # => {'value': 42}
 ```
-
-## Contributing
-
-Contributions are welcome! If you have ideas for new tools or improvements, please open an issue or submit a pull request.
 
 ## License
 
