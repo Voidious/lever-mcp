@@ -1,62 +1,17 @@
-import sys
-import asyncio
-
-if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
-import json
 import pytest
-import random
-import socket
-import subprocess
-import time
+import importlib
+import main
+from main import LeverMCP
 from fastmcp import Client
-
-
-def normalize_json(obj):
-    if isinstance(obj, str):
-        return json.dumps(json.loads(obj), sort_keys=True, separators=(",", ":"))
-    return json.dumps(obj, sort_keys=True, separators=(",", ":"))
-
-
-@pytest.fixture(scope="session")
-def server_url():
-    port = random.randint(12001, 12999)
-    host = "127.0.0.1"
-    url = f"http://{host}:{port}/mcp/"
-    # Redirect stdout/stderr to avoid pipe blocking
-    proc = subprocess.Popen(
-        [sys.executable, "main.py", "--http", "--host", host, "--port", str(port)],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    try:
-        for _ in range(30):
-            try:
-                with socket.create_connection((host, port), timeout=0.2):
-                    break
-            except OSError:
-                time.sleep(0.2)
-        else:
-            proc.terminate()
-            raise RuntimeError("HTTP server did not start in time")
-        yield url
-    finally:
-        # Only terminate if not told to keep alive
-        import os
-
-        if not os.environ.get("KEEP_SERVER_UP"):
-            proc.terminate()
-            try:
-                proc.wait(timeout=5)
-            except Exception:
-                proc.kill()
+from . import make_tool_call
 
 
 @pytest.fixture
-async def shared_client(server_url):
-    async with Client(server_url) as client:
-        yield client
+async def client():
+    importlib.reload(main)
+    mcp_instance: LeverMCP = main.mcp
+    async with Client(mcp_instance) as c:
+        yield c
 
 
 @pytest.mark.asyncio
@@ -656,7 +611,7 @@ async def shared_client(server_url):
             {"operation": "count_by", "key": "id"},
             [{"id": 1}, {"id": 2}, {"id": 1}],
             dict,
-            {1: 2},
+            {"1": 2},  # tool calls return JSON, which has only string keys
         ),
         # compare_lists -> generate (repeat the result of difference)
         (
@@ -756,7 +711,7 @@ async def shared_client(server_url):
             {"operation": "count_by", "key": "a"},
             {"a": 1},
             dict,
-            {1: 2},
+            {"1": 2},  # tool calls return JSON, which has only string keys
         ),
         # generate -> merge (list of dicts)
         (
@@ -983,8 +938,8 @@ async def shared_client(server_url):
         ),
     ],
 )
-async def test_chain_all_tool_pairs_real_server(
-    shared_client,
+async def test_chain_all_tool_pairs(
+    client,
     first_tool,
     first_params,
     second_tool,
@@ -1000,16 +955,11 @@ async def test_chain_all_tool_pairs_real_server(
             {"tool": second_tool, "params": second_params},
         ],
     }
-    request_json = json.dumps(chain_payload, sort_keys=True, separators=(",", ":"))
-    result = await shared_client.call_tool("chain", json.loads(request_json))
-    response = result[0].text if result and hasattr(result[0], "text") else None
-    assert response is not None
-    response_norm = normalize_json(response)
+    value, error = await make_tool_call(client, "chain", chain_payload)
     if expected_value is None:
-        data = json.loads(response)
-        assert "error" in data, f"Expected error, got {data}"
+        assert error is not None, f"Expected error, got value={value}, error={error}"
     else:
-        # Build expected response JSON string
-        expected_response = {"value": expected_value}
-        expected_norm = normalize_json(expected_response)
-        assert response_norm == expected_norm
+        assert error is None, f"Expected no error, got error={error}"
+        assert (
+            value == expected_value
+        ), f"Expected value={expected_value}, got value={value}"

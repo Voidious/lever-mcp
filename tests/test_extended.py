@@ -161,15 +161,23 @@ async def test_is_empty(client, value, expected):
 @pytest.mark.parametrize(
     "a, b, expected",
     [
-        ({"x": [1, 2]}, {"x": [1, 2]}, True),
-        ({"x": [1, 2]}, {"x": [2, 1]}, False),
-        (1, 1, True),
-        (1, 2, False),
+        ("foo", "foo", True),
+        (42, 42, True),
+        (3.14, 3.14, True),
+        (True, True, True),
+        ([1, 2], [1, 2], True),
+        ({"a": 1}, {"a": 1}, True),
         (None, None, True),
-        (None, 1, False),
+        ("foo", "bar", False),
+        (42, 43, False),
+        (3.14, 2.71, False),
+        (True, False, False),
+        ([1, 2], [2, 1], False),
+        ({"a": 1}, {"a": 2}, False),
+        (None, 0, False),
     ],
 )
-async def test_is_equal(client, a, b, expected):
+async def test_is_equal_all_types(client, a, b, expected):
     value, error = await make_tool_call(
         client, "has_property", {"obj": a, "property": "is_equal", "param": b}
     )
@@ -844,3 +852,115 @@ async def test_generate_permutations_direct():
     result = await main.generate.run({"input": [], "operation": "permutations"})
     actual = json.loads(result[0].text)  # type: ignore
     assert actual["value"] == [[]]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "input, param, expected",
+    [
+        ("foo", 2, ["foo", "foo"]),
+        (42, 2, [42, 42]),
+        (3.14, 2, [3.14, 3.14]),
+        (True, 2, [True, True]),
+        ([1, 2], 2, [[1, 2], [1, 2]]),
+        ({"a": 1}, 2, [{"a": 1}, {"a": 1}]),
+        (None, 2, [None, None]),
+    ],
+)
+async def test_generate_repeat_all_types(client, input, param, expected):
+    value, error = await make_tool_call(
+        client, "generate", {"input": input, "operation": "repeat", "param": param}
+    )
+    assert value == expected
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "obj, path, value, expected",
+    [
+        ({}, "x", "foo", {"x": "foo"}),
+        ({}, "x", 42, {"x": 42}),
+        ({}, "x", 3.14, {"x": 3.14}),
+        ({}, "x", True, {"x": True}),
+        ({}, "x", [1, 2], {"x": [1, 2]}),
+        ({}, "x", {"a": 1}, {"x": {"a": 1}}),
+        ({}, "x", None, {"x": None}),
+    ],
+)
+async def test_set_value_all_types(client, obj, path, value, expected):
+    value_out, error = await make_tool_call(
+        client, "set_value", {"obj": obj, "path": path, "value": value}
+    )
+    assert value_out == expected
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "obj, path, default, expected",
+    [
+        ({"x": "foo"}, "x", None, "foo"),
+        ({"x": 42}, "x", None, 42),
+        ({"x": 3.14}, "x", None, 3.14),
+        ({"x": True}, "x", None, True),
+        ({"x": [1, 2]}, "x", None, [1, 2]),
+        ({"x": {"a": 1}}, "x", None, {"a": 1}),
+        ({}, "x", None, None),
+        ({}, "x", "foo", "foo"),
+        ({}, "x", 42, 42),
+        ({}, "x", 3.14, 3.14),
+        ({}, "x", True, True),
+        ({}, "x", [1, 2], [1, 2]),
+        ({}, "x", {"a": 1}, {"a": 1}),
+        ({}, "x", None, None),
+    ],
+)
+async def test_get_value_all_types(client, obj, path, default, expected):
+    args = {"obj": obj, "path": path}
+    if default is not None or (default is None and "x" not in obj):
+        args["default"] = default
+    value, error = await make_tool_call(client, "get_value", args)
+    assert value == expected
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "input, tool_calls, expected",
+    [
+        ("foo", [{"tool": "mutate_string", "params": {"mutation": "reverse"}}], "oof"),
+        (
+            42,
+            [{"tool": "generate", "params": {"operation": "repeat", "param": 2}}],
+            [42, 42],
+        ),
+        (
+            3.14,
+            [{"tool": "generate", "params": {"operation": "repeat", "param": 2}}],
+            [3.14, 3.14],
+        ),
+        (
+            True,
+            [{"tool": "generate", "params": {"operation": "repeat", "param": 2}}],
+            [True, True],
+        ),
+        (
+            [1, 2],
+            [{"tool": "generate", "params": {"operation": "repeat", "param": 2}}],
+            [[1, 2], [1, 2]],
+        ),
+        (
+            {"a": 1},
+            [{"tool": "generate", "params": {"operation": "repeat", "param": 2}}],
+            [{"a": 1}, {"a": 1}],
+        ),
+        (
+            None,
+            [{"tool": "generate", "params": {"operation": "repeat", "param": 2}}],
+            [None, None],
+        ),
+    ],
+)
+async def test_chain_all_types(client, input, tool_calls, expected):
+    value, error = await make_tool_call(
+        client, "chain", {"input": input, "tool_calls": tool_calls}
+    )
+    assert value == expected
