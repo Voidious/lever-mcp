@@ -19,653 +19,601 @@ async def client():
     "first_tool,first_params,second_tool,second_params,input_value,expected_type,"
     "expected_value",
     [
-        # mutate_string (str -> str) -> mutate_string (str -> str)
+        # strings (str -> str) -> strings (str -> str)
         (
-            "mutate_string",
-            {"mutation": "upper_case"},
-            "mutate_string",
-            {"mutation": "reverse"},
+            "strings",
+            {"operation": "upper_case"},
+            "strings",
+            {"operation": "reverse"},
             "abc",
             str,
             "CBA",
         ),
-        # mutate_string (str -> str) -> has_property (str -> bool)
+        # strings (str -> str) -> strings (str -> bool)
         (
-            "mutate_string",
-            {"mutation": "upper_case"},
-            "has_property",
-            {"property": "is_upper"},
+            "strings",
+            {"operation": "upper_case"},
+            "strings",
+            {"operation": "is_upper"},
             "abc",
             bool,
             True,
         ),
-        # mutate_string (str -> str) -> generate (str -> list) (repeat)
+        # strings (str -> str) -> generate (str -> list) (repeat)
         (
-            "mutate_string",
-            {"mutation": "capitalize"},
+            "strings",
+            {"operation": "capitalize"},
             "generate",
             {"operation": "repeat", "param": 2},
             "foo",
             list,
             ["Foo", "Foo"],
         ),
-        # mutate_list (list -> list) -> mutate_list (list -> list)
+        # lists (list -> list) -> lists (list -> list)
         (
-            "mutate_list",
-            {"mutation": "flatten_deep"},
-            "mutate_list",
-            {"mutation": "compact"},
+            "lists",
+            {"operation": "flatten_deep"},
+            "lists",
+            {"operation": "compact"},
             [1, [0, 2, None]],
             list,
             [1, 2],
         ),
-        # mutate_list (list -> list) -> select_from_list (list -> Any)
+        # lists (list -> list) -> lists (list -> Any)
         (
-            "mutate_list",
-            {"mutation": "compact"},
-            "select_from_list",
+            "lists",
+            {"operation": "compact"},
+            "lists",
             {"operation": "head"},
             [None, "foo", "bar"],
             str,
             "foo",
         ),
-        # mutate_list (list -> list) -> process_list (list -> dict) (expect error due to
-        # non-string keys)
+        # lists (list -> list) -> lists (list -> dict) (error due to non-string keys)
         (
-            "mutate_list",
-            {"mutation": "compact"},
-            "process_list",
+            "lists",
+            {"operation": "compact"},
+            "lists",
             {"operation": "count_by", "key": 0},
             [[0], [0], [1]],
             dict,
             None,
         ),
-        # mutate_list (list -> list) -> has_property (list -> bool) is_empty
+        # lists (list -> list) -> lists (list -> bool) is_empty
         (
-            "mutate_list",
-            {"mutation": "compact"},
-            "has_property",
-            {"property": "is_empty"},
+            "lists",
+            {"operation": "compact"},
+            "lists",
+            {"operation": "is_empty"},
             [None, None],
             bool,
             True,
         ),
-        # mutate_list (list -> list) -> has_property (list -> bool) is_equal
+        # lists (list -> list) -> lists (list -> bool) is_equal
         (
-            "mutate_list",
-            {"mutation": "compact"},
-            "has_property",
-            {"property": "is_equal", "param": [1, 2]},
+            "lists",
+            {"operation": "compact"},
+            "lists",
+            {"operation": "is_equal", "param": [1, 2]},
             [1, 2],
             bool,
             True,
         ),
-        # mutate_list (list -> list) -> has_property (list -> bool) is_nil
+        # lists (list -> list) -> lists (list -> bool) contains
         (
-            "mutate_list",
-            {"mutation": "compact"},
-            "has_property",
-            {"property": "is_nil"},
-            [],
-            bool,
-            False,
-        ),
-        # mutate_list (list -> list) -> has_property (list -> bool) contains
-        (
-            "mutate_list",
-            {"mutation": "compact"},
-            "has_property",
-            {"property": "contains", "param": 2},
+            "lists",
+            {"operation": "compact"},
+            "lists",
+            {"operation": "contains", "param": 2},
             [1, 2, 3],
             bool,
             True,
         ),
-        # mutate_list (list -> list) -> generate (powerset)
+        # lists (list -> list) -> generate (powerset)
         (
-            "mutate_list",
-            {"mutation": "compact"},
+            "lists",
+            {"operation": "compact"},
             "generate",
             {"operation": "powerset"},
             [1, 2],
             list,
             [[], [1], [2], [1, 2]],
         ),
-        # mutate_list (list -> list) -> generate (permutations)
+        # lists (list -> list) -> generate (permutations)
         (
-            "mutate_list",
-            {"mutation": "compact"},
+            "lists",
+            {"operation": "compact"},
             "generate",
             {"operation": "permutations"},
             [1, 2],
             list,
             [[1, 2], [2, 1]],
         ),
-        # mutate_list (list -> list) -> generate (windowed)
+        # lists (list -> list) -> generate (windowed)
         (
-            "mutate_list",
-            {"mutation": "compact"},
+            "lists",
+            {"operation": "compact"},
             "generate",
             {"operation": "windowed", "param": 2},
             [1, 2, 3],
             list,
             [[1, 2], [2, 3]],
         ),
-        # mutate_list (list -> list) -> generate (cycle)
+        # lists (list -> list) -> generate (cycle)
         (
-            "mutate_list",
-            {"mutation": "compact"},
+            "lists",
+            {"operation": "compact"},
             "generate",
             {"operation": "cycle", "param": 3},
             [1, 2],
             list,
             [1, 2, 1],
         ),
-        # mutate_list (list -> list) -> generate (accumulate)
+        # lists (list -> list) -> generate (accumulate)
         (
-            "mutate_list",
-            {"mutation": "compact"},
+            "lists",
+            {"operation": "compact"},
             "generate",
             {"operation": "accumulate"},
             [1, 2, 3],
             list,
             [1, 3, 6],
         ),
-        # mutate_list (list -> list) -> generate (zip_with_index)
+        # lists (list -> list) -> generate (zip_with_index)
         (
-            "mutate_list",
-            {"mutation": "compact"},
+            "lists",
+            {"operation": "compact"},
             "generate",
             {"operation": "zip_with_index"},
             ["a", "b"],
             list,
             [[0, "a"], [1, "b"]],
         ),
-        # mutate_list (list -> list) -> generate (unique_pairs)
+        # lists (list -> list) -> generate (unique_pairs)
         (
-            "mutate_list",
-            {"mutation": "compact"},
+            "lists",
+            {"operation": "compact"},
             "generate",
             {"operation": "unique_pairs"},
             [1, 2, 3],
             list,
             [[1, 2], [1, 3], [2, 3]],
         ),
-        # mutate_list (list -> list) -> generate (combinations)
+        # lists (list -> list) -> generate (combinations)
         (
-            "mutate_list",
-            {"mutation": "compact"},
+            "lists",
+            {"operation": "compact"},
             "generate",
             {"operation": "combinations", "param": 2},
             [1, 2, 3],
             list,
             [[1, 2], [1, 3], [2, 3]],
         ),
-        # mutate_list (list -> list) -> generate (repeat)
+        # lists (list -> list) -> generate (repeat)
         (
-            "mutate_list",
-            {"mutation": "compact"},
+            "lists",
+            {"operation": "compact"},
             "generate",
             {"operation": "repeat", "param": 2},
             [1],
             list,
             [[1], [1]],
         ),
-        # mutate_list (list -> list) -> compare_lists (difference)
+        # lists (list -> list) -> lists (difference)
         (
-            "mutate_list",
-            {"mutation": "compact"},
-            "compare_lists",
-            {"b": [2, 3], "operation": "difference"},
+            "lists",
+            {"operation": "compact"},
+            "lists",
+            {"operation": "difference", "others": [2, 3]},
             [1, 2, None, 3],
             list,
             [1],
         ),
-        # mutate_list (list -> list) -> compare_lists (intersection)
+        # lists (list -> list) -> lists (intersection)
         (
-            "mutate_list",
-            {"mutation": "compact"},
-            "compare_lists",
-            {"b": [2, 3], "operation": "intersection"},
+            "lists",
+            {"operation": "compact"},
+            "lists",
+            {"operation": "intersection", "others": [2, 3]},
             [1, 2, None, 3],
             list,
             [2, 3],
         ),
-        # mutate_list (list -> list) -> compare_lists (difference_by)
+        # lists (list -> list) -> lists (difference_by)
         (
-            "mutate_list",
-            {"mutation": "compact"},
-            "compare_lists",
-            {"b": [{"id": 2}], "operation": "difference_by", "key": "id"},
+            "lists",
+            {"operation": "compact"},
+            "lists",
+            {"operation": "difference_by", "others": [{"id": 2}], "key": "id"},
             [{"id": 1}, None, {"id": 2}],
             list,
             [{"id": 1}],
         ),
-        # mutate_list (list -> list) -> compare_lists (intersection_by)
+        # lists (list -> list) -> lists (intersection_by)
         (
-            "mutate_list",
-            {"mutation": "compact"},
-            "compare_lists",
-            {"b": [{"id": 2}], "operation": "intersection_by", "key": "id"},
+            "lists",
+            {"operation": "compact"},
+            "lists",
+            {"operation": "intersection_by", "others": [{"id": 2}], "key": "id"},
             [{"id": 1}, None, {"id": 2}],
             list,
             [{"id": 2}],
         ),
-        # process_list (list -> dict) -> process_dict (dict -> dict) (expect error due
-        # to non-string keys)
+        # lists (list -> dict) -> dicts (dict -> dict) (error due to non-string keys)
         (
-            "process_list",
+            "lists",
             {"operation": "count_by", "key": 0},
-            "process_dict",
+            "dicts",
             {"operation": "invert"},
             [[0], [0], [1]],
             dict,
             None,
         ),
-        # process_list (list -> dict) -> has_property (dict -> bool) is_empty (error
-        # case)
+        # lists (list -> dict) -> dicts (dict -> bool) is_empty (error case)
         (
-            "process_list",
+            "lists",
             {"operation": "count_by", "key": 0},
-            "has_property",
-            {"property": "is_empty"},
+            "any",
+            {"operation": "is_empty"},
             [[0], [0], [1]],
             bool,
             None,
         ),
-        # process_list (list -> dict) -> has_property (dict -> bool) is_empty (working
-        # case)
+        # lists (list -> dict) -> dicts (dict -> bool) is_empty (working case)
         (
-            "process_list",
+            "lists",
             {"operation": "count_by", "key": "x"},
-            "has_property",
-            {"property": "is_empty"},
+            "dicts",
+            {"operation": "is_empty"},
             [{"x": 1}, {"x": 1}, {"x": 2}],
             bool,
             False,
         ),
-        # process_list (list -> dict) -> has_property (dict -> bool) has_key (error
-        # case)
+        # lists (list -> dict) -> dicts (dict -> bool) has_key (error case)
         (
-            "process_list",
+            "lists",
             {"operation": "count_by", "key": 0},
-            "has_property",
-            {"property": "has_key", "param": 0},
+            "dicts",
+            {"operation": "has_key", "param": 0},
             [[0], [0], [1]],
             bool,
             None,
         ),
-        # process_list (list -> dict) -> has_property (dict -> bool) has_key (working
-        # case)
+        # lists (list -> dict) -> dicts (dict -> bool) has_key (working case)
         (
-            "process_list",
+            "lists",
             {"operation": "count_by", "key": "x"},
-            "has_property",
-            {"property": "has_key", "param": "1"},
+            "dicts",
+            {"operation": "has_key", "param": "1"},
             [{"x": 1}, {"x": 1}, {"x": 2}],
             bool,
             True,
         ),
-        # process_list (list -> dict) -> has_property (dict -> bool) is_nil (error
-        # case)
+        # lists (list -> dict) -> any (any -> bool) is_nil (error case)
         (
-            "process_list",
+            "lists",
             {"operation": "count_by", "key": 0},
-            "has_property",
-            {"property": "is_nil"},
+            "any",
+            {"operation": "is_nil"},
             [[0], [0], [1]],
             bool,
             None,
         ),
-        # process_list (list -> dict) -> has_property (dict -> bool) is_nil (working
-        # case)
+        # lists (list -> dict) -> any (any -> bool) is_nil (working case)
         (
-            "process_list",
+            "lists",
             {"operation": "count_by", "key": "x"},
-            "has_property",
-            {"property": "is_nil"},
+            "any",
+            {"operation": "is_nil"},
             [{"x": 1}, {"x": 1}, {"x": 2}],
             bool,
             False,
         ),
-        # process_list (list -> dict) -> has_property (dict -> bool) contains (error
-        # case)
+        # lists (list -> dict) -> any (any -> bool) contains (error case)
         (
-            "process_list",
+            "lists",
             {"operation": "count_by", "key": 0},
-            "has_property",
-            {"property": "contains", "param": 2},
+            "any",
+            {"operation": "contains", "param": 2},
             [[0], [0], [1]],
             bool,
             None,
         ),
-        # process_list (list -> dict) -> has_property (dict -> bool) contains (working
-        # case)
+        # lists (list -> dict) -> any (any -> bool) contains (working case)
         (
-            "process_list",
+            "lists",
             {"operation": "count_by", "key": "x"},
-            "has_property",
-            {"property": "contains", "param": "2"},
+            "any",
+            {"operation": "contains", "param": "2"},
             [{"x": 1}, {"x": 1}, {"x": 2}],
             bool,
             False,
         ),
-        # process_list (list -> dict) -> get_value (dict -> Any) (error case)
+        # lists (list -> dict) -> dicts (dict -> Any) (error case)
         (
-            "process_list",
+            "lists",
             {"operation": "count_by", "key": 0},
-            "get_value",
-            {"path": 0},
+            "dicts",
+            {"operation": "get_value", "path": 0},
             [[0], [0], [1]],
             int,
             None,
         ),
-        # process_list (list -> dict) -> get_value (dict -> Any) (working case)
+        # lists (list -> dict) -> dicts (dict -> Any) (working case)
         (
-            "process_list",
+            "lists",
             {"operation": "count_by", "key": "x"},
-            "get_value",
-            {"path": "1"},
+            "dicts",
+            {"operation": "get_value", "path": "1"},
             [{"x": 1}, {"x": 1}, {"x": 2}],
             int,
             2,
         ),
-        # generate (Any -> Any, repeat str) -> mutate_list (list -> list)
+        # generate (Any -> Any, repeat str) -> lists (list -> list)
         (
             "generate",
             {"operation": "repeat", "param": 2},
-            "mutate_list",
-            {"mutation": "compact"},
+            "lists",
+            {"operation": "compact"},
             "foo",
             list,
             ["foo", "foo"],
         ),
-        # generate (Any -> Any, range) -> mutate_list (list -> list) (compact removes 0)
+        # generate (Any -> Any, range) -> lists (list -> list) (compact removes 0)
         (
             "generate",
             {"operation": "range", "param": [0, 3]},
-            "mutate_list",
-            {"mutation": "compact"},
+            "lists",
+            {"operation": "compact"},
             None,
             list,
             [1, 2],
         ),
-        # generate (Any -> Any, repeat str) -> select_from_list (list -> Any)
+        # generate (Any -> Any, repeat str) -> lists (list -> Any)
         (
             "generate",
             {"operation": "repeat", "param": 2},
-            "select_from_list",
+            "lists",
             {"operation": "head"},
             "foo",
             str,
             "foo",
         ),
-        # select_from_list (list -> Any, head str) -> mutate_string (str -> str)
-        # (working case)
+        # lists (list -> Any, head str) -> strings (str -> str) (working case)
         (
-            "select_from_list",
+            "lists",
             {"operation": "head"},
-            "mutate_string",
-            {"mutation": "upper_case"},
+            "strings",
+            {"operation": "upper_case"},
             ["foo", "bar", "baz"],
             str,
             "FOO",
         ),
-        # get_value (dict -> Any, str) -> mutate_string (str -> str)
+        # dicts (dict -> Any, str) -> strings (str -> str)
         (
-            "get_value",
-            {"path": "a"},
-            "mutate_string",
-            {"mutation": "capitalize"},
+            "dicts",
+            {"operation": "get_value", "path": "a"},
+            "strings",
+            {"operation": "capitalize"},
             {"a": "hello"},
             str,
             "Hello",
         ),
-        # get_value (dict -> Any, list) -> mutate_list (list -> list)
+        # dicts (dict -> Any, list) -> lists (list -> list)
         (
-            "get_value",
-            {"path": "a"},
-            "mutate_list",
-            {"mutation": "compact"},
+            "dicts",
+            {"operation": "get_value", "path": "a"},
+            "lists",
+            {"operation": "compact"},
             {"a": [None, 1, 2]},
             list,
             [1, 2],
         ),
-        # process_dict (dict -> dict) -> process_dict (dict -> dict) (invert twice
-        # returns original dict with string values)
+        # dicts (dict -> dict) -> dicts (dict -> dict)
+        #   (tool response converts keys to JSON)
         (
-            "process_dict",
+            "dicts",
             {"operation": "invert"},
-            "process_dict",
+            "dicts",
             {"operation": "invert"},
             {"a": 1, "b": 2},
             dict,
             {"a": "1", "b": "2"},
         ),
-        # merge (list of dicts -> dict) -> process_dict (dict -> dict) (int keys,
-        # converted to string)
+        # dicts (list of dicts -> dict) -> dicts (dict -> dict)
+        #   (int keys, converted to string)
         (
-            "merge",
-            {},
-            "process_dict",
+            "dicts",
+            {"operation": "merge"},
+            "dicts",
             {"operation": "invert"},
             [{"a": 1}, {"b": 2}],
             dict,
             {"1": "a", "2": "b"},
         ),
-        # merge (list of dicts -> dict) -> process_dict (dict -> dict) (string keys)
+        # dicts (list of dicts -> dict) -> dicts (dict -> dict) (string keys)
         (
-            "merge",
-            {},
-            "process_dict",
+            "dicts",
+            {"operation": "merge"},
+            "dicts",
             {"operation": "invert"},
             [{"a": "x"}, {"b": "y"}],
             dict,
             {"x": "a", "y": "b"},
         ),
-        # set_value (dict -> dict) -> get_value (dict -> Any)
+        # dicts (dict -> dict) -> dicts (dict -> dict)
         (
-            "set_value",
-            {"path": "a.b", "value": 42},
-            "get_value",
-            {"path": "a.b"},
+            "dicts",
+            {"operation": "set_value", "path": "a.b", "value": 42},
+            "dicts",
+            {"operation": "get_value", "path": "a.b"},
             {"a": {}},
             int,
             42,
         ),
-        # get_value (dict -> Any, int) -> generate (Any -> Any, repeat)
+        # dicts (dict -> Any, int) -> generate (Any -> Any, repeat)
         (
-            "get_value",
-            {"path": "a"},
+            "dicts",
+            {"operation": "get_value", "path": "a"},
             "generate",
             {"operation": "repeat", "param": 2},
             {"a": 7},
             list,
             [7, 7],
         ),
-        # has_property (Any -> bool, is_upper) -> mutate_string (should error,
-        # bool->str)
+        # lists -> dicts (list of dicts)
         (
-            "has_property",
-            {"property": "is_upper"},
-            "mutate_string",
-            {"mutation": "upper_case"},
-            "abc",
-            str,
-            None,
-        ),
-        # select_from_list (list -> Any, head int) -> generate (Any -> Any, repeat)
-        (
-            "select_from_list",
-            {"operation": "head"},
-            "generate",
-            {"operation": "repeat", "param": 2},
-            [7, 8],
-            list,
-            [7, 7],
-        ),
-        # mutate_list -> merge (list of dicts)
-        (
-            "mutate_list",
-            {"mutation": "compact"},
-            "merge",
-            {},
+            "lists",
+            {"operation": "compact"},
+            "dicts",
+            {"operation": "merge"},
             [{"a": 1}, None, {"b": 2}],
             dict,
             {"a": 1, "b": 2},
         ),
-        # has_property -> generate (repeat bool)
+        # any -> lists (repeat bool)
         (
-            "has_property",
-            {"property": "is_nil"},
+            "any",
+            {"operation": "is_nil"},
             "generate",
             {"operation": "repeat", "param": 2},
             0,
             list,
             [False, False],
         ),
-        # select_from_list -> has_property (output: str)
+        # lists -> dicts (output: dict)
         (
-            "select_from_list",
+            "lists",
             {"operation": "head"},
-            "has_property",
-            {"property": "is_digit"},
-            ["7", "8"],
-            bool,
-            True,
-        ),
-        # select_from_list -> process_dict (output: dict)
-        (
-            "select_from_list",
-            {"operation": "head"},
-            "process_dict",
+            "dicts",
             {"operation": "invert"},
             [{"a": "x", "b": "y"}],
             dict,
             {"x": "a", "y": "b"},
         ),
-        # select_from_list -> set_value (output: dict)
+        # lists -> dicts (output: dict)
         (
-            "select_from_list",
+            "lists",
             {"operation": "head"},
-            "set_value",
-            {"path": "c", "value": 42},
+            "dicts",
+            {"operation": "set_value", "path": "c", "value": 42},
             [{"a": 1, "b": 2}],
             dict,
             {"a": 1, "b": 2, "c": 42},
         ),
-        # select_from_list -> get_value (output: dict)
+        # lists -> dicts (output: dict)
         (
-            "select_from_list",
+            "lists",
             {"operation": "head"},
-            "get_value",
-            {"path": "a"},
+            "dicts",
+            {"operation": "get_value", "path": "a"},
             [{"a": 7}, {"b": 8}],
             int,
             7,
         ),
-        # select_from_list -> merge (output: list of dicts)
+        # lists -> dicts (output: list of dicts)
         (
-            "select_from_list",
+            "lists",
             {"operation": "head"},
-            "merge",
-            {},
+            "dicts",
+            {"operation": "merge"},
             [[{"a": 1}, {"b": 2}], [{"c": 3}]],
             dict,
             {"a": 1, "b": 2},
         ),
-        # compare_lists -> mutate_list
+        # lists -> lists
         (
-            "compare_lists",
-            {"b": [2], "operation": "difference"},
-            "mutate_list",
-            {"mutation": "compact"},
+            "lists",
+            {"operation": "difference", "others": [2]},
+            "lists",
+            {"operation": "compact"},
             [1, 2, None],
             list,
             [1],
         ),
-        # compare_lists -> has_property
+        # lists -> lists
         (
-            "compare_lists",
-            {"b": [2], "operation": "difference"},
-            "has_property",
-            {"property": "is_empty"},
+            "lists",
+            {"operation": "difference", "others": [2]},
+            "lists",
+            {"operation": "is_empty"},
             [1, 2],
             bool,
             False,
         ),
-        # compare_lists -> select_from_list
+        # lists -> lists
         (
-            "compare_lists",
-            {"b": [2], "operation": "difference"},
-            "select_from_list",
+            "lists",
+            {"operation": "difference", "others": [2]},
+            "lists",
             {"operation": "head"},
             [1, 2],
             int,
             1,
         ),
-        # compare_lists -> process_list (list of dicts)
+        # lists -> lists (list of dicts)
         (
-            "compare_lists",
-            {"b": [{"id": 2}], "operation": "difference_by", "key": "id"},
-            "process_list",
+            "lists",
+            {"operation": "difference_by", "others": [{"id": 2}], "key": "id"},
+            "lists",
             {"operation": "count_by", "key": "id"},
             [{"id": 1}, {"id": 2}, {"id": 1}],
             dict,
-            {"1": 2},  # tool calls return JSON, which has only string keys
+            {"1": 2},
         ),
-        # compare_lists -> generate (repeat the result of difference)
+        # lists -> generate (repeat the result of difference)
         (
-            "compare_lists",
-            {"b": [2], "operation": "difference"},
+            "lists",
+            {"operation": "difference", "others": [2]},
             "generate",
             {"operation": "repeat", "param": 2},
             [1, 2],
             list,
             [[1], [1]],
         ),
-        # compare_lists -> merge (difference_by, expect {"x": 1})
+        # lists -> dicts (difference_by, expect {"x": 1})
         (
-            "compare_lists",
-            {"b": [{"x": 2}], "operation": "difference_by", "key": "x"},
-            "merge",
-            {},
+            "lists",
+            {"operation": "difference_by", "others": [{"x": 2}], "key": "x"},
+            "dicts",
+            {"operation": "merge"},
             [{"x": 1}, {"x": 2}],
             dict,
             {"x": 1},
         ),
-        # process_list -> set_value
+        # lists -> dicts
         (
-            "process_list",
+            "lists",
             {"operation": "key_by", "key": "id"},
-            "set_value",
-            {"path": "x", "value": 99},
+            "dicts",
+            {"operation": "set_value", "path": "x", "value": 99},
             [{"id": "a", "val": 1}],
             dict,
             {"a": {"id": "a", "val": 1}, "x": 99},
         ),
-        # process_list -> get_value
+        # lists -> dicts
         (
-            "process_list",
+            "lists",
             {"operation": "key_by", "key": "id"},
-            "get_value",
-            {"path": "a"},
+            "dicts",
+            {"operation": "get_value", "path": "a"},
             [{"id": "a", "val": 1}],
             dict,
             {"id": "a", "val": 1},
         ),
-        # process_dict -> has_property
+        # dicts -> dicts
         (
-            "process_dict",
+            "dicts",
             {"operation": "invert"},
-            "has_property",
-            {"property": "has_key", "param": "x"},
+            "dicts",
+            {"operation": "has_key", "param": "x"},
             {"a": "x", "b": "y"},
             bool,
             True,
         ),
-        # process_dict -> generate (repeat the output of invert)
+        # dicts -> generate (repeat the output of invert)
         (
-            "process_dict",
+            "dicts",
             {"operation": "invert"},
             "generate",
             {"operation": "repeat", "param": 2},
@@ -673,135 +621,143 @@ async def client():
             list,
             [{"1": "a", "2": "b"}, {"1": "a", "2": "b"}],
         ),
-        # process_dict -> set_value (add a key to the output of invert)
+        # dicts -> dicts (add a key to the output of invert)
         (
-            "process_dict",
+            "dicts",
             {"operation": "invert"},
-            "set_value",
-            {"path": "c", "value": 42},
+            "dicts",
+            {"operation": "set_value", "path": "c", "value": 42},
             {"a": 1, "b": 2},
             dict,
             {"1": "a", "2": "b", "c": 42},
         ),
-        # process_dict -> get_value (get a value from the output of invert)
+        # dicts -> dicts (get a value from the output of invert)
         (
-            "process_dict",
+            "dicts",
             {"operation": "invert"},
-            "get_value",
-            {"path": "1"},
+            "dicts",
+            {"operation": "get_value", "path": "1"},
             {"a": 1, "b": 2},
             str,
             "a",
         ),
-        # generate -> has_property
+        # generate -> lists
         (
             "generate",
             {"operation": "repeat", "param": 2},
-            "has_property",
-            {"property": "is_empty"},
+            "lists",
+            {"operation": "is_empty"},
             [1, 2],
             bool,
             False,
         ),
-        # generate -> process_list (list of dicts)
+        # generate -> lists (list of dicts)
         (
             "generate",
             {"operation": "repeat", "param": 2},
-            "process_list",
+            "lists",
             {"operation": "count_by", "key": "a"},
             {"a": 1},
             dict,
-            {"1": 2},  # tool calls return JSON, which has only string keys
+            {"1": 2},
         ),
-        # generate -> merge (list of dicts)
+        # generate -> dicts (list of dicts)
         (
             "generate",
             {"operation": "repeat", "param": 2},
-            "merge",
-            {},
+            "dicts",
+            {"operation": "merge"},
             {"a": 1, "b": 2},
             dict,
             {"a": 1, "b": 2},
         ),
-        # merge -> has_property
+        # dicts -> dicts
         (
-            "merge",
-            {},
-            "has_property",
-            {"property": "has_key", "param": "a"},
+            "dicts",
+            {"operation": "merge"},
+            "dicts",
+            {"operation": "has_key", "param": "a"},
             [{"a": 1}, {"b": 2}],
             bool,
             True,
         ),
-        # merge -> generate (repeat the output of merge)
+        # dicts -> generate (repeat the output of merge)
         (
-            "merge",
-            {},
+            "dicts",
+            {"operation": "merge"},
             "generate",
             {"operation": "repeat", "param": 2},
             [{"a": 1, "b": 2}],
             list,
             [{"a": 1, "b": 2}, {"a": 1, "b": 2}],
         ),
-        # merge -> set_value (add a key to the output of merge)
+        # dicts -> dicts (add a key to the output of merge)
         (
-            "merge",
-            {},
-            "set_value",
-            {"path": "c", "value": 42},
+            "dicts",
+            {"operation": "merge"},
+            "dicts",
+            {"operation": "set_value", "path": "c", "value": 42},
             [{"a": 1, "b": 2}],
             dict,
             {"a": 1, "b": 2, "c": 42},
         ),
-        # merge -> get_value (get a value from the output of merge)
-        ("merge", {}, "get_value", {"path": "a"}, [{"a": 1, "b": 2}], int, 1),
-        # set_value -> process_dict (invert the output of set_value)
+        # dicts -> dicts (get a value from the output of merge)
         (
-            "set_value",
-            {"path": "a", "value": 1},
-            "process_dict",
+            "dicts",
+            {"operation": "merge"},
+            "dicts",
+            {"operation": "get_value", "path": "a"},
+            [{"a": 1, "b": 2}],
+            int,
+            1,
+        ),
+        # dicts -> dicts (invert the output of set_value)
+        (
+            "dicts",
+            {"operation": "set_value", "path": "a", "value": 1},
+            "dicts",
             {"operation": "invert"},
             {"b": 2},
             dict,
             {"2": "b", "1": "a"},
         ),
-        # set_value -> generate (repeat the output dict)
+        # dicts -> generate (repeat the output dict)
         (
-            "set_value",
-            {"path": "a", "value": 1},
+            "dicts",
+            {"operation": "set_value", "path": "a", "value": 1},
             "generate",
             {"operation": "repeat", "param": 2},
             {"b": 2},
             list,
             [{"b": 2, "a": 1}, {"b": 2, "a": 1}],
         ),
-        # set_value -> has_property (check for added key)
+        # dicts -> dicts (check for added key)
         (
-            "set_value",
-            {"path": "a", "value": 1},
-            "has_property",
-            {"property": "has_key", "param": "a"},
+            "dicts",
+            {"operation": "set_value", "path": "a", "value": 1},
+            "dicts",
+            {"operation": "has_key", "param": "a"},
             {"b": 2},
             bool,
             True,
         ),
-        # set_value -> set_value (add another key)
+        # dicts -> dicts (add another key)
         (
-            "set_value",
-            {"path": "a", "value": 1},
-            "set_value",
-            {"path": "c", "value": 42},
+            "dicts",
+            {"operation": "set_value", "path": "a", "value": 1},
+            "dicts",
+            {"operation": "set_value", "path": "c", "value": 42},
             {"b": 2},
             dict,
             {"b": 2, "a": 1, "c": 42},
         ),
-        # generate -> has_property(is_equal) (list[str], list[int], list[dict],
-        # list[bool], list[list])
+        # generate -> lists (is_equal)
+        #   (list[str], list[int], list[dict], list[bool], list[list])
         (
             "generate",
             {"operation": "repeat", "param": 2},
-            "has_property",
-            {"property": "is_equal", "param": ["a", "a"]},
+            "any",
+            {"operation": "is_equal", "param": ["a", "a"]},
             "a",
             bool,
             True,
@@ -809,8 +765,8 @@ async def client():
         (
             "generate",
             {"operation": "repeat", "param": 2},
-            "has_property",
-            {"property": "is_equal", "param": [1, 1]},
+            "any",
+            {"operation": "is_equal", "param": [1, 1]},
             1,
             bool,
             True,
@@ -818,8 +774,8 @@ async def client():
         (
             "generate",
             {"operation": "repeat", "param": 2},
-            "has_property",
-            {"property": "is_equal", "param": [{"x": 1}, {"x": 1}]},
+            "any",
+            {"operation": "is_equal", "param": [{"x": 1}, {"x": 1}]},
             {"x": 1},
             bool,
             True,
@@ -827,8 +783,8 @@ async def client():
         (
             "generate",
             {"operation": "repeat", "param": 2},
-            "has_property",
-            {"property": "is_equal", "param": [True, True]},
+            "any",
+            {"operation": "is_equal", "param": [True, True]},
             True,
             bool,
             True,
@@ -836,102 +792,130 @@ async def client():
         (
             "generate",
             {"operation": "repeat", "param": 2},
-            "has_property",
-            {"property": "is_equal", "param": [[1], [1]]},
+            "any",
+            {"operation": "is_equal", "param": [[1], [1]]},
             [1],
             bool,
             True,
         ),
-        # generate -> has_property(contains) (list[str])
+        # generate -> lists (contains) (list[str])
         (
             "generate",
             {"operation": "repeat", "param": 2},
-            "has_property",
-            {"property": "contains", "param": "a"},
+            "any",
+            {"operation": "contains", "param": "a"},
             "a",
             bool,
             True,
         ),
-        # select_from_list -> has_property(is_equal) (str, int, list, dict, bool)
+        # lists -> lists (is_equal) (str, int, list, dict, bool)
         (
-            "select_from_list",
+            "lists",
             {"operation": "head"},
-            "has_property",
-            {"property": "is_equal", "param": "a"},
+            "any",
+            {"operation": "is_equal", "param": "a"},
             ["a", "b"],
             bool,
             True,
         ),
         (
-            "select_from_list",
+            "lists",
             {"operation": "head"},
-            "has_property",
-            {"property": "is_equal", "param": 1},
+            "any",
+            {"operation": "is_equal", "param": 1},
             [1, 2],
             bool,
             True,
         ),
         (
-            "select_from_list",
+            "lists",
             {"operation": "head"},
-            "has_property",
-            {"property": "is_equal", "param": [1]},
+            "any",
+            {"operation": "is_equal", "param": [1]},
             [[1], [2]],
             bool,
             True,
         ),
         (
-            "select_from_list",
+            "lists",
             {"operation": "head"},
-            "has_property",
-            {"property": "is_equal", "param": {"x": 1}},
+            "any",
+            {"operation": "is_equal", "param": {"x": 1}},
             [{"x": 1}, {"x": 2}],
             bool,
             True,
         ),
         (
-            "select_from_list",
+            "lists",
             {"operation": "head"},
-            "has_property",
-            {"property": "is_equal", "param": True},
+            "any",
+            {"operation": "is_equal", "param": True},
             [True, False],
             bool,
             True,
         ),
-        # select_from_list -> has_property(contains) (list[str], list[int], str)
+        # lists -> lists (contains) (list[str], list[int], str)
         (
-            "select_from_list",
+            "lists",
             {"operation": "head"},
-            "has_property",
-            {"property": "contains", "param": "a"},
+            "any",
+            {"operation": "contains", "param": "a"},
             [["a", "b"], ["c"]],
             bool,
             True,
         ),
         (
-            "select_from_list",
+            "lists",
             {"operation": "head"},
-            "has_property",
-            {"property": "contains", "param": 1},
+            "any",
+            {"operation": "contains", "param": 1},
             [[1, 2], [3]],
             bool,
             True,
         ),
         (
-            "select_from_list",
+            "lists",
             {"operation": "head"},
-            "has_property",
-            {"property": "contains", "param": "b"},
+            "any",
+            {"operation": "contains", "param": "b"},
             ["ab", "cd"],
             bool,
             True,
         ),
-        # select_from_list -> has_property(is_empty) (str)
+        # --- Restored: type-agnostic contains/is_equal using any ---
         (
-            "select_from_list",
+            "dicts",
+            {"operation": "invert"},
+            "any",
+            {"operation": "contains", "param": "a"},
+            {"a": 1, "b": 2},
+            bool,
+            False,
+        ),
+        (
+            "lists",
             {"operation": "head"},
-            "has_property",
-            {"property": "is_empty"},
+            "any",
+            {"operation": "contains", "param": 1},
+            [[1]],
+            bool,
+            True,
+        ),
+        (
+            "lists",
+            {"operation": "head"},
+            "any",
+            {"operation": "is_equal", "param": 1},
+            [1],
+            bool,
+            True,
+        ),
+        # lists -> lists (is_empty) (str)
+        (
+            "lists",
+            {"operation": "head"},
+            "any",
+            {"operation": "is_empty"},
             [""],
             bool,
             True,

@@ -100,43 +100,49 @@ While human users and contributors may also find the document informative, its p
 
 ## Data Utility Tools
 
-All tools accept only property names (strings) for keys/predicates, not function names or callables. Each tool is exposed as an MCP tool with the following parameters and return types:
+All tools accept only JSON-serializable types (str, int, float, bool, None, list, dict). Each tool is exposed as an MCP tool with the following parameters and return types:
 
-### mutate_string
-Mutates a string according to the specified mutation type.
+---
+
+### strings
+Performs string operations and mutations.
 
 **Parameters:**
-- `text` (str): The input string to mutate.
-- `mutation` (str): The type of mutation to perform. One of:
-    - 'camel_case': Converts the string to camelCase (e.g., 'foo bar' → 'fooBar').
-    - 'capitalize': Converts the first character to upper case and the rest to lower case (e.g., 'foo bar' → 'Foo bar').
-    - 'deburr': Removes accents/diacritics from the string (e.g., 'Café' → 'Cafe').
-    - 'kebab_case': Converts the string to kebab-case (e.g., 'foo bar' → 'foo-bar').
-    - 'lower_case': Converts the string to all lowercase (e.g., 'Hello' → 'hello').
-    - 'replace': Replaces all occurrences of a substring with another (requires data={'old': 'x', 'new': 'y'}). (e.g., 'foo bar foo', data={'old': 'foo', 'new': 'baz'} → 'baz bar baz')
+- `text` (str): The input string to operate on.
+- `operation` (str): The operation to perform. One of:
+    - 'camel_case': Converts to camelCase (e.g., 'foo bar' → 'fooBar').
+    - 'capitalize': Capitalizes the first character (e.g., 'foo bar' → 'Foo bar').
+    - 'deburr': Removes accents/diacritics (e.g., 'Café' → 'Cafe').
+    - 'kebab_case': Converts to kebab-case (e.g., 'foo bar' → 'foo-bar').
+    - 'lower_case': Converts to lowercase (e.g., 'Hello' → 'hello').
+    - 'replace': Replaces all occurrences of a substring (requires data={'old': 'x', 'new': 'y'}).
     - 'reverse': Reverses the string (e.g., 'hello' → 'olleh').
-    - 'snake_case': Converts the string to snake_case (e.g., 'foo bar' → 'foo_bar').
-    - 'upper_case': Converts the string to all uppercase (e.g., 'Hello' → 'HELLO').
-    - 'template': Interpolates variables in the string using {var} syntax. Requires 'data' dict (e.g., 'Hello, {name}!' with data={'name': 'World'} → 'Hello, World!').
-    - 'trim': Removes leading and trailing whitespace (e.g., '  hello  ' → 'hello').
-- `data` (Dict[str, Any], optional): Data for 'template' and 'replace' mutations.
+    - 'snake_case': Converts to snake_case (e.g., 'foo bar' → 'foo_bar').
+    - 'upper_case': Converts to uppercase (e.g., 'Hello' → 'HELLO').
+    - 'template': Interpolates variables using {var} syntax (requires data dict).
+    - 'trim': Removes leading and trailing whitespace.
+    - 'starts_with', 'ends_with', 'contains', 'is_equal', 'is_empty', 'is_digit', 'is_alpha', 'is_upper', 'is_lower', 'xor', 'shuffle', 'sample_size'.
+- `param` (Any, optional): Parameter for operations that require one.
+- `data` (dict, optional): Data for 'template' and 'replace' operations.
 
 **Returns:**
-- `dict`: The mutated string wrapped in a dictionary with 'value' key.
+- `dict`: Always returns a dictionary with a 'value' key containing the result. If an error occurs, the dict will also have an 'error' key.
 
 **Usage Example:**
 ```python
-mutate_string('foo bar', 'camel_case')  # => {'value': 'fooBar'}
-mutate_string('Hello, {name}!', 'template', {'name': 'World'})  # => {'value': 'Hello, World!'}
-mutate_string('foo bar foo', 'replace', {'old': 'foo', 'new': 'baz'})  # => {'value': 'baz bar baz'}
+strings('foo bar', 'camel_case')  # => {'value': 'fooBar'}
+strings('Hello, {name}!', 'template', data={'name': 'World'})  # => {'value': 'Hello, World!'}
+strings('foo bar foo', 'replace', data={'old': 'foo', 'new': 'baz'})  # => {'value': 'baz bar baz'}
 ```
 
-### mutate_list
-Mutates a list according to the specified mutation type.
+---
+
+### lists
+Performs list operations and mutations.
 
 **Parameters:**
-- `items` (List[Any]): The input list to mutate.
-- `mutation` (str): The type of mutation to perform. One of:
+- `items` (list): The input list to operate on.
+- `operation` (str): The operation to perform. One of:
     - 'chunk': Splits a list into chunks of a given size (param: int).
     - 'compact': Removes falsy values from a list.
     - 'drop': Drops n elements from the beginning (param: int).
@@ -144,252 +150,163 @@ Mutates a list according to the specified mutation type.
     - 'flatten': Flattens a list one level deep.
     - 'flatten_deep': Flattens a nested list completely.
     - 'initial': Gets all but the last element.
-    - 'partition': Splits a list into two lists based on a predicate key (param: str).
+    - 'partition': Splits a list into two lists based on a property (param: str).
     - 'pluck': Extracts a list of values for a given key (param: str).
     - 'remove_by': Removes items where a property matches a value (param: {'key': str, 'value': Any}).
-    - 'sample_size': Gets n random elements from the list (param: int).
+    - 'sample_size': Gets n random elements (param: int).
     - 'shuffle': Shuffles the list.
     - 'sort_by': Sorts a list of objects by a key (param: str).
     - 'tail': Gets all but the first element.
     - 'take': Takes n elements from the beginning (param: int).
     - 'take_right': Takes n elements from the end (param: int).
-    - 'union': Creates a list of unique values from all given lists.
-    - 'uniq_by': Removes duplicates from a list of objects based on a key (param: str).
+    - 'union': Unique values from all given lists.
+    - 'uniq_by': Removes duplicates by a key (param: str).
     - 'unzip_list': Unzips a list of tuples into separate lists.
-    - 'xor': Creates a list of unique values that is the symmetric difference of the given lists.
+    - 'xor': Symmetric difference of the given lists.
     - 'zip_lists': Zips multiple lists into a list of tuples.
-- `param` (Any, optional): A parameter for mutations that require one.
+    - 'is_empty', 'difference', 'intersection', 'difference_by', 'intersection_by', 'group_by', 'count_by', 'key_by', 'find_by', 'head', 'last', 'sample', 'nth', 'min_by', 'max_by', 'index_of', 'random_except', 'contains', 'is_equal', 'is_empty'.
+- `param` (Any, optional): Parameter for operations that require one.
+- `others` (list, optional): Second list for set-like operations.
+- `key` (str, optional): Property name for *_by operations.
 
 **Returns:**
-- `dict`: The mutated list wrapped in a dictionary with 'value' key.
+- `dict`: Always returns a dictionary with a 'value' key containing the result. If an error occurs, the dict will also have an 'error' key.
 
 **Usage Example:**
 ```python
-mutate_list([[1, [2, 3], 4], 5], 'flatten_deep')  # => {'value': [1, 2, 3, 4, 5]}
-mutate_list([{'id': 1}, {'id': 2}], 'pluck', 'id')  # => {'value': [1, 2]}
+lists([[1, [2, 3], 4], 5], 'flatten_deep')  # => {'value': [1, 2, 3, 4, 5]}
+lists([{'id': 1, 'name': 'Alice'}, {'id': 2, 'name': 'Bob'}], 'pluck', 'name')  # => {'value': ['Alice', 'Bob']}
+lists([1, 2, 3], 'difference', others=[2, 3])  # => {'value': [1]}
+lists([{'id': 1}, {'id': 2}], 'uniq_by', key='id')  # => {'value': [{'id': 1}]}
 ```
 
-### has_property
-Checks a property or relationship for the given object.
+---
+
+### dicts
+Performs dictionary operations, including merge, set/get value, and property checks.
 
 **Parameters:**
-- `obj` (Any): The object or value to check.
-- `property` (str): The property or operation to check. One of:
-    - 'contains': Checks if a string contains a substring or a list contains an element (param: value to check).
-    - 'ends_with': Checks if a string ends with the given target (param: str).
+- `obj` (dict or list): The source dictionary, or a list of dicts for 'merge'. Must be a dict for all operations except 'merge'.
+- `operation` (str): The operation to perform. One of:
+    - 'merge': Deep merges a list of dictionaries (obj must be a list of dicts).
+    - 'invert': Swaps keys and values.
+    - 'pick': Picks specified keys (param: list of keys).
+    - 'omit': Omits specified keys (param: list of keys).
+    - 'set_value': Sets a deep property by path (path: str or list, value: any).
+    - 'get_value': Gets a deep property by path (path: str or list, default: any).
     - 'has_key': Checks if a dict has a given key (param: str).
-    - 'is_alpha': Checks if a string consists only of alphabetic characters.
-    - 'is_digit': Checks if a string consists only of digits.
-    - 'is_empty': Checks if the value is empty.
+    - 'is_equal': Checks if two dicts are deeply equal (param: dict to compare).
+    - 'is_empty': Checks if the dict is empty.
+- `param` (Any, optional): Used for 'pick', 'omit', 'has_key', 'is_equal'.
+- `path` (str or list, optional): Used for 'set_value' and 'get_value'.
+- `value` (Any, optional): Used for 'set_value'.
+- `default` (Any, optional): Used for 'get_value'.
+
+**Returns:**
+- `dict`: Always returns a dictionary with a 'value' key containing the result. If an error occurs, the dict will also have an 'error' key.
+
+**Usage Example:**
+```python
+dicts({'a': 1, 'b': 2}, 'pick', ['a'])  # => {'value': {'a': 1}}
+dicts({'a': {'b': 1}}, 'set_value', path=['a', 'b'], value=2)  # => {'value': {'a': {'b': 2}}}
+dicts({'a': 1}, 'get_value', path='b', default=42)  # => {'value': 42}
+```
+
+---
+
+### any
+Performs type-agnostic property checks and comparisons.
+
+**Parameters:**
+- `value` (Any): The value to check.
+- `operation` (str): The operation to perform. One of:
     - 'is_equal': Checks if two values are deeply equal (param: value to compare).
-    - 'is_lower': Checks if a string is all lowercase.
+    - 'is_empty': Checks if the value is empty.
     - 'is_nil': Checks if the value is None.
-    - 'is_upper': Checks if a string is all uppercase.
-    - 'starts_with': Checks if a string starts with the given target (param: str).
+    - 'contains': Checks if a string or list contains a value (param: value to check).
 - `param` (Any, optional): The parameter for the operation, if required.
 
 **Returns:**
-- `dict`: The result of the check wrapped in a dictionary with 'value' key.
+- `dict`: Always returns a dictionary with a 'value' key containing the result. If an error occurs, the dict will also have an 'error' key.
 
 **Usage Example:**
 ```python
-has_property('abc', 'ends_with', 'c')  # => {'value': True}
-has_property({'a': 1}, 'has_key', 'a')  # => {'value': True}
-has_property('12345', 'is_digit')  # => {'value': True}
+any('abc', 'contains', 'b')  # => {'value': True}
+any([1, 2, 3], 'contains', 2)  # => {'value': True}
+any({'a': 1}, 'contains', 'a')  # => {'value': False}
+any([], 'is_empty')  # => {'value': True}
+any(None, 'is_nil')  # => {'value': True}
+any(42, 'is_equal', 42)  # => {'value': True}
+any(True, 'is_equal', True)  # => {'value': True}
+any(3.14, 'is_equal', 3.14)  # => {'value': True}
 ```
 
-### select_from_list
-Selects an element from a list using various operations.
-
-**Parameters:**
-- `items` (list): The list to select from.
-- `operation` (str): The operation to perform. One of:
-    - 'find_by': Finds the first item where a property matches a value (param: {'key': str, 'value': Any}).
-    - 'head': Gets the first element.
-    - 'index_of': Returns the index of the first item where a property matches a value (param: {'key': str, 'value': Any}), or -1 if not found.
-    - 'last': Gets the last element.
-    - 'max_by': Gets the item with the maximum value for a property (param: property name).
-    - 'min_by': Gets the item with the minimum value for a property (param: property name).
-    - 'nth': Gets the nth element (param: integer index, supports negative for reverse).
-    - 'random_except': Returns a random element from the list, excluding any that match a given property value (param: {'key': str, 'value': Any}).
-    - 'sample': Gets a random element.
-- `param` (Any, optional): Parameter for the operation (required for some operations).
-
-**Returns:**
-- `dict`: The selected element wrapped in a dictionary with 'value' key.
-
-**Usage Example:**
-```python
-select_from_list([1, 2, 3], 'head')  # => {'value': 1}
-select_from_list([10, 20, 30], 'nth', 1)  # => {'value': 20}
-select_from_list([{'id': 1}, {'id': 2}], 'find_by', {'key': 'id', 'value': 2})  # => {'value': {'id': 2}}
-```
-
-### compare_lists
-Compares two lists using various set-like operations.
-
-**Parameters:**
-- `a` (list): The first list.
-- `b` (list): The second list.
-- `operation` (str): The operation to perform. One of:
-    - 'difference': Values in a not in b (ignores key).
-    - 'difference_by': Items in a not in b by property (requires key).
-    - 'intersection': Unique values in both lists (ignores key).
-    - 'intersection_by': Items in a also in b by property (requires key).
-- `key` (str, optional): The property name for *_by operations.
-
-**Returns:**
-- `dict`: The result of the comparison wrapped in a dictionary with 'value' key.
-
-**Usage Example:**
-```python
-compare_lists([1, 2, 3], [2, 4], 'difference')  # => {'value': [1, 3]}
-compare_lists([{'id': 1}, {'id': 2}], [{'id': 2}], 'difference_by', 'id')  # => {'value': [{'id': 1}]}
-```
-
-### process_list
-Processes a list into a dictionary using grouping, counting, or keying by a property.
-
-**Parameters:**
-- `items` (list): The list of items (dicts or objects).
-- `operation` (str): The operation to perform. One of:
-    - 'count_by': Counts occurrences of property values.
-    - 'group_by': Groups items by a property value.
-    - 'key_by': Creates a dictionary with keys from a property.
-- `key` (str): The property name to use.
-
-**Returns:**
-- `dict`: The resulting dictionary wrapped in a dictionary with 'value' key.
-
-**Usage Example:**
-```python
-process_list([{'type': 'a'}, {'type': 'b'}, {'type': 'a'}], 'count_by', 'type')  # => {'value': {'a': 2, 'b': 1}}
-process_list([{'id': 'a'}, {'id': 'b'}], 'key_by', 'id')  # => {'value': {'a': {'id': 'a'}, 'b': {'id': 'b'}}}
-```
-
-### process_dict
-Performs dictionary operations.
-
-**Parameters:**
-- `obj` (dict): The source dictionary.
-- `operation` (str): The operation to perform. One of:
-    - 'invert': Swaps keys and values.
-    - 'omit': Omits specified keys (param: list of keys).
-    - 'pick': Picks specified keys (param: list of keys).
-- `param` (list, optional): Keys to pick or omit (required for 'pick' and 'omit').
-
-**Returns:**
-- `dict`: The resulting dictionary wrapped in a dictionary with 'value' key.
-
-**Usage Example:**
-```python
-process_dict({'a': 'x', 'b': 'y'}, 'invert')  # => {'value': {'x': 'a', 'y': 'b'}}
-process_dict({'a': 1, 'b': 2}, 'omit', ['a'])  # => {'value': {'b': 2}}
-process_dict({'a': 1, 'b': 2}, 'pick', ['a'])  # => {'value': {'a': 1}}
-```
+---
 
 ### generate
 Generates sequences or derived data from input using the specified operation.
 
 **Parameters:**
-- `input` (Any): The input list or value.
+- `text` (Any): The input list or value.
 - `operation` (str): The operation to perform. One of:
-    - 'accumulate': Running totals (or with a binary function if param is provided).
-    - 'cartesian_product': Cartesian product of multiple input lists.
-    - 'combinations': All combinations of a given length.
-    - 'cycle': Repeat the sequence infinitely or up to param times.
-    - 'permutations': All permutations of a given length.
-    - 'powerset': All possible subsets of a list.
-    - 'range': Generate a list of numbers from start to end.
-    - 'repeat': Repeat a value or sequence a specified number of times.
-    - 'unique_pairs': All unique pairs from a list.
-    - 'windowed': Sliding windows of a given size.
-    - 'zip_with_index': Tuples of (index, value).
+    - 'accumulate': Running totals (or with a binary function if param is provided). param: None or a supported function name (e.g., 'mul')
+    - 'cartesian_product': Cartesian product of multiple input lists. param: None
+    - 'combinations': All combinations of a given length (param: int, required)
+    - 'cycle': Repeat the sequence up to param times. param: int (max length, optional)
+    - 'permutations': All permutations of a given length (param: int, optional, default=len(input))
+    - 'powerset': All possible subsets of a list. param: None
+    - 'range': Generate a list of numbers from start to end (optionally step). param: [start, end, step?]
+    - 'repeat': Repeat a value or sequence a specified number of times. param: int (number of times)
+    - 'unique_pairs': All unique pairs from a list. param: None
+    - 'windowed': Sliding windows of a given size. param: int (window size)
+    - 'zip_with_index': Tuples of (index, value). param: None
 - `param` (Any, optional): Parameter for the operation, if required.
 
 **Returns:**
-- `dict`: The generated sequence or result wrapped in a dictionary with 'value' key.
+- `dict`: Always returns a dictionary with a 'value' key containing the result. If an error occurs, the dict will also have an 'error' key.
 
 **Usage Example:**
 ```python
 generate(None, 'range', [0, 5])  # => {'value': [0, 1, 2, 3, 4]}
 generate('x', 'repeat', 3)  # => {'value': ['x', 'x', 'x']}
-generate([1, 2, 3], 'powerset') # => {'value': [[], [1], [2], [1, 2], [3], [1, 3], [2, 3], [1, 2, 3]]}
-generate([[1, 2], ['a', 'b']], 'cartesian_product') # => {'value': [[1, 'a'], [1, 'b'], [2, 'a'], [2, 'b']]}
 ```
+
+---
 
 ### chain
 Chains multiple tool calls, piping the output of one as the input to the next.
 
 **Parameters:**
-- `input` (any): The initial input to the chain.
-- `tool_calls` (list): Each dict must have:
-  - `tool` (str): The tool name
-  - `params` (dict, optional): Additional parameters
+- `input` (Any): The initial input to the chain.
+- `tool_calls` (List[Dict[str, Any]]): Each dict must have:
+    - 'tool': the tool name (str)
+    - 'params': dict of additional parameters (optional, default empty)
 
 **Returns:**
-- `dict`: The result of the last tool in the chain wrapped in a dictionary with 'value' key.
+- `dict`: The result of the last tool in the chain, always wrapped in a dictionary with a 'value' key. If an error occurs, an 'error' key is also present.
 
 **Usage Example:**
 ```python
 chain(
-    [1, [2, [3, 4], 5]],
+    [[{"id": 2}], [{"id": 1}], [None]],
     [
-        {"tool": "mutate_list", "params": {"mutation": "flatten_deep"}},
-        {"tool": "mutate_list", "params": {"mutation": "compact"}},
-        {"tool": "mutate_list", "params": {"mutation": "sort_by", "param": None}}
+        {"tool": "lists", "params": {"operation": "flatten"}},
+        {"tool": "lists", "params": {"operation": "compact"}},
+        {"tool": "lists", "params": {"operation": "sort_by", "param": "id"}}
     ]
 )
-# => {'value': [1, 2, 3, 4, 5]}
+# => {'value': [{"id": 1}, {"id": 2}}
 ```
 
-### merge
-Deep merges a list of dictionaries.
+---
 
-**Parameters:**
-- `dicts` (list): A list of dictionaries to merge.
+## Error Handling
 
-**Returns:**
-- `dict`: A single dictionary containing the merged keys and values wrapped in a dictionary with 'value' key.
+All tools return a dictionary with a 'value' key. If an error occurs (e.g., invalid input type, missing parameter, unknown operation), the dictionary will also include an 'error' key with a descriptive message.
 
-**Usage Example:**
-```python
-merge([{"a": 1, "b": {"c": 2}}, {"b": {"d": 3}}])
-# => {'value': {'a': 1, 'b': {'c': 2, 'd': 3}}}
-```
+## Type Handling
 
-### set_value
-Sets a deep property in a dictionary by path (dot/bracket notation or list).
-
-**Parameters:**
-- `obj` (dict): The dictionary to modify.
-- `path` (str or list): The property path.
-- `value` (any): The value to set.
-
-**Returns:**
-- `dict`: The modified dictionary wrapped in a dictionary with 'value' key.
-
-**Usage Example:**
-```python
-set_value({"a": {"b": 1}}, "a.b", 2)  # => {'value': {'a': {'b': 2}}}
-```
-
-### get_value
-Gets a deep property from a dictionary by path (dot/bracket notation or list).
-
-**Parameters:**
-- `obj` (dict): The dictionary to access.
-- `path` (str or list): The property path.
-- `default` (any, optional): The value to return if the path does not exist.
-
-**Returns:**
-- `dict`: The value at the specified path, or the default wrapped in a dictionary with 'value' key.
-
-**Usage Example:**
-```python
-get_value({"a": {"b": 2}}, "a.b")  # => {'value': 2}
-get_value({"a": {"b": 2}}, "a.c", 42)  # => {'value': 42}
-```
+All tools only accept JSON-serializable types. For type-agnostic checks (e.g., is_empty, is_equal, contains), use the `any` tool.
 
 ## License
 

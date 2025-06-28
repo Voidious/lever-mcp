@@ -60,19 +60,19 @@ async def shared_client(server_url):
 
 
 @pytest.mark.asyncio
-async def test_mutate_string_real_server(shared_client):
+async def test_strings_upper_case_real_server(shared_client):
     result = await shared_client.call_tool(
-        "mutate_string", {"text": "hello", "mutation": "upper_case"}
+        "strings", {"text": "hello", "operation": "upper_case"}
     )
     assert json.loads(result[0].text)["value"] == "HELLO"
 
 
 @pytest.mark.asyncio
-async def test_mutate_list_real_server(shared_client):
+async def test_lists_compact_real_server(shared_client):
     items = [1, None, 2]
     mutation = "compact"
     result = await shared_client.call_tool(
-        "mutate_list", {"items": items, "mutation": mutation}
+        "lists", {"items": items, "operation": mutation}
     )
     assert json.loads(result[0].text)["value"] == [1, 2]
 
@@ -97,7 +97,29 @@ async def test_has_property_types_real_server(
     args = {"obj": obj, "property": property}
     if param is not None:
         args["param"] = param
-    result = await shared_client.call_tool("has_property", args)
+    result = await shared_client.call_tool(
+        (
+            "strings"
+            if isinstance(args.get("obj"), str)
+            else "lists" if isinstance(args.get("obj"), list) else "dicts"
+        ),
+        {
+            k: v
+            for k, v in [
+                (
+                    ("text", args["obj"])
+                    if isinstance(args.get("obj"), str)
+                    else (
+                        ("items", args["obj"])
+                        if isinstance(args.get("obj"), list)
+                        else ("obj", args["obj"])
+                    )
+                ),
+                ("operation", args["property"]),
+            ]
+            + ([("param", args["param"])] if "param" in args else [])
+        },
+    )
     assert json.loads(result[0].text)["value"] == expected
 
 
@@ -124,13 +146,13 @@ async def test_has_property_types_real_server(
         ([{"x": 1}, {"x": 2}], "nth", 1, {"x": 2}),
     ],
 )
-async def test_select_from_list_types_real_server(
+async def test_lists_selection_types_real_server(
     shared_client, items, operation, param, expected
 ):
     args = {"items": items, "operation": operation}
     if param is not None:
         args["param"] = param
-    result = await shared_client.call_tool("select_from_list", args)
+    result = await shared_client.call_tool("lists", args)
     assert json.loads(result[0].text)["value"] == expected
 
 
@@ -147,13 +169,13 @@ async def test_select_from_list_types_real_server(
         ([[1], [2], [3]], [[2]], "intersection", None, [[2]]),
     ],
 )
-async def test_compare_lists_types_real_server(
+async def test_lists_set_operations_types_real_server(
     shared_client, a, b, operation, key, expected
 ):
-    args = {"a": a, "b": b, "operation": operation}
+    args = {"items": a, "others": b, "operation": operation}
     if key is not None:
         args["key"] = key
-    result = await shared_client.call_tool("compare_lists", args)
+    result = await shared_client.call_tool("lists", args)
     assert json.loads(result[0].text)["value"] == expected
 
 
@@ -171,10 +193,10 @@ async def test_compare_lists_types_real_server(
         ),
     ],
 )
-async def test_generate_types_real_server(
+async def test_generate_tool_types_real_server(
     shared_client, input, operation, param, expected
 ):
-    args = {"input": input, "operation": operation}
+    args = {"text": input, "operation": operation}
     if param is not None:
         args["param"] = param
     result = await shared_client.call_tool("generate", args)
@@ -182,20 +204,22 @@ async def test_generate_types_real_server(
 
 
 @pytest.mark.asyncio
-async def test_get_value_real_server(shared_client):
+async def test_dicts_get_value_real_server(shared_client):
     obj = {"a": {"b": 1}}
     path = "a.b"
-    result = await shared_client.call_tool("get_value", {"obj": obj, "path": path})
+    result = await shared_client.call_tool(
+        "dicts", {"obj": obj, "operation": "get_value", "path": path}
+    )
     assert json.loads(result[0].text)["value"] == 1
 
 
 @pytest.mark.asyncio
-async def test_set_value_real_server(shared_client):
+async def test_dicts_set_value_real_server(shared_client):
     obj = {"a": {}}
     path = "a.b"
     value = 42
     result = await shared_client.call_tool(
-        "set_value", {"obj": obj, "path": path, "value": value}
+        "dicts", {"obj": obj, "operation": "set_value", "path": path, "value": value}
     )
     assert json.loads(result[0].text)["value"] == {"a": {"b": 42}}
 
@@ -209,13 +233,13 @@ async def test_set_value_real_server(shared_client):
         ([{"id": 1}, {"id": 1}, {"id": 2}], "uniq_by", "id", [{"id": 1}, {"id": 2}]),
     ],
 )
-async def test_mutate_list_types_real_server(
+async def test_lists_mutation_types_real_server(
     shared_client, items, mutation, param, expected
 ):
-    args = {"items": items, "mutation": mutation}
+    args = {"items": items, "operation": mutation}
     if param is not None:
         args["param"] = param
-    result = await shared_client.call_tool("mutate_list", args)
+    result = await shared_client.call_tool("lists", args)
     assert json.loads(result[0].text)["value"] == expected
 
 
@@ -223,34 +247,34 @@ async def test_mutate_list_types_real_server(
 async def test_chain_real_server(shared_client):
     chain_payload = {
         "input": "abc",
-        "tool_calls": [{"tool": "mutate_string", "params": {"mutation": "upper_case"}}],
+        "tool_calls": [{"tool": "strings", "params": {"operation": "upper_case"}}],
     }
     result = await shared_client.call_tool("chain", chain_payload)
     assert json.loads(result[0].text)["value"] == "ABC"
 
 
 @pytest.mark.asyncio
-async def test_process_list_real_server(shared_client):
+async def test_lists_count_by_real_server(shared_client):
     items = [{"type": "a"}, {"type": "b"}, {"type": "a"}]
     result = await shared_client.call_tool(
-        "process_list", {"items": items, "operation": "count_by", "key": "type"}
+        "lists", {"items": items, "operation": "count_by", "key": "type"}
     )
     assert json.loads(result[0].text)["value"] == {"a": 2, "b": 1}
 
 
 @pytest.mark.asyncio
-async def test_process_dict_real_server(shared_client):
+async def test_dicts_invert_real_server(shared_client):
     obj = {"a": "x", "b": "y"}
-    result = await shared_client.call_tool(
-        "process_dict", {"obj": obj, "operation": "invert"}
-    )
+    result = await shared_client.call_tool("dicts", {"obj": obj, "operation": "invert"})
     assert json.loads(result[0].text)["value"] == {"x": "a", "y": "b"}
 
 
 @pytest.mark.asyncio
-async def test_merge_real_server(shared_client):
+async def test_dicts_merge_real_server(shared_client):
     dicts = [{"a": 1}, {"b": 2}]
-    result = await shared_client.call_tool("merge", {"dicts": dicts})
+    result = await shared_client.call_tool(
+        "dicts", {"obj": dicts, "operation": "merge"}
+    )
     assert json.loads(result[0].text)["value"] == {"a": 1, "b": 2}
 
 
@@ -258,7 +282,7 @@ async def test_merge_real_server(shared_client):
 async def test_chain_single_step_real_server(shared_client):
     chain_payload = {
         "input": "abc",
-        "tool_calls": [{"tool": "mutate_string", "params": {"mutation": "upper_case"}}],
+        "tool_calls": [{"tool": "strings", "params": {"operation": "upper_case"}}],
     }
     result = await shared_client.call_tool("chain", chain_payload)
     assert json.loads(result[0].text)["value"] == "ABC"
