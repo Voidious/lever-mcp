@@ -113,5 +113,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Cursor
+# AI Coding Editors
 .cursor/
+.claude/
+.vscode/
+.roo/
+.kilocode/

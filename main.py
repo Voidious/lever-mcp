@@ -2,6 +2,11 @@ from fastmcp import FastMCP
 from typing import Any, Dict, List, Optional
 import inspect
 import argparse
+import lupa
+
+# Global configuration for Lua safety mode
+SAFE_MODE = True  # Default to safe mode, can be overridden by command line
+
 
 # --- MCP Server Setup ---
 
@@ -30,20 +35,29 @@ def strings(
             - 'camel_case': Converts to camelCase (e.g., 'foo bar' → 'fooBar').
             - 'capitalize': Capitalizes the first character (e.g.,
               'foo bar' → 'Foo bar').
+            - 'contains': Checks if string contains a substring (param: str to find).
             - 'deburr': Removes accents/diacritics (e.g., 'Café' → 'Cafe').
+            - 'ends_with': Checks if string ends with substring (param: str).
+            - 'is_alpha': Checks if string contains only alphabetic characters.
+            - 'is_digit': Checks if string contains only digits.
+            - 'is_empty': Checks if string is empty.
+            - 'is_equal': Checks if strings are equal (param: str to compare).
+            - 'is_lower': Checks if string is all lowercase.
+            - 'is_upper': Checks if string is all uppercase.
             - 'kebab_case': Converts to kebab-case (e.g., 'foo bar' → 'foo-bar').
             - 'lower_case': Converts to lowercase (e.g., 'Hello' → 'hello').
             - 'replace': Replaces all occurrences of a substring (requires
               data={'old': 'x', 'new': 'y'}).
             - 'reverse': Reverses the string (e.g., 'hello' → 'olleh').
+            - 'sample_size': Returns n random characters (param: int).
+            - 'shuffle': Randomly shuffles string characters.
             - 'snake_case': Converts to snake_case (e.g., 'foo bar' → 'foo_bar').
-            - 'upper_case': Converts to uppercase (e.g., 'Hello' → 'HELLO').
+            - 'starts_with': Checks if string starts with substring (param: str).
             - 'template': Interpolates variables using {var} syntax (requires data
               dict).
             - 'trim': Removes leading and trailing whitespace.
-            - 'starts_with', 'ends_with', 'contains', 'is_equal', 'is_empty',
-              'is_digit', 'is_alpha', 'is_upper', 'is_lower', 'xor', 'shuffle',
-              'sample_size'.
+            - 'upper_case': Converts to uppercase (e.g., 'Hello' → 'HELLO').
+            - 'xor': String-specific XOR operation (param: str).
         param (Any, optional): Parameter for operations that require one.
         data (dict, optional): Data for 'template' and 'replace' operations.
 
@@ -178,55 +192,105 @@ def lists(
     others: Optional[list] = None,
     key: str = "",
     text: Any = None,
+    expression: Optional[str] = None,
 ) -> dict:
     """
-    Performs list operations and mutations.
+    Performs list operations and mutations with support for Lua expressions.
 
     Parameters:
         items (list): The input list to operate on.
-        operation (str): The operation to perform. One of:
-            - 'chunk': Splits a list into chunks of a given size (param: int).
-            - 'compact': Removes falsy values from a list.
-            - 'drop': Drops n elements from the beginning (param: int).
-            - 'drop_right': Drops n elements from the end (param: int).
-            - 'flatten': Flattens a list one level deep.
-            - 'flatten_deep': Flattens a nested list completely.
-            - 'initial': Gets all but the last element.
-            - 'partition': Splits a list into two lists based on a property
-              (param: str).
-            - 'pluck': Extracts a list of values for a given key (param: str).
-            - 'remove_by': Removes items where a property matches a value
-              (param: {'key': str, 'value': Any}).
-            - 'sample_size': Gets n random elements (param: int).
-            - 'shuffle': Shuffles the list.
-            - 'sort_by': Sorts a list of objects by a key (param: str).
-            - 'tail': Gets all but the first element.
-            - 'take': Takes n elements from the beginning (param: int).
-            - 'take_right': Takes n elements from the end (param: int).
-            - 'union': Unique values from all given lists.
-            - 'uniq_by': Removes duplicates by a key (param: str).
-            - 'unzip_list': Unzips a list of tuples into separate lists.
-            - 'xor': Symmetric difference of the given lists.
-            - 'zip_lists': Zips multiple lists into a list of tuples.
-            - 'is_empty', 'difference', 'intersection', 'difference_by',
-              'intersection_by', 'group_by', 'count_by', 'key_by', 'find_by', 'head',
-              'last', 'sample', 'nth', 'min_by', 'max_by', 'index_of', 'random_except',
-              'contains', 'is_equal'.
-        param (Any, optional): Parameter for operations that require one.
-        others (list, optional): Second list for set-like operations.
-        key (str, optional): Property name for *_by operations.
+        operation (str): The operation to perform. Available operations:
+            EXPRESSION OPERATIONS (use expression parameter):
+            - 'count_by': Count occurrences by expression result/key
+            - 'difference_by': Items in first list not matching expression in second
+            - 'find_by': Find first item matching expression/key-value
+            - 'group_by': Group items by expression result/key value
+            - 'intersection_by': Items in first list matching expression in second
+            - 'key_by': Create dict keyed by expression result/field
+            - 'max_by': Find max by expression result/key
+            - 'min_by': Find min by expression result/key
+            - 'partition': Split by expression result/boolean key
+            - 'pluck': Extract values by expression/key (expression: any value)
+            - 'remove_by': Remove items matching expression/key-value
+            - 'sort_by': Sort by expression result/key
+              (expression: any comparable value)
+            - 'uniq_by': Remove duplicates by expression result/key
+
+            BASIC OPERATIONS:
+            - 'chunk': Split into chunks (param: int)
+            - 'compact': Remove falsy values
+            - 'contains': Check if item exists (param: value)
+            - 'drop': Drop n elements from start (param: int)
+            - 'drop_right': Drop n elements from end (param: int)
+            - 'flatten': Flatten one level
+            - 'flatten_deep': Flatten completely
+            - 'head': First element
+            - 'index_of': Find index of item (param: dict with 'key' and 'value')
+            - 'initial': All but last element
+            - 'is_empty': Check if list is empty
+            - 'is_equal': Check if lists are equal (param: list)
+            - 'last': Last element
+            - 'nth': Get nth element (param: int, supports negative indexing)
+            - 'random_except': Random item excluding condition
+              (param: dict with 'key' and 'value')
+            - 'sample': Get one random item
+            - 'sample_size': Get n random items (param: int)
+            - 'shuffle': Randomize order
+            - 'tail': All but first element
+            - 'take': Take n elements from start (param: int)
+            - 'take_right': Take n elements from end (param: int)
+
+            SET OPERATIONS (use others parameter):
+            - 'difference': Items in first not in second
+            - 'intersection': Items in both lists
+            - 'union': Unique values from all lists
+            - 'xor': Symmetric difference
+
+            UTILITIES:
+            - 'unzip_list': Unzip list of tuples
+            - 'zip_lists': Zip multiple lists
+
+        param (Any, optional): Parameter for operations requiring one
+        others (list, optional): Second list for set operations
+        key (str, optional): Property name for *_by operations (faster, alternative to
+            expression)
+        expression (str, optional): Lua expression for advanced
+            filtering/grouping/sorting/extraction
+
+    Expression Examples:
+        - Filtering: "age > 25", "score >= 80", "name == 'Alice'"
+        - Complex conditions: "age > 25 and score >= 80", "status == 'active' or
+          priority == 'high'"
+        - Grouping: "age >= 30 and 'senior' or 'junior'"
+        - Sorting: "age * -1" (reverse age), "string.lower(name)" (case-insensitive)
+        - Extraction: "string.upper(name)", "age > 18 and name or 'minor'"
+        - Math: "math.abs(score - 50)", "x*x + y*y" (distance squared)
+
+    Available in expressions: math.*, string.*, os.time/date/clock, type(), tonumber(),
+    tostring(). Dictionary keys accessible directly (age, name, etc.) or via item.key.
 
     Returns:
-        dict: The result, always wrapped in a dictionary with a 'value' key. If an error
-            occurs, an 'error' key is also present.
+        dict: Result with 'value' key. On error, includes 'error' key.
 
-    Usage Example:
-        lists([[1, [2, 3], 4], 5], 'flatten_deep')  # => {'value': [1, 2, 3, 4, 5]}
-        lists([{'id': 1, 'name': 'Alice'}, {'id': 2, 'name': 'Bob'}], 'pluck', 'name')
-          # => {'value': ['Alice', 'Bob']}
-        lists([1, 2, 3], 'difference', others=[2, 3])  # => {'value': [1]}
-        lists([{'id': 1}, {'id': 2}], 'uniq_by', key='id')
+    Examples:
+        lists([{'id': 1}, {'id': 2}, {'id': 1}], 'uniq_by', key='id')
           # => {'value': [{'id': 1}, {'id': 2}]}
+        lists([{'age': 30}, {'age': 20}], 'find_by', expression="age > 25")
+          # => {'value': {'age': 30}}
+        lists(
+            [{'age': 30}, {'age': 20}],
+            'group_by',
+            expression="age >= 25 and 'adult' or 'young'"
+        )  # => {'value': {'adult': [{'age': 30}], 'young': [{'age': 20}]}}
+        lists(
+            [{'name': 'bob'},
+            {'name': 'Alice'}],
+            'sort_by', expression="string.lower(name)"
+        )  # => {'value': [{'name': 'Alice'}, {'name': 'bob'}]}
+        lists([{'x': 1, 'y': 2}, {'x': 3, 'y': 4}], 'pluck', expression="x + y")
+          # => {'value': [3, 7]}
+        lists([1, 2, 3], 'chunk', param=2)  # => {'value': [[1, 2], [3]]}
+        lists([1, 2, 3], 'difference', others=[2, 3])  # => {'value': [1]}
     """
     # Accept 'text' as an alias for items for compatibility with test_extended.py
     if items is None and text is not None:
@@ -301,14 +365,39 @@ def lists(
             _flatten(items)
             return {"value": result}
         elif operation == "sort_by":
+            if expression:
+                # Use Lua expression for sorting
+                def get_sort_key_expr(x):
+                    result = evaluate_expression(expression, x)
+                    # Handle different result types for sorting
+                    if result is None:
+                        return ""  # Sort None values first
+                    elif isinstance(result, dict):
+                        return json.dumps(result, sort_keys=True)
+                    return result
 
-            def get_sort_key(x):
-                v = x.get(param, "") if isinstance(x, dict) else getattr(x, param, "")
-                if isinstance(v, dict):
-                    return json.dumps(v, sort_keys=True)
-                return v
+                return {"value": sorted(items, key=get_sort_key_expr)}
+            elif param:
+                # Use traditional key-based sorting
+                def get_sort_key_param(x):
+                    v = (
+                        x.get(param, "")
+                        if isinstance(x, dict)
+                        else getattr(x, param, "")
+                    )
+                    if isinstance(v, dict):
+                        return json.dumps(v, sort_keys=True)
+                    return v
 
-            return {"value": sorted(items, key=get_sort_key)}
+                return {"value": sorted(items, key=get_sort_key_param)}
+            else:
+                return {
+                    "value": None,
+                    "error": (
+                        "Missing required param (key name) or expression for operation "
+                        "'sort_by'.",
+                    ),
+                }
         elif operation == "uniq_by":
             seen = set()
             result = []
@@ -334,16 +423,31 @@ def lists(
                 (trues if result else falses).append(item)
             return {"value": [trues, falses]}
         elif operation == "pluck":
-            return {
-                "value": [
-                    (
-                        item.get(param)
-                        if isinstance(item, dict)
-                        else getattr(item, param, None)
-                    )
-                    for item in items
-                ]
-            }
+            if expression:
+                # Use Lua expression for extraction
+                return {
+                    "value": [evaluate_expression(expression, item) for item in items]
+                }
+            elif param:
+                # Use traditional key-based extraction
+                return {
+                    "value": [
+                        (
+                            item.get(param)
+                            if isinstance(item, dict)
+                            else getattr(item, param, None)
+                        )
+                        for item in items
+                    ]
+                }
+            else:
+                return {
+                    "value": None,
+                    "error": (
+                        "Missing required param (key name) or expression for operation "
+                        "'pluck'.",
+                    ),
+                }
         elif operation == "compact":
             return {"value": [item for item in items if item]}
         elif operation == "chunk":
@@ -354,20 +458,31 @@ def lists(
         elif operation == "unzip_list":
             return {"value": [list(t) for t in zip(*items)]}
         elif operation == "remove_by":
-            key_ = param["key"]
-            value_ = param["value"]
-            return {
-                "value": [
-                    item
-                    for item in items
-                    if (
-                        item.get(key_)
-                        if isinstance(item, dict)
-                        else getattr(item, key_, None)
-                    )
-                    != value_
-                ]
-            }
+            if expression:
+                # Use Lua expression - remove items that match the expression
+                return {
+                    "value": [
+                        item
+                        for item in items
+                        if not evaluate_expression(expression, item)
+                    ]
+                }
+            else:
+                # Use traditional key-value matching
+                key_ = param["key"]
+                value_ = param["value"]
+                return {
+                    "value": [
+                        item
+                        for item in items
+                        if (
+                            item.get(key_)
+                            if isinstance(item, dict)
+                            else getattr(item, key_, None)
+                        )
+                        != value_
+                    ]
+                }
         elif operation == "tail":
             return {"value": items[1:] if len(items) > 1 else []}
         elif operation == "initial":
@@ -393,55 +508,101 @@ def lists(
             return {"value": result}
         # Set-like operations
         elif operation == "difference_by":
-            if not key:
+            if expression:
+                # Use Lua expression to find matching items in others
+                others_matching_expression = [
+                    item for item in others if evaluate_expression(expression, item)
+                ]
+                # Return items from main list that don't match any in others
+                return {
+                    "value": [
+                        item
+                        for item in items
+                        if not any(
+                            evaluate_expression(expression, other)
+                            and evaluate_expression(expression, item)
+                            for other in others_matching_expression
+                        )
+                    ]
+                }
+            elif not key:
                 return {
                     "value": None,
                     "error": (
-                        "Missing required key parameter for operation 'difference_by' "
-                        "(or intersection_by, etc.).",
+                        "Missing required key parameter or expression for operation "
+                        "'difference_by'.",
                     ),
                 }
-            others_keys = set(
-                item.get(key) if isinstance(item, dict) else getattr(item, key, None)
-                for item in others
-            )
-            return {
-                "value": [
-                    item
-                    for item in items
-                    if (
+            else:
+                # Use traditional key-based comparison
+                others_keys = set(
+                    (
                         item.get(key)
                         if isinstance(item, dict)
                         else getattr(item, key, None)
                     )
-                    not in others_keys
-                ]
-            }
+                    for item in others
+                )
+                return {
+                    "value": [
+                        item
+                        for item in items
+                        if (
+                            item.get(key)
+                            if isinstance(item, dict)
+                            else getattr(item, key, None)
+                        )
+                        not in others_keys
+                    ]
+                }
         elif operation == "intersection_by":
-            if not key:
+            if expression:
+                # Use Lua expression to find matching items in others
+                others_matching_expression = [
+                    item for item in others if evaluate_expression(expression, item)
+                ]
+                # Return items from main list that match any in others
+                return {
+                    "value": [
+                        item
+                        for item in items
+                        if any(
+                            evaluate_expression(expression, other)
+                            and evaluate_expression(expression, item)
+                            for other in others_matching_expression
+                        )
+                    ]
+                }
+            elif not key:
                 return {
                     "value": None,
                     "error": (
-                        "Missing required key parameter for operation "
-                        "'intersection_by' (or difference_by, etc.).",
+                        "Missing required key parameter or expression for operation "
+                        "'intersection_by'.",
                     ),
                 }
-            others_keys = set(
-                item.get(key) if isinstance(item, dict) else getattr(item, key, None)
-                for item in others
-            )
-            return {
-                "value": [
-                    item
-                    for item in items
-                    if (
+            else:
+                # Use traditional key-based comparison
+                others_keys = set(
+                    (
                         item.get(key)
                         if isinstance(item, dict)
                         else getattr(item, key, None)
                     )
-                    in others_keys
-                ]
-            }
+                    for item in others
+                )
+                return {
+                    "value": [
+                        item
+                        for item in items
+                        if (
+                            item.get(key)
+                            if isinstance(item, dict)
+                            else getattr(item, key, None)
+                        )
+                        in others_keys
+                    ]
+                }
         elif operation == "intersection":
             # Support intersection for multiple lists (not just two)
             if isinstance(items, list) and all(isinstance(x, list) for x in items):
@@ -514,21 +675,39 @@ def lists(
                 return {"value": []}
         # Grouping/Counting
         elif operation == "group_by":
-            if not key:
+            if expression:
+                # Use Lua expression to compute grouping key
+                result = {}
+                for item in items:
+                    try:
+                        k = evaluate_expression(expression, item)
+                        # Convert result to string for consistent grouping
+                        k = str(k) if k is not None else "None"
+                        result.setdefault(k, []).append(item)
+                    except Exception:
+                        # If expression fails, group under "error"
+                        result.setdefault("error", []).append(item)
+                return {"value": result}
+            elif not key:
                 return {
                     "value": None,
-                    "error": "Missing required key parameter for operation 'group_by'.",
+                    "error": (
+                        "Missing required key parameter or expression for operation "
+                        "'group_by'.",
+                    ),
                 }
-            if not all(isinstance(item, dict) for item in items):
-                return {
-                    "value": None,
-                    "error": "All items must be dicts for operation 'group_by'.",
-                }
-            result = {}
-            for item in items:
-                k = item.get(key)
-                result.setdefault(k, []).append(item)
-            return {"value": result}
+            else:
+                # Use traditional key-based grouping
+                if not all(isinstance(item, dict) for item in items):
+                    return {
+                        "value": None,
+                        "error": "All items must be dicts for operation 'group_by'.",
+                    }
+                result = {}
+                for item in items:
+                    k = item.get(key)
+                    result.setdefault(k, []).append(item)
+                return {"value": result}
         elif operation == "count_by":
             if not key:
                 return {
@@ -559,15 +738,28 @@ def lists(
             return {"value": {item[key]: item for item in items}}
         # Selection
         elif operation == "find_by":
-            key_ = param["key"]
-            value_ = param["value"]
-            if not all(isinstance(item, dict) for item in items):
-                return {"value": None, "error": "All items must be dicts for find_by."}
-            for item in items:
-                v = item.get(key_)
-                if v == value_:
-                    return {"value": item}
-            return {"value": None}
+            if expression:
+                # Use Lua expression
+                for item in items:
+                    result = evaluate_expression(expression, item)
+                    # For find_by, treat result as boolean (truthy/falsy)
+                    if result:
+                        return {"value": item}
+                return {"value": None}
+            else:
+                # Use traditional key-value matching
+                key_ = param["key"]
+                value_ = param["value"]
+                if not all(isinstance(item, dict) for item in items):
+                    return {
+                        "value": None,
+                        "error": "All items must be dicts for find_by.",
+                    }
+                for item in items:
+                    v = item.get(key_)
+                    if v == value_:
+                        return {"value": item}
+                return {"value": None}
         elif operation == "head":
             return {"value": items[0] if items else None}
         elif operation == "last":
@@ -582,21 +774,55 @@ def lists(
                 return {"value": items[idx]}
             return {"value": None}
         elif operation == "min_by":
-            key_ = param
+            if expression:
+                # Use Lua expression for min comparison
+                def min_key_expr(x):
+                    result = evaluate_expression(expression, x)
+                    return result if result is not None else float("inf")
 
-            def min_key(x):
-                v = x.get(key_) if isinstance(x, dict) else getattr(x, key_, None)
-                return v if v is not None else float("inf")
+                return {"value": min(items, key=min_key_expr)}
+            elif param:
+                # Use traditional key-based min
+                key_ = param
 
-            return {"value": min(items, key=min_key)}
+                def min_key_param(x):
+                    v = x.get(key_) if isinstance(x, dict) else getattr(x, key_, None)
+                    return v if v is not None else float("inf")
+
+                return {"value": min(items, key=min_key_param)}
+            else:
+                return {
+                    "value": None,
+                    "error": (
+                        "Missing required param (key name) or expression for operation "
+                        "'min_by'.",
+                    ),
+                }
         elif operation == "max_by":
-            key_ = param
+            if expression:
+                # Use Lua expression for max comparison
+                def max_key_expr(x):
+                    result = evaluate_expression(expression, x)
+                    return result if result is not None else float("-inf")
 
-            def max_key(x):
-                v = x.get(key_) if isinstance(x, dict) else getattr(x, key_, None)
-                return v if v is not None else float("-inf")
+                return {"value": max(items, key=max_key_expr)}
+            elif param:
+                # Use traditional key-based max
+                key_ = param
 
-            return {"value": max(items, key=max_key)}
+                def max_key_param(x):
+                    v = x.get(key_) if isinstance(x, dict) else getattr(x, key_, None)
+                    return v if v is not None else float("-inf")
+
+                return {"value": max(items, key=max_key_param)}
+            else:
+                return {
+                    "value": None,
+                    "error": (
+                        "Missing required param (key name) or expression for operation "
+                        "'max_by'.",
+                    ),
+                }
         elif operation == "index_of":
             key_ = param["key"]
             value_ = param["value"]
@@ -652,16 +878,16 @@ def dicts(
         obj (dict or list): The source dictionary, or a list of dicts for 'merge'. Must
             be a dict for all operations except 'merge'.
         operation (str): The operation to perform. One of:
-            - 'merge': Deep merges a list of dictionaries (obj must be a list of dicts).
-            - 'invert': Swaps keys and values.
-            - 'pick': Picks specified keys (param: list of keys).
-            - 'omit': Omits specified keys (param: list of keys).
-            - 'set_value': Sets a deep property by path (path: str or list, value: any).
             - 'get_value': Gets a deep property by path (path: str or list,
               default: any).
             - 'has_key': Checks if a dict has a given key (param: str).
-            - 'is_equal': Checks if two dicts are deeply equal (param: dict to compare).
+            - 'invert': Swaps keys and values.
             - 'is_empty': Checks if the dict is empty.
+            - 'is_equal': Checks if two dicts are deeply equal (param: dict to compare).
+            - 'merge': Deep merges a list of dictionaries (obj must be a list of dicts).
+            - 'omit': Omits specified keys (param: list of keys).
+            - 'pick': Picks specified keys (param: list of keys).
+            - 'set_value': Sets a deep property by path (path: str or list, value: any).
         param (any, optional): Used for 'pick', 'omit', 'has_key', 'is_equal'.
         path (str or list, optional): Used for 'set_value' and 'get_value'.
         value (any, optional): Used for 'set_value'.
@@ -795,21 +1021,27 @@ def dicts(
 
 @mcp.tool("any")
 def any_tool(
-    value: Any = None, operation: Optional[str] = None, param: Any = None
+    value: Any = None,
+    operation: Optional[str] = None,
+    param: Any = None,
+    expression: Optional[str] = None,
 ) -> dict:
     """
-    Performs type-agnostic property checks and comparisons.
+    Performs type-agnostic property checks, comparisons, and expression evaluation.
 
     Parameters:
-        value (Any): The value to check.
+        value (Any): The value to check or use as context for expression evaluation.
         operation (str): The operation to perform. One of:
-            - 'is_equal': Checks if two values are deeply equal (param: value to
-              compare).
-            - 'is_empty': Checks if the value is empty.
-            - 'is_nil': Checks if the value is None.
             - 'contains': Checks if a string or list contains a value
               (param: value to check).
+            - 'eval': Evaluate a Lua expression with value as context
+              (expression: Lua code).
+            - 'is_empty': Checks if the value is empty.
+            - 'is_equal': Checks if two values are deeply equal
+              (param: value to compare).
+            - 'is_nil': Checks if the value is None.
         param (Any, optional): The parameter for the operation, if required.
+        expression (str, optional): Lua expression to evaluate (for 'eval' operation).
 
     Returns:
         dict: The result, always wrapped in a dictionary with a 'value' key. If an error
@@ -821,24 +1053,37 @@ def any_tool(
         any([], 'is_empty')  # => {'value': True}
         any(None, 'is_nil')  # => {'value': True}
         any(42, 'is_equal', 42)  # => {'value': True}
-        any(True, 'is_equal', True)  # => {'value': True}
-        any(3.14, 'is_equal', 3.14)  # => {'value': True}
+        any({'age': 30, 'name': 'Alice'}, 'eval', expression="age > 25")
+          # => {'value': True}
+        any({'x': 3, 'y': 4}, 'eval', expression="math.sqrt(x*x + y*y)")
+          # => {'value': 5.0}
+        any("hello", 'eval', expression="string.upper(item)")  # => {'value': 'HELLO'}
     """
     try:
         if operation == "is_equal":
-            return {"value": value == param}
+            return {"value": unwrap_result(value == param)}
         elif operation == "is_empty":
             if value is None or value == 0 or value is False:
-                return {"value": True}
+                return {"value": unwrap_result(True)}
             if isinstance(value, (str, list, dict)):
-                return {"value": len(value) == 0}
-            return {"value": False}
+                return {"value": unwrap_result(len(value) == 0)}
+            return {"value": unwrap_result(False)}
         elif operation == "is_nil":
-            return {"value": value is None}
+            return {"value": unwrap_result(value is None)}
         elif operation == "contains":
             if isinstance(value, (str, list)):
-                return {"value": param in value}
-            return {"value": False}
+                return {"value": unwrap_result(param in value)}
+            return {"value": unwrap_result(False)}
+        elif operation == "eval":
+            if not expression:
+                return {
+                    "value": None,
+                    "error": (
+                        "Missing required expression parameter for operation 'eval'.",
+                    ),
+                }
+            result = evaluate_expression(expression, value)
+            return {"value": unwrap_result(result)}
         else:
             raise ValueError(f"Unknown operation: {operation}")
     except Exception as e:
@@ -861,7 +1106,7 @@ def generate(
               param: None
             - 'combinations': All combinations of a given length (param: int, required)
             - 'cycle': Repeat the sequence up to param times.
-              param: int (max length,optional)
+              param: int (max length, optional)
             - 'permutations': All permutations of a given length
               (param: int, optional, default=len(input))
             - 'powerset': All possible subsets of a list. param: None
@@ -899,9 +1144,6 @@ def generate(
                         "'range'.",
                     ),
                 }
-                raise ValueError(
-                    "'param' must be [start, end] or [start, end, step] for 'range'."
-                )
             start, end = param[0], param[1]
             step = param[2] if len(param) > 2 else 1
             return {"value": list(range(start, end, step))}
@@ -1029,13 +1271,27 @@ async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> dict:
         param_schema = tool.parameters.get("properties", {})
         required = tool.parameters.get("required", [])
         primary_param = None
-        for k in required:
-            primary_param = k
-            break
+
+        # Prioritize common primary parameter names
+        for p_name in ["text", "items", "obj", "value"]:
+            if p_name in param_schema:
+                primary_param = p_name
+                break
+
+        # Fallback to required parameters (excluding 'operation')
+        if not primary_param:
+            for k in required:
+                if k != "operation":
+                    primary_param = k
+                    break
+
+        # Fallback to first non-'operation' parameter in schema
         if not primary_param and param_schema:
             for k in param_schema:
-                primary_param = k
-                break
+                if k != "operation":
+                    primary_param = k
+                    break
+
         arguments = dict(params)
         if primary_param:
             if primary_param in arguments:
@@ -1045,7 +1301,8 @@ async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> dict:
                     f"primary parameter '{primary_param}' in params. The output from "
                     "the previous tool is always used as input.",
                 }
-            arguments[primary_param] = value
+            # Unwrap the value before passing to the next tool
+            arguments[primary_param] = unwrap_result(value)
         elif len(param_schema) == 1:
             only_param = next(iter(param_schema))
             if only_param in arguments:
@@ -1055,7 +1312,7 @@ async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> dict:
                     f"primary parameter '{only_param}' in params. The output from the "
                     "previous tool is always used as input.",
                 }
-            arguments[only_param] = value
+            arguments[only_param] = unwrap_result(value)
         elif not param_schema:
             arguments = {}
         try:
@@ -1066,48 +1323,261 @@ async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> dict:
                 "error": f"Step {i}: Error calling tool '{tool_name}': {e}",
             }
         unwrapped = unwrap_result(result)
-        if isinstance(unwrapped, dict):
-            if "error" in unwrapped:
-                return {
-                    "value": None,
-                    "error": (
-                        f"Step {i}: Error calling tool '{tool_name}': "
-                        f"{unwrapped['error']}"
-                    ),
-                }
-            elif "value" in unwrapped:
-                value = unwrapped["value"]
-            else:
-                value = unwrapped
+        value = unwrapped
+        if isinstance(value, dict) and "error" in value:
+            return {
+                "value": None,
+                "error": (
+                    f"Step {i}: Error calling tool '{tool_name}': " f"{value['error']}"
+                ),
+            }
+        elif isinstance(value, dict) and "value" in value:
+            value = value["value"]
     return {"value": value}
+
+
+def create_lua_runtime(safe_mode: Optional[bool] = None) -> lupa.LuaRuntime:
+    """
+    Create a Lua runtime with optional sandboxing.
+
+    Args:
+        safe_mode: If True, applies safety rails. If None, uses global SAFE_MODE
+            setting.
+    """
+    if safe_mode is None:
+        safe_mode = SAFE_MODE
+
+    lua_runtime = lupa.LuaRuntime()
+
+    # Always define a global 'null' table as the None sentinel
+    lua_runtime.execute("null = {}")
+
+    if safe_mode:
+        # Apply safety rails - disable dangerous functions but keep useful ones
+        lua_runtime.execute(
+            """
+            -- Disable dangerous file/system operations
+            os = {
+                -- Keep safe time/date functions
+                time = os.time,
+                date = os.date,
+                clock = os.clock,
+                difftime = os.difftime,
+                -- Remove dangerous ones: execute, exit, getenv, remove, rename, etc.
+            }
+
+            -- Disable file I/O
+            io = nil
+
+            -- Disable module loading that could access filesystem
+            require = nil
+            dofile = nil
+            loadfile = nil
+
+            -- Keep package.loaded for accessing already loaded safe modules
+            if package then
+                package.loadlib = nil
+                package.searchpath = nil
+                package.searchers = nil
+                package.path = nil
+                package.cpath = nil
+            end
+
+            -- Disable debug library (could be used for introspection attacks)
+            debug = nil
+        """
+        )
+
+    return lua_runtime
+
+
+def encode_null_for_lua(obj, lua_runtime):
+    """
+    Recursively replace None (from JSON null) with the Lua 'null' table before passing
+    to Lua. All None values become 'null' sentinels, enabling consistent null checks
+    with 'item == null'. Lists are always preserved as arrays, dicts as tables.
+    """
+    null_sentinel = lua_runtime.eval("null")
+    if obj is None:
+        return null_sentinel
+    elif isinstance(obj, list):
+        # Convert each element and then convert the whole list to a Lua table
+        converted_items = [encode_null_for_lua(x, lua_runtime) for x in obj]
+        return lua_runtime.table_from(converted_items)
+    elif isinstance(obj, dict):
+        # Convert each value, handling nested lists
+        converted_dict = {}
+        for k, v in obj.items():
+            converted_dict[k] = encode_null_for_lua(v, lua_runtime)
+        return lua_runtime.table_from(converted_dict)
+    else:
+        return obj
+
+
+def decode_null_from_lua(obj, null_sentinel=None):
+    """
+    Recursively replace the Lua 'null' table with None (for JSON null output). Converts
+    all 'null' sentinels back to Python None for JSON serialization.
+    """
+    if null_sentinel is not None and obj is null_sentinel:
+        return None
+    elif isinstance(obj, list):
+        return [decode_null_from_lua(x, null_sentinel) for x in obj]
+    elif isinstance(obj, dict):
+        # Preserve dicts as dicts (no longer convert integer-keyed dicts to lists)
+        return {k: decode_null_from_lua(v, null_sentinel) for k, v in obj.items()}
+    # Check for LuaTable objects that might be the null sentinel
+    elif "LuaTable" in type(obj).__name__:
+        # If it's an empty LuaTable, it might be the null sentinel
+        try:
+            keys = list(obj.keys())
+            if len(keys) == 0:
+                return None
+            else:
+                # Convert to dict and recurse
+                return decode_null_from_lua({k: obj[k] for k in keys}, null_sentinel)
+        except Exception:
+            return obj
+    else:
+        return obj
+
+
+def evaluate_expression(
+    expression: str, item: Any, safe_mode: Optional[bool] = None
+) -> Any:
+    """
+    Evaluate a Lua expression against an item. The item is available as 'item' in the
+    Lua context, and dict keys are directly accessible. All None (JSON null) values are
+    converted to 'null' table for consistent null checks.
+
+    Args:
+        expression: Lua expression to evaluate (can return any value)
+        item: The data item to evaluate against (None values become 'null')
+        safe_mode: If True, applies safety rails. If None, uses global SAFE_MODE
+            setting.
+    """
+    try:
+        lua_runtime = create_lua_runtime(safe_mode)
+        # Set up context
+        if isinstance(item, dict):
+            for key, value in item.items():
+                if (
+                    isinstance(key, str)
+                    and key.isidentifier()
+                    and key not in ["and", "or", "not", "if", "then", "else", "end"]
+                ):
+                    lua_runtime.globals()[key] = encode_null_for_lua(value, lua_runtime)  # type: ignore  # noqa
+
+        # Convert the top-level item (encode_null_for_lua now handles table conversion)
+        lua_runtime.globals()["item"] = encode_null_for_lua(item, lua_runtime)  # type: ignore  # noqa
+
+        try:
+            # Try to execute as a statement returning a value. This works for simple
+            # expressions.
+            return lua_runtime.execute("return (" + expression + ")")
+        except lupa.LuaError:
+            # If that fails, it's likely a multi-line script that already contains
+            # 'return'.
+            return lua_runtime.execute(expression)
+
+    except Exception:
+        return None
 
 
 def unwrap_result(result):
     """
-    Unwraps the result from a tool call. The result from the client is typically
-    a list containing a single Content object. This function extracts the text
-    from that object and decodes it from JSON.
+    Unwraps the result from a tool call. The result from the client is typically a list
+    containing a single Content object. This function extracts the text from that object
+    and decodes it from JSON.
     """
     import json
 
+    def _convert_lua_table(lua_table):
+        try:
+            keys = list(lua_table.keys())
+
+            # Check if this is the null sentinel (empty table)
+            if len(keys) == 0:
+                return None
+
+            # If all keys are positive integers, treat as a list
+            if keys and all(isinstance(k, int) and k > 0 for k in keys):
+                max_index = max(keys)
+                result = [None] * max_index
+                for k in keys:
+                    val = lua_table[k]
+                    # Check if this value is an empty LuaTable (null sentinel)
+                    if "LuaTable" in type(val).__name__:
+                        try:
+                            if len(list(val.keys())) == 0:
+                                result[k - 1] = None
+                            else:
+                                result[k - 1] = _convert_lua_table(val)
+                        except Exception:
+                            result[k - 1] = val
+                    else:
+                        result[k - 1] = val
+                return result
+            else:
+                result = {}
+                for k in keys:
+                    val = lua_table[k]
+                    # Check if this value is an empty LuaTable (null sentinel)
+                    if "LuaTable" in type(val).__name__:
+                        try:
+                            if len(list(val.keys())) == 0:
+                                result[k] = None
+                            else:
+                                result[k] = _convert_lua_table(val)
+                        except Exception:
+                            result[k] = val
+                    else:
+                        result[k] = val
+                return result
+        except Exception:
+            return None
+
     # The result from client.call_tool is a list of Content objects.
     # For our tools, it's typically a single object in the list.
-    if isinstance(result, list) and result and hasattr(result[0], "text"):
+    if (
+        isinstance(result, list)
+        and result
+        and hasattr(result[0], "text")
+        and isinstance(result[0], object)
+    ):
         try:
             # The text attribute contains the JSON string of the actual return value.
-            return json.loads(result[0].text)  # type: ignore[attr-defined]
+            unwrapped = json.loads(result[0].text)  # type: ignore[attr-defined]
         except (json.JSONDecodeError, TypeError):
             # If it's not valid JSON, return the text as is.
-            return result[0].text  # type: ignore[attr-defined]
-
+            unwrapped = getattr(result[0], "text", result[0])
     # Fallback for single Content object or other types passed from tests
-    if hasattr(result, "text"):
+    elif (
+        not isinstance(result, list)
+        and hasattr(result, "text")
+        and result.text is not None
+    ):
         try:
-            return json.loads(result.text)  # type: ignore[attr-defined]
+            unwrapped = json.loads(result.text)  # type: ignore[attr-defined]
         except (json.JSONDecodeError, TypeError):
-            return result.text  # type: ignore[attr-defined]
+            unwrapped = result.text  # type: ignore[attr-defined]
+    else:
+        unwrapped = result
 
-    return result
+    # Recursively convert LuaTable objects
+    if "LuaTable" in type(unwrapped).__name__:
+        return _convert_lua_table(unwrapped)
+    elif isinstance(unwrapped, list):
+        return [
+            _convert_lua_table(item) if type(item).__name__ == "LuaTable" else item
+            for item in unwrapped
+        ]
+    elif isinstance(unwrapped, dict):
+        return {
+            k: _convert_lua_table(v) if type(v).__name__ == "LuaTable" else v
+            for k, v in unwrapped.items()
+        }
+    return unwrapped
 
 
 if __name__ == "__main__":
@@ -1129,7 +1599,15 @@ if __name__ == "__main__":
         default=8000,
         help="Port for HTTP server (default: 8000)",
     )
+    parser.add_argument(
+        "--unsafe",
+        action="store_true",
+        help="Disable Lua safety rails (allows file I/O and system commands)",
+    )
     args = parser.parse_args()
+
+    # Update global safe mode setting based on command line args
+    SAFE_MODE = not args.unsafe
 
     if args.http:
         mcp.run(transport="http", host=args.host, port=args.port)

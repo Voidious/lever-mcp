@@ -920,6 +920,404 @@ async def client():
             bool,
             True,
         ),
+        # === any.eval as FIRST tool (outputting different types) ===
+        # any.eval (Any -> str) -> strings (str -> str)
+        (
+            "any",
+            {"operation": "eval", "expression": "string.upper(item)"},
+            "strings",
+            {"operation": "reverse"},
+            "hello",
+            str,
+            "OLLEH",
+        ),
+        # any.eval (Any -> str) -> strings (str -> bool)
+        (
+            "any",
+            {"operation": "eval", "expression": "string.upper(item)"},
+            "strings",
+            {"operation": "is_upper"},
+            "hello",
+            bool,
+            True,
+        ),
+        # any.eval (Any -> int) -> generate (int -> list)
+        (
+            "any",
+            {"operation": "eval", "expression": "item * 2"},
+            "generate",
+            {"operation": "repeat", "param": 3},
+            5,
+            list,
+            [10, 10, 10],
+        ),
+        # any.eval (Any -> float) -> generate (float -> list)
+        (
+            "any",
+            {"operation": "eval", "expression": "math.sqrt(item)"},
+            "generate",
+            {"operation": "repeat", "param": 2},
+            16,
+            list,
+            [4.0, 4.0],
+        ),
+        # any.eval (Any -> bool) -> generate (bool -> list)
+        (
+            "any",
+            {"operation": "eval", "expression": "item > 5"},
+            "generate",
+            {"operation": "repeat", "param": 2},
+            10,
+            list,
+            [True, True],
+        ),
+        # any.eval (Any -> list) -> lists (list -> list)
+        (
+            "any",
+            {"operation": "eval", "expression": "item"},
+            "lists",
+            {"operation": "compact"},
+            [1, None, 2],
+            list,
+            [1, 2],
+        ),
+        # any.eval (Any -> int) -> generate (int -> list)
+        (
+            "any",
+            {"operation": "eval", "expression": "item * 3"},
+            "generate",
+            {"operation": "repeat", "param": 2},
+            5,
+            list,
+            [15, 15],
+        ),
+        # any.eval (Any -> str) -> strings (str -> str)
+        (
+            "any",
+            {"operation": "eval", "expression": "string.upper(tostring(item))"},
+            "strings",
+            {"operation": "reverse"},
+            3,
+            str,
+            "3",
+        ),
+        # any.eval (Any -> bool) -> any (bool -> bool)
+        (
+            "any",
+            {"operation": "eval", "expression": "item > 20"},
+            "any",
+            {"operation": "is_equal", "param": True},
+            25,
+            bool,
+            True,
+        ),
+        # any.eval (Any -> float) -> any (float -> bool)
+        (
+            "any",
+            {"operation": "eval", "expression": "item / 2.0"},
+            "any",
+            {"operation": "is_equal", "param": 2.5},
+            5,
+            bool,
+            True,
+        ),
+        # === any.eval as SECOND tool (accepting different input types) ===
+        # strings (str -> str) -> any.eval (str -> str)
+        (
+            "strings",
+            {"operation": "upper_case"},
+            "any",
+            {"operation": "eval", "expression": "string.reverse(item)"},
+            "hello",
+            str,
+            "OLLEH",
+        ),
+        # strings (str -> str) -> any.eval (str -> int)
+        (
+            "strings",
+            {"operation": "upper_case"},
+            "any",
+            {"operation": "eval", "expression": "string.len(item)"},
+            "hello",
+            int,
+            5,
+        ),
+        # strings (str -> str) -> any.eval (str -> bool)
+        (
+            "strings",
+            {"operation": "upper_case"},
+            "any",
+            {"operation": "eval", "expression": "string.find(item, 'H') ~= nil"},
+            "hello",
+            bool,
+            True,
+        ),
+        # strings (str -> str) -> any.eval (str -> float)
+        (
+            "strings",
+            {"operation": "template", "data": {"num": "3.14"}},
+            "any",
+            {
+                "operation": "eval",
+                "expression": "tonumber(string.match(item, '%d+%.%d+'))",
+            },
+            "The number is {num}",
+            float,
+            3.14,
+        ),
+        # lists (list -> list) -> any.eval (list -> int)
+        (
+            "lists",
+            {"operation": "compact"},
+            "any",
+            {"operation": "eval", "expression": "item[1] and 1 or 0"},
+            [1, None, 2, 3],
+            int,
+            1,
+        ),
+        # lists (list -> list) -> any.eval (list -> str)
+        (
+            "lists",
+            {"operation": "compact"},
+            "any",
+            {"operation": "eval", "expression": "tostring(item[1])"},
+            ["a", None, "b", "c"],
+            str,
+            "a",
+        ),
+        # lists (list -> list) -> any.eval (list -> bool)
+        (
+            "lists",
+            {"operation": "compact"},
+            "any",
+            {"operation": "eval", "expression": "item[2] ~= nil"},
+            [1, None, 2, 3],
+            bool,
+            True,
+        ),
+        # lists (list -> list) -> any.eval (list -> float)
+        (
+            "lists",
+            {"operation": "compact"},
+            "any",
+            {"operation": "eval", "expression": "(item[1] + item[2]) / 2.0"},
+            [10, None, 20],
+            float,
+            15.0,
+        ),
+        # lists (list -> dict) -> any.eval (dict -> str)
+        (
+            "lists",
+            {"operation": "count_by", "key": "type"},
+            "any",
+            {
+                "operation": "eval",
+                "expression": "item.fruit and 'has fruit' or 'no fruit'",
+            },
+            [{"type": "fruit"}, {"type": "fruit"}, {"type": "vegetable"}],
+            str,
+            "has fruit",
+        ),
+        # lists (list -> dict) -> any.eval (dict -> int)
+        (
+            "lists",
+            {"operation": "count_by", "key": "category"},
+            "any",
+            {"operation": "eval", "expression": "item.A or 0"},
+            [{"category": "A"}, {"category": "A"}, {"category": "B"}],
+            int,
+            2,
+        ),
+        # lists (list -> dict) -> any.eval (dict -> bool)
+        (
+            "lists",
+            {"operation": "count_by", "key": "status"},
+            "any",
+            {"operation": "eval", "expression": "item.active and item.active > 1"},
+            [{"status": "active"}, {"status": "active"}, {"status": "inactive"}],
+            bool,
+            True,
+        ),
+        # lists (list -> Any) -> any.eval (Any -> str)
+        (
+            "lists",
+            {"operation": "head"},
+            "any",
+            {
+                "operation": "eval",
+                "expression": (
+                    "type(item) == 'string' and string.upper(item) or tostring(item)"
+                ),
+            },
+            ["hello", "world"],
+            str,
+            "HELLO",
+        ),
+        # lists (list -> Any) -> any.eval (Any -> int)
+        (
+            "lists",
+            {"operation": "head"},
+            "any",
+            {
+                "operation": "eval",
+                "expression": (
+                    "type(item) == 'number' and item * 2 or string.len(tostring(item))"
+                ),
+            },
+            [42, "test"],
+            int,
+            84,
+        ),
+        # dicts (dict -> dict) -> any.eval (dict -> str)
+        (
+            "dicts",
+            {"operation": "invert"},
+            "any",
+            {"operation": "eval", "expression": "item['2'] or 'not found'"},
+            {"a": 1, "b": 2},
+            str,
+            "b",
+        ),
+        # dicts (dict -> dict) -> any.eval (dict -> int)
+        (
+            "dicts",
+            {"operation": "invert"},
+            "any",
+            {
+                "operation": "eval",
+                "expression": "item['1'] and string.len(item['1']) or 0",
+            },
+            {"a": 1, "b": 2},
+            int,
+            1,
+        ),
+        # dicts (dict -> dict) -> any.eval (dict -> bool)
+        (
+            "dicts",
+            {"operation": "invert"},
+            "any",
+            {"operation": "eval", "expression": "item['1'] ~= nil"},
+            {"a": 1, "b": 2},
+            bool,
+            True,
+        ),
+        # dicts (dict -> Any) -> any.eval (Any -> str)
+        (
+            "dicts",
+            {"operation": "get_value", "path": "name"},
+            "any",
+            {"operation": "eval", "expression": "string.upper(item)"},
+            {"name": "alice", "age": 30},
+            str,
+            "ALICE",
+        ),
+        # dicts (dict -> Any) -> any.eval (Any -> int)
+        (
+            "dicts",
+            {"operation": "get_value", "path": "age"},
+            "any",
+            {"operation": "eval", "expression": "item + 10"},
+            {"name": "alice", "age": 30},
+            int,
+            40,
+        ),
+        # dicts (dict -> Any) -> any.eval (Any -> bool)
+        (
+            "dicts",
+            {"operation": "get_value", "path": "score"},
+            "any",
+            {"operation": "eval", "expression": "item >= 80"},
+            {"name": "alice", "score": 95},
+            bool,
+            True,
+        ),
+        # generate (Any -> list) -> any.eval (list -> int)
+        (
+            "generate",
+            {"operation": "repeat", "param": 3},
+            "any",
+            {"operation": "eval", "expression": "item[2] and 3 or 0"},
+            "x",
+            int,
+            3,
+        ),
+        # generate (Any -> list) -> any.eval (list -> str)
+        (
+            "generate",
+            {"operation": "range", "param": [1, 4]},
+            "any",
+            {
+                "operation": "eval",
+                "expression": (
+                    "tostring(item[1]) .. '-' .. tostring(item[2]) .. '-' .. "
+                    "tostring(item[3])"
+                ),
+            },
+            None,
+            str,
+            "1-2-3",
+        ),
+        # generate (Any -> list) -> any.eval (list -> bool)
+        (
+            "generate",
+            {"operation": "repeat", "param": 2},
+            "any",
+            {"operation": "eval", "expression": "item[1] == item[2]"},
+            42,
+            bool,
+            True,
+        ),
+        # generate (Any -> list) -> any.eval (list -> float)
+        (
+            "generate",
+            {"operation": "range", "param": [1, 6]},
+            "any",
+            {"operation": "eval", "expression": "(item[1] + item[5]) / 2.0"},
+            None,
+            float,
+            3.0,
+        ),
+        # === Complex type conversion chains with any.eval ===
+        # any.eval (nested dict -> extracted value) -> strings
+        (
+            "any",
+            {"operation": "eval", "expression": "item.user.name"},
+            "strings",
+            {"operation": "capitalize"},
+            {"user": {"name": "alice", "age": 30}},
+            str,
+            "Alice",
+        ),
+        # any.eval (math calculation) -> generate
+        (
+            "any",
+            {"operation": "eval", "expression": "math.floor(item / 2)"},
+            "generate",
+            {"operation": "repeat", "param": 2},
+            7,
+            list,
+            [3, 3],
+        ),
+        # any.eval (math calculation) -> lists (single item list)
+        (
+            "any",
+            {"operation": "eval", "expression": "item * 3"},
+            "generate",
+            {"operation": "repeat", "param": 1},
+            10,
+            list,
+            [30],
+        ),
+        # any.eval (simple calculation) -> generate
+        (
+            "any",
+            {"operation": "eval", "expression": "item * 2"},
+            "generate",
+            {"operation": "repeat", "param": 1},
+            5,
+            list,
+            [10],
+        ),
     ],
 )
 async def test_chain_all_tool_pairs(

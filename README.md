@@ -69,6 +69,7 @@ python main.py --http --host 0.0.0.0 --port 9000
 - `--http`: Start the server with Streamable HTTP (instead of stdio)
 - `--host`: Host for HTTP server (default: 127.0.0.1)
 - `--port`: Port for HTTP server (default: 8000)
+- `--unsafe`: Disable Lua safety rails (allows file I/O and system commands)
 
 **Note:** The `run.sh` and `run.bat` scripts also support these arguments and will pass them to `main.py`. For example:
 
@@ -88,9 +89,23 @@ If you omit `--http`, the server will use stdio transport (default behavior):
 python main.py
 ```
 
+### Lua Safety Configuration
+
+By default, Lever MCP runs Lua predicates in **safe mode**, which blocks potentially dangerous operations:
+- **Blocked**: File I/O (`io.*`), system commands (`os.execute`), module loading (`require`)
+- **Allowed**: Math operations, string functions, time/date functions, comparisons
+
+To disable safety rails for trusted environments:
+```bash
+./run.sh --unsafe
+python main.py --unsafe
+```
+
+This enables full Lua access, including file operations and system commands.
+
 ### Usage in AI Coding Editors
 
-If you are integrating Lever MCP with an AI-assisted coding editor (such as Cursor or Windsurf), be sure to load the [lever-rules.md](./lever-rules.md) file into your editor's rules for the coding agent/AI assistant. This file provides best practices and guidance for the agent, ensuring it uses Lever MCP tools efficiently and according to recommended patterns:
+If you are integrating Lever MCP with an AI-assisted coding editor (such as Cursor or Windsurf), be sure to load the [lever-rules.md](./docs/lever-rules.md) file into your editor's rules for the coding agent/AI assistant. This file provides best practices and guidance for the agent, ensuring it uses Lever MCP tools efficiently and according to recommended patterns:
 - Prefer built-in Lever MCP tools for data operations
 - Apply best practices for data transformation, list/set operations, and more
 - Use efficient, maintainable patterns for code generation
@@ -112,16 +127,27 @@ Performs string operations and mutations.
 - `operation` (str): The operation to perform. One of:
     - 'camel_case': Converts to camelCase (e.g., 'foo bar' → 'fooBar').
     - 'capitalize': Capitalizes the first character (e.g., 'foo bar' → 'Foo bar').
+    - 'contains': Checks if string contains a substring (param: str to find).
     - 'deburr': Removes accents/diacritics (e.g., 'Café' → 'Cafe').
+    - 'ends_with': Checks if string ends with substring (param: str).
+    - 'is_alpha': Checks if string contains only alphabetic characters.
+    - 'is_digit': Checks if string contains only digits.
+    - 'is_empty': Checks if string is empty.
+    - 'is_equal': Checks if strings are equal (param: str to compare).
+    - 'is_lower': Checks if string is all lowercase.
+    - 'is_upper': Checks if string is all uppercase.
     - 'kebab_case': Converts to kebab-case (e.g., 'foo bar' → 'foo-bar').
     - 'lower_case': Converts to lowercase (e.g., 'Hello' → 'hello').
     - 'replace': Replaces all occurrences of a substring (requires data={'old': 'x', 'new': 'y'}).
     - 'reverse': Reverses the string (e.g., 'hello' → 'olleh').
+    - 'sample_size': Returns n random characters (param: int).
+    - 'shuffle': Randomly shuffles string characters.
     - 'snake_case': Converts to snake_case (e.g., 'foo bar' → 'foo_bar').
-    - 'upper_case': Converts to uppercase (e.g., 'Hello' → 'HELLO').
+    - 'starts_with': Checks if string starts with substring (param: str).
     - 'template': Interpolates variables using {var} syntax (requires data dict).
     - 'trim': Removes leading and trailing whitespace.
-    - 'starts_with', 'ends_with', 'contains', 'is_equal', 'is_empty', 'is_digit', 'is_alpha', 'is_upper', 'is_lower', 'xor', 'shuffle', 'sample_size'.
+    - 'upper_case': Converts to uppercase (e.g., 'Hello' → 'HELLO').
+    - 'xor': String-specific XOR operation (param: str).
 - `param` (Any, optional): Parameter for operations that require one.
 - `data` (dict, optional): Data for 'template' and 'replace' operations.
 
@@ -138,46 +164,98 @@ strings('foo bar foo', 'replace', data={'old': 'foo', 'new': 'baz'})  # => {'val
 ---
 
 ### lists
-Performs list operations and mutations.
+Performs list operations and mutations with support for Lua expressions.
 
 **Parameters:**
 - `items` (list): The input list to operate on.
-- `operation` (str): The operation to perform. One of:
-    - 'chunk': Splits a list into chunks of a given size (param: int).
-    - 'compact': Removes falsy values from a list.
-    - 'drop': Drops n elements from the beginning (param: int).
-    - 'drop_right': Drops n elements from the end (param: int).
-    - 'flatten': Flattens a list one level deep.
-    - 'flatten_deep': Flattens a nested list completely.
-    - 'initial': Gets all but the last element.
-    - 'partition': Splits a list into two lists based on a property (param: str).
-    - 'pluck': Extracts a list of values for a given key (param: str).
-    - 'remove_by': Removes items where a property matches a value (param: {'key': str, 'value': Any}).
-    - 'sample_size': Gets n random elements (param: int).
-    - 'shuffle': Shuffles the list.
-    - 'sort_by': Sorts a list of objects by a key (param: str).
-    - 'tail': Gets all but the first element.
-    - 'take': Takes n elements from the beginning (param: int).
-    - 'take_right': Takes n elements from the end (param: int).
-    - 'union': Unique values from all given lists.
-    - 'uniq_by': Removes duplicates by a key (param: str).
-    - 'unzip_list': Unzips a list of tuples into separate lists.
-    - 'xor': Symmetric difference of the given lists.
-    - 'zip_lists': Zips multiple lists into a list of tuples.
-    - 'is_empty', 'difference', 'intersection', 'difference_by', 'intersection_by', 'group_by', 'count_by', 'key_by', 'find_by', 'head', 'last', 'sample', 'nth', 'min_by', 'max_by', 'index_of', 'random_except', 'contains', 'is_equal', 'is_empty'.
-- `param` (Any, optional): Parameter for operations that require one.
-- `others` (list, optional): Second list for set-like operations.
-- `key` (str, optional): Property name for *_by operations.
+- `operation` (str): The operation to perform. Key operations include:
+    - 'chunk': Split into chunks (param: int)
+    - 'compact': Remove falsy values
+    - 'contains': Check if item exists (param: value)
+    - 'count_by': Count occurrences by expression result/key
+    - 'difference': Items in first not in second (others: list)
+    - 'difference_by': Items in first list not matching expression in second
+    - 'drop': Drop n elements from start (param: int)
+    - 'drop_right': Drop n elements from end (param: int)
+    - 'find_by': Find first item matching expression/key-value
+    - 'flatten': Flatten one level
+    - 'flatten_deep': Flatten completely
+    - 'group_by': Group items by expression result/key value
+    - 'head': First element
+    - 'index_of': Find index of item (param: dict with 'key' and 'value')
+    - 'initial': All but last element
+    - 'intersection': Items in both lists (others: list)
+    - 'intersection_by': Items in first list matching expression in second
+    - 'is_empty': Check if list is empty
+    - 'is_equal': Check if lists are equal (param: list)
+    - 'key_by': Create dict keyed by expression result/field
+    - 'last': Last element
+    - 'max_by': Find max by expression result/key
+    - 'min_by': Find min by expression result/key
+    - 'nth': Get nth element (param: int, supports negative indexing)
+    - 'partition': Split by expression result/boolean key
+    - 'pluck': Extract values by expression/key (expression: any value)
+    - 'random_except': Random item excluding condition (param: dict with 'key' and 'value')
+    - 'remove_by': Remove items matching expression/key-value
+    - 'sample': Get one random item
+    - 'sample_size': Get n random items (param: int)
+    - 'shuffle': Randomize order
+    - 'sort_by': Sort by expression result/key (expression: any comparable value)
+    - 'tail': All but first element
+    - 'take': Take n elements from start (param: int)
+    - 'take_right': Take n elements from end (param: int)
+    - 'union': Unique values from all lists (others: list)
+    - 'uniq_by': Remove duplicates by expression result/key
+    - 'unzip_list': Unzip list of tuples
+    - 'xor': Symmetric difference (others: list)
+    - 'zip_lists': Zip multiple lists
+- `param` (Any, optional): Parameter for operations (int for take/drop, str for sort_by)
+- `others` (list, optional): Second list for set operations like difference/intersection
+- `key` (str, optional): Property name for *_by operations (faster, alternative to expression)
+- `expression` (str, optional): Lua expression for advanced filtering/grouping/sorting/extraction
+
+**Lua Expressions:**
+Enable powerful filtering, grouping, sorting, and extraction with Lua expressions:
+- **Filtering**: `"age > 25"`, `"score >= 80"`, `"name == 'Alice'"`
+- **Complex conditions**: `"age > 25 and score >= 80"`, `"status == 'active' or priority == 'high'"`
+- **Grouping**: `"age >= 30 and 'senior' or 'junior'"` (returns group key)
+- **Sorting**: `"age * -1"` (reverse age), `"string.lower(name)"` (case-insensitive)
+- **Extraction**: `"string.upper(name)"`, `"age > 18 and name or 'minor'"`
+- **Math**: `"math.abs(score - 50)"`, `"x*x + y*y"` (distance squared)
+- **Null handling**: `"item == null"`, `"age ~= null"`, `"item[2] == null"` (JSON null becomes `null`)
+
+Available functions: `math.*`, `string.*`, `os.time/date/clock`, `type()`, `tonumber()`, `tostring()`. Dictionary keys accessible directly (`age`, `name`) or via `item.key`.
+
+**Null Handling**: JSON null values become `null` table (not Lua `nil`). This is because Lua does not support `nil` as a list value—using `nil` would remove the element from the list. Important: `null` is truthy, use `== null` for null checks, `type(null)` returns "table". This preserves array indices and enables consistent null checking.
 
 **Returns:**
 - `dict`: Always returns a dictionary with a 'value' key containing the result. If an error occurs, the dict will also have an 'error' key.
 
-**Usage Example:**
+**Usage Examples:**
 ```python
+# Basic operations
 lists([[1, [2, 3], 4], 5], 'flatten_deep')  # => {'value': [1, 2, 3, 4, 5]}
-lists([{'id': 1, 'name': 'Alice'}, {'id': 2, 'name': 'Bob'}], 'pluck', 'name')  # => {'value': ['Alice', 'Bob']}
 lists([1, 2, 3], 'difference', others=[2, 3])  # => {'value': [1]}
-lists([{'id': 1}, {'id': 2}], 'uniq_by', key='id')  # => {'value': [{'id': 1}]}
+
+# Using key parameter for *_by operations
+lists([{'id': 1, 'name': 'Alice'}, {'id': 2, 'name': 'Bob'}, {'id': 1, 'name': 'Alice'}], 'uniq_by', key='id')  # => {'value': [{'id': 1, 'name': 'Alice'}, {'id': 2, 'name': 'Bob'}]}
+
+# Expression-based operations
+lists([{'age': 30, 'score': 85}, {'age': 20, 'score': 95}], 'find_by', expression="age > 25")
+# => {'value': {'age': 30, 'score': 85}}
+
+lists([{'score': 90}, {'score': 70}], 'remove_by', expression="score < 80")
+# => {'value': [{'score': 90}]}
+
+lists([{'age': 30}, {'age': 20}], 'group_by', expression="age >= 25 and 'adult' or 'young'")
+# => {'value': {'adult': [{'age': 30}], 'young': [{'age': 20}]}}
+
+# Advanced expression examples
+lists([{'name': 'bob'}, {'name': 'Alice'}], 'sort_by', expression="string.lower(name)")
+# => {'value': [{'name': 'Alice'}, {'name': 'bob'}]}
+
+lists([{'x': 1, 'y': 2}, {'x': 3, 'y': 4}], 'pluck', expression="x + y")
+# => {'value': [3, 7]}
 ```
 
 ---
@@ -188,15 +266,15 @@ Performs dictionary operations, including merge, set/get value, and property che
 **Parameters:**
 - `obj` (dict or list): The source dictionary, or a list of dicts for 'merge'. Must be a dict for all operations except 'merge'.
 - `operation` (str): The operation to perform. One of:
-    - 'merge': Deep merges a list of dictionaries (obj must be a list of dicts).
-    - 'invert': Swaps keys and values.
-    - 'pick': Picks specified keys (param: list of keys).
-    - 'omit': Omits specified keys (param: list of keys).
-    - 'set_value': Sets a deep property by path (path: str or list, value: any).
     - 'get_value': Gets a deep property by path (path: str or list, default: any).
     - 'has_key': Checks if a dict has a given key (param: str).
-    - 'is_equal': Checks if two dicts are deeply equal (param: dict to compare).
+    - 'invert': Swaps keys and values.
     - 'is_empty': Checks if the dict is empty.
+    - 'is_equal': Checks if two dicts are deeply equal (param: dict to compare).
+    - 'merge': Deep merges a list of dictionaries (obj must be a list of dicts).
+    - 'omit': Omits specified keys (param: list of keys).
+    - 'pick': Picks specified keys (param: list of keys).
+    - 'set_value': Sets a deep property by path (path: str or list, value: any).
 - `param` (Any, optional): Used for 'pick', 'omit', 'has_key', 'is_equal'.
 - `path` (str or list, optional): Used for 'set_value' and 'get_value'.
 - `value` (Any, optional): Used for 'set_value'.
@@ -215,30 +293,42 @@ dicts({'a': 1}, 'get_value', path='b', default=42)  # => {'value': 42}
 ---
 
 ### any
-Performs type-agnostic property checks and comparisons.
+Performs type-agnostic property checks, comparisons, and expression evaluation.
 
 **Parameters:**
-- `value` (Any): The value to check.
+- `value` (Any): The value to check or use as context for expression evaluation.
 - `operation` (str): The operation to perform. One of:
-    - 'is_equal': Checks if two values are deeply equal (param: value to compare).
-    - 'is_empty': Checks if the value is empty.
-    - 'is_nil': Checks if the value is None.
     - 'contains': Checks if a string or list contains a value (param: value to check).
+    - 'eval': Evaluate a Lua expression with value as context (expression: Lua code).
+    - 'is_empty': Checks if the value is empty.
+    - 'is_equal': Checks if two values are deeply equal (param: value to compare).
+    - 'is_nil': Checks if the value is None.
 - `param` (Any, optional): The parameter for the operation, if required.
+- `expression` (str, optional): Lua expression to evaluate (for 'eval' operation).
 
 **Returns:**
 - `dict`: Always returns a dictionary with a 'value' key containing the result. If an error occurs, the dict will also have an 'error' key.
 
 **Usage Example:**
 ```python
+# Basic operations
 any('abc', 'contains', 'b')  # => {'value': True}
 any([1, 2, 3], 'contains', 2)  # => {'value': True}
 any({'a': 1}, 'contains', 'a')  # => {'value': False}
 any([], 'is_empty')  # => {'value': True}
 any(None, 'is_nil')  # => {'value': True}
 any(42, 'is_equal', 42)  # => {'value': True}
-any(True, 'is_equal', True)  # => {'value': True}
-any(3.14, 'is_equal', 3.14)  # => {'value': True}
+
+# Expression evaluation
+any({'age': 30, 'name': 'Alice'}, 'eval', expression="age > 25")  # => {'value': True}
+any({'x': 3, 'y': 4}, 'eval', expression="math.sqrt(x*x + y*y)")  # => {'value': 5.0}
+any("hello", 'eval', expression="string.upper(item)")  # => {'value': 'HELLO'}
+any([1, 2, 3, 4, 5], 'eval', expression="#item")  # => {'value': 5} (length)
+any(42, 'eval', expression="item * 2 + 1")  # => {'value': 85}
+
+# Null handling (important: null is truthy!)
+any(None, 'eval', expression="item == null")  # => {'value': True}
+any({'score': None}, 'eval', expression="score ~= null and 'has score' or 'no score'")  # => {'value': 'no score'}
 ```
 
 ---
