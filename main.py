@@ -425,11 +425,16 @@ def lists(
         elif operation == "partition":
             trues, falses = [], []
             for item in items:
-                result = (
-                    item.get(param)
-                    if isinstance(item, dict)
-                    else getattr(item, param, False)
-                )
+                if expression:
+                    # Use Lua expression
+                    result = evaluate_expression(expression, item)
+                else:
+                    # Use param key
+                    result = (
+                        item.get(param)
+                        if isinstance(item, dict)
+                        else getattr(item, param, False)
+                    )
                 (trues if result else falses).append(item)
             return {"value": [trues, falses]}
         elif operation == "pluck":
@@ -1449,9 +1454,262 @@ async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> dict:
     return {"value": value}
 
 
+
+
+def _register_mcp_tools_in_lua(lua_runtime: lupa.LuaRuntime):
+    """
+    Register MCP tool functions in the Lua runtime to enable calling them
+    as functions like strings.is_alpha(s) or lists.filter_by(items, expr).
+    """
+    
+    def create_tool_wrapper(tool_name, operation_name):
+        """Create a wrapper function for a specific tool operation."""
+        def wrapper(*args):
+            # Get null sentinel for proper conversion
+            null_sentinel = lua_runtime.eval("null")
+            # Support both positional args and table-based args
+            if len(args) == 1 and hasattr(args[0], 'values'):
+                # Check if this is a parameter table or just data
+                table_dict = dict(args[0])
+                
+                # Parameter tables have tool-specific parameter names as keys
+                param_keys = set()
+                if tool_name == 'strings':
+                    param_keys = {'text', 'param', 'data'}
+                elif tool_name == 'lists':
+                    param_keys = {'items', 'param', 'others', 'key', 'text', 'expression'}
+                elif tool_name == 'dicts':
+                    param_keys = {'obj', 'param', 'path', 'value', 'default'}
+                elif tool_name == 'any_tool':
+                    param_keys = {'value', 'param', 'expression'}
+                elif tool_name == 'generate':
+                    param_keys = {'text', 'param'}
+                
+                # If any table key matches parameter names, treat as parameter table
+                is_param_table = bool(param_keys.intersection(table_dict.keys()))
+                
+                if is_param_table:
+                    # Single table argument - extract named parameters
+                    params_table = decode_null_from_lua(table_dict)
+                    
+                    # Call the tool function with named parameters from the table
+                    if tool_name == 'strings':
+                        result = strings.fn(
+                            text=params_table.get('text'),
+                            operation=operation_name,
+                            param=params_table.get('param'),
+                            data=params_table.get('data')
+                        )
+                    elif tool_name == 'lists':
+                        result = lists.fn(
+                            items=params_table.get('items'),
+                            operation=operation_name,
+                            param=params_table.get('param'),
+                            others=params_table.get('others'),
+                            key=params_table.get('key', ''),
+                            text=params_table.get('text'),
+                            expression=params_table.get('expression')
+                        )
+                    elif tool_name == 'dicts':
+                        result = dicts.fn(
+                            obj=params_table.get('obj'),
+                            operation=operation_name,
+                            param=params_table.get('param'),
+                            path=params_table.get('path'),
+                            value=params_table.get('value'),
+                            default=params_table.get('default')
+                        )
+                    elif tool_name == 'any_tool':
+                        result = any_tool.fn(
+                            value=params_table.get('value'),
+                            operation=operation_name,
+                            param=params_table.get('param'),
+                            expression=params_table.get('expression')
+                        )
+                    elif tool_name == 'generate':
+                        result = generate.fn(
+                            text=params_table.get('text'),
+                            operation=operation_name,
+                            param=params_table.get('param')
+                        )
+                    else:
+                        return None
+                else:
+                    # Single table that's data, not parameters - treat as positional
+                    data_table = decode_null_from_lua(args[0], null_sentinel)
+                    
+                    # Call with the table as the first positional argument
+                    if tool_name == 'strings':
+                        result = strings.fn(text=data_table, operation=operation_name)
+                    elif tool_name == 'lists':
+                        result = lists.fn(items=data_table, operation=operation_name)
+                    elif tool_name == 'dicts':
+                        result = dicts.fn(obj=data_table, operation=operation_name)
+                    elif tool_name == 'any_tool':
+                        result = any_tool.fn(value=data_table, operation=operation_name)
+                    elif tool_name == 'generate':
+                        result = generate.fn(text=data_table, operation=operation_name)
+                    else:
+                        return None
+            else:
+                # Positional arguments - convert and use positional mapping
+                py_args = []
+                for i, arg in enumerate(args):
+                    if hasattr(arg, 'values'):  # Lua table
+                        # Check if this is the null sentinel
+                        if arg is null_sentinel:
+                            py_args.append(None)
+                        else:
+                            converted_table = decode_null_from_lua(dict(arg))
+                            
+                            # Special handling for first argument that might be a parameter table
+                            if i == 0 and isinstance(converted_table, dict):
+                                # Check if this looks like a parameter table for this tool
+                                if tool_name == 'lists' and 'items' in converted_table:
+                                    # Extract the items value for lists operations
+                                    py_args.append(converted_table['items'])
+                                elif tool_name == 'strings' and 'text' in converted_table:
+                                    # Extract the text value for strings operations  
+                                    py_args.append(converted_table['text'])
+                                elif tool_name == 'dicts' and 'obj' in converted_table:
+                                    # Extract the obj value for dicts operations
+                                    py_args.append(converted_table['obj'])
+                                elif tool_name == 'any_tool' and 'value' in converted_table:
+                                    # Extract the value for any_tool operations
+                                    py_args.append(converted_table['value'])
+                                elif tool_name == 'generate' and 'text' in converted_table:
+                                    # Extract the text value for generate operations
+                                    py_args.append(converted_table['text'])
+                                else:
+                                    # Not a parameter table, use as-is
+                                    py_args.append(converted_table)
+                            else:
+                                py_args.append(converted_table)
+                    elif hasattr(arg, '__iter__') and not isinstance(arg, str):  # Other Lua tables
+                        try:
+                            py_args.append(decode_null_from_lua(dict(arg)))
+                        except:
+                            py_args.append(list(arg))
+                    else:
+                        py_args.append(arg)
+                
+                # Call the tool function directly using .fn to access the underlying implementation
+                if tool_name == 'strings':
+                    result = strings.fn(text=py_args[0] if py_args else None, operation=operation_name,
+                                      param=py_args[1] if len(py_args) > 1 else None,
+                                      data=py_args[2] if len(py_args) > 2 else None)
+                elif tool_name == 'lists':
+                    # For lists, the second argument is usually expression, third is param, fourth is key
+                    items_arg = py_args[0] if py_args else None
+                    expression_arg = py_args[1] if len(py_args) > 1 else None
+                    key_arg = py_args[3] if len(py_args) > 3 else ""
+                    if operation_name == 'key_by':
+                        print(f"DEBUG lists.key_by: items={items_arg}, key={key_arg}")
+                    result = lists.fn(items=items_arg, operation=operation_name,
+                                    expression=expression_arg,
+                                    param=py_args[2] if len(py_args) > 2 else None,
+                                    key=key_arg,
+                                    others=py_args[4] if len(py_args) > 4 else None)
+                    if operation_name == 'key_by':
+                        print(f"DEBUG lists.key_by result: {result}")
+                elif tool_name == 'dicts':
+                    result = dicts.fn(obj=py_args[0] if py_args else None, operation=operation_name,
+                                    param=py_args[1] if len(py_args) > 1 else None,
+                                    path=py_args[2] if len(py_args) > 2 else None,
+                                    value=py_args[3] if len(py_args) > 3 else None)
+                elif tool_name == 'any_tool':
+                    # For any_tool, param vs expression depends on the operation
+                    if operation_name in ['contains', 'is_equal']:
+                        # These operations use param for second argument
+                        result = any_tool.fn(value=py_args[0] if py_args else None, operation=operation_name,
+                                           param=py_args[1] if len(py_args) > 1 else None)
+                    else:
+                        # Operations like 'eval' use expression for second argument
+                        result = any_tool.fn(value=py_args[0] if py_args else None, operation=operation_name,
+                                           expression=py_args[1] if len(py_args) > 1 else None,
+                                           param=py_args[2] if len(py_args) > 2 else None)
+                elif tool_name == 'generate':
+                    result = generate.fn(text=py_args[0] if py_args else None, operation=operation_name,
+                                       param=py_args[1] if len(py_args) > 1 else None)
+                else:
+                    return None
+            
+            # Return the value directly, or None if error
+            if isinstance(result, dict) and "value" in result:
+                return encode_null_for_lua(result["value"], lua_runtime)
+            return None
+        
+        return wrapper
+
+    # String operations
+    string_ops = [
+        'camel_case', 'capitalize', 'contains', 'deburr', 'ends_with', 'is_alpha',
+        'is_digit', 'is_empty', 'is_equal', 'is_lower', 'is_upper', 'kebab_case',
+        'lower_case', 'replace', 'reverse', 'sample_size', 'shuffle', 'snake_case',
+        'starts_with', 'template', 'trim', 'upper_case', 'xor'
+    ]
+    
+    # List operations
+    list_ops = [
+        'all_by', 'every', 'any_by', 'some', 'count_by', 'difference_by', 'filter_by',
+        'find_by', 'flat_map', 'group_by', 'intersection_by', 'key_by', 'map',
+        'max_by', 'min_by', 'partition', 'pluck', 'reduce', 'remove_by', 'sort_by',
+        'uniq_by', 'zip_with', 'chunk', 'compact', 'contains', 'drop', 'drop_right',
+        'flatten', 'flatten_deep', 'head', 'index_of', 'initial', 'is_empty',
+        'is_equal', 'last', 'nth', 'random_except', 'sample', 'sample_size',
+        'shuffle', 'tail', 'take', 'take_right', 'difference', 'intersection',
+        'union', 'xor', 'unzip_list', 'zip_lists'
+    ]
+    
+    # Dict operations  
+    dict_ops = [
+        'get_value', 'has_key', 'invert', 'is_empty', 'is_equal', 'merge',
+        'omit', 'pick', 'set_value'
+    ]
+    
+    # Any operations
+    any_ops = ['contains', 'eval', 'is_empty', 'is_equal', 'is_nil']
+    
+    # Generate operations
+    generate_ops = [
+        'accumulate', 'cartesian_product', 'combinations', 'cycle', 'permutations',
+        'powerset', 'range', 'repeat', 'unique_pairs', 'windowed', 'zip_with_index'
+    ]
+    
+    # Create string table with operations
+    strings_table = {}
+    for op in string_ops:
+        strings_table[op] = create_tool_wrapper('strings', op)
+    lua_runtime.globals()['strings'] = lua_runtime.table_from(strings_table)
+    
+    # Create lists table with operations
+    lists_table = {}
+    for op in list_ops:
+        lists_table[op] = create_tool_wrapper('lists', op)
+    lua_runtime.globals()['lists'] = lua_runtime.table_from(lists_table)
+    
+    # Create dicts table with operations
+    dicts_table = {}
+    for op in dict_ops:
+        dicts_table[op] = create_tool_wrapper('dicts', op)
+    lua_runtime.globals()['dicts'] = lua_runtime.table_from(dicts_table)
+    
+    # Create any table with operations (renamed from any_tool to avoid Lua keyword)
+    any_table = {}
+    for op in any_ops:
+        any_table[op] = create_tool_wrapper('any_tool', op)
+    lua_runtime.globals()['any'] = lua_runtime.table_from(any_table)
+    
+    # Create generate table with operations
+    generate_table = {}
+    for op in generate_ops:
+        generate_table[op] = create_tool_wrapper('generate', op)
+    lua_runtime.globals()['generate'] = lua_runtime.table_from(generate_table)
+
+
 def create_lua_runtime(safe_mode: Optional[bool] = None) -> lupa.LuaRuntime:
     """
-    Create a Lua runtime with optional sandboxing.
+    Create a Lua runtime with optional sandboxing and MCP tool function registration.
 
     Args:
         safe_mode: If True, applies safety rails. If None, uses global SAFE_MODE
@@ -1500,6 +1758,9 @@ def create_lua_runtime(safe_mode: Optional[bool] = None) -> lupa.LuaRuntime:
             debug = nil
         """
         )
+
+    # Register MCP tool functions in Lua runtime
+    _register_mcp_tools_in_lua(lua_runtime)
 
     return lua_runtime
 
@@ -1600,10 +1861,24 @@ def evaluate_expression(
                     ):
                         lua_runtime.globals()[key] = encode_null_for_lua(value, lua_runtime)  # type: ignore  # noqa
             lua_runtime.globals()["item"] = encode_null_for_lua(item, lua_runtime)  # type: ignore  # noqa
+        # Evaluate the expression
         try:
-            return lua_runtime.execute("return (" + expression + ")")
+            result = lua_runtime.execute("return (" + expression + ")")
         except lupa.LuaError:
-            return lua_runtime.execute(expression)
+            result = lua_runtime.execute(expression)
+        
+        # Check if the result is a Lua function - if so, call it with the item
+        if hasattr(result, '__call__'):
+            try:
+                # Call the function with the item as argument
+                result = result(encode_null_for_lua(item, lua_runtime))
+            except Exception:
+                # If calling the function fails, return the original result
+                pass
+        
+        # Convert Lua results back to Python
+        null_sentinel = lua_runtime.eval("null")
+        return decode_null_from_lua(result, null_sentinel)
     except Exception:
         return None
 
