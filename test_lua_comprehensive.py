@@ -464,8 +464,8 @@ class TestLuaListsOperations:
         # Create dict keyed by key field - now with proper parameter passing
         result = evaluate_expression('lists.key_by({{id=1, name="alice"}, {id=2, name="bob"}}, nil, nil, "id")', {})
         assert isinstance(result, dict)
-        assert result[1] == {"id": 1, "name": "alice"}
-        assert result[2] == {"id": 2, "name": "bob"}
+        assert result["1"] == {"id": 1, "name": "alice"}
+        assert result["2"] == {"id": 2, "name": "bob"}
         
         # Table syntax should also work now
         result = evaluate_expression('lists.key_by({items={{key="x", val=10}, {key="y", val=20}}, key="key"})', {})

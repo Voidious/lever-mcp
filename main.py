@@ -750,7 +750,15 @@ def lists(
                     "value": None,
                     "error": "All items must be dicts for operation 'key_by'.",
                 }
-            return {"value": {item[key]: item for item in items}}
+            # Convert integer keys to strings to avoid Lua table->list conversion
+            result = {}
+            for item in items:
+                k = item[key]
+                # Convert integer keys to strings like JSON does
+                if isinstance(k, int):
+                    k = str(k)
+                result[k] = item
+            return {"value": result}
         # Selection
         elif operation == "find_by":
             if expression:
