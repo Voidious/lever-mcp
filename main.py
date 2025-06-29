@@ -209,8 +209,6 @@ def lists(
     operation: Optional[str] = None,
     param: Any = None,
     others: Optional[list] = None,
-    key: str = "",
-    text: Any = None,
     expression: Optional[str] = None,
 ) -> dict:
     """
@@ -222,25 +220,24 @@ def lists(
             EXPRESSION OPERATIONS (use expression parameter):
             - 'all_by'/'every': Return True if all items satisfy the expression
             - 'any_by'/'some': Return True if any item satisfies the expression
-            - 'count_by': Count occurrences by expression result/key
+            - 'count_by': Count occurrences by expression result
             - 'difference_by': Items in first list not matching expression in second
             - 'filter_by': Return all items matching the expression (predicate)
-            - 'find_by': Find first item matching expression/key-value
+            - 'find_by': Find first item matching expression
             - 'flat_map': Like map, but flattens one level if the mapping returns lists
-            - 'group_by': Group items by expression result/key value
+            - 'group_by': Group items by expression result
             - 'intersection_by': Items in first list matching expression in second
-            - 'key_by': Create dict keyed by expression result/field
+            - 'key_by': Create dict keyed by expression result
             - 'map': Apply a Lua expression to each item and return the transformed list
-            - 'max_by': Find max by expression result/key
-            - 'min_by': Find min by expression result/key
-            - 'partition': Split by expression result/boolean key
-            - 'pluck': Extract values by expression/key (expression: any value)
+            - 'max_by': Find max by expression result
+            - 'min_by': Find min by expression result
+            - 'partition': Split by expression result/boolean
+            - 'pluck': Extract values by expression (expression: any value)
             - 'reduce': Aggregate the list using a binary Lua expression (uses 'acc' and
               'item') and optional initializer (param)
-            - 'remove_by': Remove items matching expression/key-value
-            - 'sort_by': Sort by expression result/key
-              (expression: any comparable value)
-            - 'uniq_by': Remove duplicates by expression result/key
+            - 'remove_by': Remove items matching expression
+            - 'sort_by': Sort by expression result (expression: any comparable value)
+            - 'uniq_by': Remove duplicates by expression result
             - 'zip_with': Combine two lists element-wise using a binary Lua expression
               (uses 'item1' and 'item2')
 
@@ -280,8 +277,6 @@ def lists(
 
         param (Any, optional): Parameter for operations requiring one
         others (list, optional): Second list for set operations
-        key (str, optional): Property name for *_by operations (faster, alternative to
-            expression)
         expression (str, optional): Lua expression for advanced
             filtering/grouping/sorting/extraction
 
@@ -304,7 +299,7 @@ def lists(
         dict: Result with 'value' key. On error, includes 'error' key.
 
     MCP Usage Examples:
-        lists([{'id': 1}, {'id': 2}, {'id': 1}], 'uniq_by', key='id')
+        lists([{'id': 1}, {'id': 2}, {'id': 1}], 'uniq_by', expression='id')
           # => {'value': [{'id': 1}, {'id': 2}]}
         lists([{'age': 30}, {'age': 20}], 'find_by', expression="age > 25")
           # => {'value': {'age': 30}}
@@ -324,9 +319,7 @@ def lists(
         lists.difference({items={1, 2, 3}, others={2, 3}})  # => [1]
         lists.group_by({items={{age=30}, {age=20}}, expression="age >= 25 and 'adult' or 'young'"})  # => {adult=[{age=30}], young=[{age=20}]}
     """
-    # Accept 'text' as an alias for items for compatibility with test_extended.py
-    if items is None and text is not None:
-        items = text
+    # Initialize items if None
     if items is None:
         items = []
     if others is None:
@@ -384,6 +377,15 @@ def lists(
     """
     import random, json
 
+    def evaluate_expression_optimized(expr, item):
+        """Optimized expression evaluation with fast path for simple key access."""
+        if isinstance(item, dict) and expr.isidentifier() and expr in item:
+            # Fast path: simple key lookup without Lua runtime
+            return item[expr]
+        else:
+            # Full expression evaluation
+            return evaluate_expression(expr, item)
+
     try:
         # Mutations
         if operation == "flatten_deep":
@@ -399,94 +401,64 @@ def lists(
             _flatten(items)
             return {"value": result}
         elif operation == "sort_by":
-            if expression:
-                # Use Lua expression for sorting
-                def get_sort_key_expr(x):
-                    result = evaluate_expression(expression, x)
-                    # Handle different result types for sorting
-                    if result is None:
-                        return ""  # Sort None values first
-                    elif isinstance(result, dict):
-                        return json.dumps(result, sort_keys=True)
-                    return result
-
-                return {"value": sorted(items, key=get_sort_key_expr)}
-            elif param:
-                # Use traditional key-based sorting
-                def get_sort_key_param(x):
-                    v = (
-                        x.get(param, "")
-                        if isinstance(x, dict)
-                        else getattr(x, param, "")
-                    )
-                    if isinstance(v, dict):
-                        return json.dumps(v, sort_keys=True)
-                    return v
-
-                return {"value": sorted(items, key=get_sort_key_param)}
-            else:
+            # Use expression if provided, otherwise use param as expression
+            sort_expr = expression or (param if isinstance(param, str) else None)
+            if not sort_expr:
                 return {
                     "value": None,
-                    "error": (
-                        "Missing required param (key name) or expression for operation "
-                        "'sort_by'.",
-                    ),
+                    "error": "Missing required expression or param parameter for operation 'sort_by'.",
                 }
+            
+            def get_sort_key(x):
+                result = evaluate_expression_optimized(sort_expr, x)
+                # Handle different result types for sorting
+                if result is None:
+                    return ""  # Sort None values first
+                elif isinstance(result, dict):
+                    return json.dumps(result, sort_keys=True)
+                return result
+            return {"value": sorted(items, key=get_sort_key)}
         elif operation == "uniq_by":
+            # Use expression if provided, otherwise use param as expression
+            uniq_expr = expression or (param if isinstance(param, str) else None)
+            if not uniq_expr:
+                return {
+                    "value": None,
+                    "error": "Missing required expression or param parameter for operation 'uniq_by'.",
+                }
             seen = set()
             result = []
             for item in items:
-                k = (
-                    item.get(param)
-                    if isinstance(item, dict)
-                    else getattr(item, param, None)
-                )
+                k = evaluate_expression_optimized(uniq_expr, item)
                 k_hash = json.dumps(k, sort_keys=True) if isinstance(k, dict) else k
                 if k_hash not in seen:
                     seen.add(k_hash)
                     result.append(item)
             return {"value": result}
         elif operation == "partition":
+            # Use expression if provided, otherwise use param as expression
+            part_expr = expression or (param if isinstance(param, str) else None)
+            if not part_expr:
+                return {
+                    "value": None,
+                    "error": "Missing required expression or param parameter for operation 'partition'.",
+                }
             trues, falses = [], []
             for item in items:
-                if expression:
-                    # Use Lua expression
-                    result = evaluate_expression(expression, item)
-                else:
-                    # Use param key
-                    result = (
-                        item.get(param)
-                        if isinstance(item, dict)
-                        else getattr(item, param, False)
-                    )
+                result = evaluate_expression_optimized(part_expr, item)
                 (trues if result else falses).append(item)
             return {"value": [trues, falses]}
         elif operation == "pluck":
-            if expression:
-                # Use Lua expression for extraction
-                return {
-                    "value": [evaluate_expression(expression, item) for item in items]
-                }
-            elif param:
-                # Use traditional key-based extraction
-                return {
-                    "value": [
-                        (
-                            item.get(param)
-                            if isinstance(item, dict)
-                            else getattr(item, param, None)
-                        )
-                        for item in items
-                    ]
-                }
-            else:
+            # Use expression if provided, otherwise use param as expression
+            pluck_expr = expression or (param if isinstance(param, str) else None)
+            if not pluck_expr:
                 return {
                     "value": None,
-                    "error": (
-                        "Missing required param (key name) or expression for operation "
-                        "'pluck'.",
-                    ),
+                    "error": "Missing required expression or param parameter for operation 'pluck'.",
                 }
+            return {
+                "value": [evaluate_expression_optimized(pluck_expr, item) for item in items]
+            }
         elif operation == "compact":
             return {"value": [item for item in items if item]}
         elif operation == "chunk":
@@ -497,31 +469,18 @@ def lists(
         elif operation == "unzip_list":
             return {"value": [list(t) for t in zip(*items)]}
         elif operation == "remove_by":
-            if expression:
-                # Use Lua expression - remove items that match the expression
+            if not expression:
                 return {
-                    "value": [
-                        item
-                        for item in items
-                        if not evaluate_expression(expression, item)
-                    ]
+                    "value": None,
+                    "error": "Missing required expression parameter for operation 'remove_by'.",
                 }
-            else:
-                # Use traditional key-value matching
-                key_ = param["key"]
-                value_ = param["value"]
-                return {
-                    "value": [
-                        item
-                        for item in items
-                        if (
-                            item.get(key_)
-                            if isinstance(item, dict)
-                            else getattr(item, key_, None)
-                        )
-                        != value_
-                    ]
-                }
+            return {
+                "value": [
+                    item
+                    for item in items
+                    if not evaluate_expression_optimized(expression, item)
+                ]
+            }
         elif operation == "tail":
             return {"value": items[1:] if len(items) > 1 else []}
         elif operation == "initial":
@@ -714,78 +673,51 @@ def lists(
                 return {"value": []}
         # Grouping/Counting
         elif operation == "group_by":
-            if expression:
-                # Use Lua expression to compute grouping key
-                result = {}
-                for item in items:
-                    try:
-                        k = evaluate_expression(expression, item)
-                        # Convert result to string for consistent grouping
-                        k = str(k) if k is not None else "None"
-                        result.setdefault(k, []).append(item)
-                    except Exception:
-                        # If expression fails, group under "error"
-                        result.setdefault("error", []).append(item)
-                return {"value": result}
-            elif not key:
+            # Use expression if provided, otherwise use param as expression
+            group_expr = expression or (param if isinstance(param, str) else None)
+            if not group_expr:
                 return {
                     "value": None,
-                    "error": (
-                        "Missing required key parameter or expression for operation "
-                        "'group_by'.",
-                    ),
-                }
-            else:
-                # Use traditional key-based grouping
-                if not all(isinstance(item, dict) for item in items):
-                    return {
-                        "value": None,
-                        "error": "All items must be dicts for operation 'group_by'.",
-                    }
-                result = {}
-                for item in items:
-                    k = item.get(key)
-                    result.setdefault(k, []).append(item)
-                return {"value": result}
-        elif operation == "count_by":
-            if not key and not expression:
-                return {
-                    "value": None,
-                    "error": "Missing required key or expression parameter for operation 'count_by'.",
+                    "error": "Missing required expression or param parameter for operation 'group_by'.",
                 }
             result = {}
             for item in items:
-                if expression:
-                    # Use expression evaluation
-                    k = evaluate_expression(expression, item)
-                    # Convert result to string for consistent dictionary keys
-                    k = str(k) if k is not None else "null"
-                else:
-                    # Use key parameter (legacy behavior)
-                    if not isinstance(item, dict):
-                        return {
-                            "value": None,
-                            "error": "All items must be dicts when using key parameter for 'count_by'.",
-                        }
-                    k = item.get(key)
-                    k = str(k) if k is not None else "null"
+                try:
+                    k = evaluate_expression_optimized(group_expr, item)
+                    # Convert result to string for consistent grouping
+                    k = str(k) if k is not None else "None"
+                    result.setdefault(k, []).append(item)
+                except Exception:
+                    # If expression fails, group under "error"
+                    result.setdefault("error", []).append(item)
+            return {"value": result}
+        elif operation == "count_by":
+            # Use expression if provided, otherwise use param as expression
+            count_expr = expression or (param if isinstance(param, str) else None)
+            if not count_expr:
+                return {
+                    "value": None,
+                    "error": "Missing required expression or param parameter for operation 'count_by'.",
+                }
+            result = {}
+            for item in items:
+                k = evaluate_expression_optimized(count_expr, item)
+                # Convert result to string for consistent dictionary keys
+                k = str(k) if k is not None else "null"
                 result[k] = result.get(k, 0) + 1
             return {"value": result}
         elif operation == "key_by":
-            if not key:
+            # Use expression if provided, otherwise use param as expression
+            key_expr = expression or (param if isinstance(param, str) else None)
+            if not key_expr:
                 return {
                     "value": None,
-                    "error": "Missing required key parameter for operation 'key_by'.",
-                }
-            if not all(isinstance(item, dict) for item in items):
-                return {
-                    "value": None,
-                    "error": "All items must be dicts for operation 'key_by'.",
+                    "error": "Missing required expression or param parameter for operation 'key_by'.",
                 }
             # Convert integer keys to strings to avoid Lua table->list conversion
             result = {}
             for item in items:
-                k = item[key]
+                k = evaluate_expression_optimized(key_expr, item)
                 # Convert integer keys to strings like JSON does
                 if isinstance(k, int):
                     k = str(k)
@@ -793,28 +725,27 @@ def lists(
             return {"value": result}
         # Selection
         elif operation == "find_by":
+            # Use expression if provided, otherwise check for param with key/value structure
             if expression:
-                # Use Lua expression
                 for item in items:
-                    result = evaluate_expression(expression, item)
+                    result = evaluate_expression_optimized(expression, item)
                     # For find_by, treat result as boolean (truthy/falsy)
                     if result:
                         return {"value": item}
                 return {"value": None}
-            else:
-                # Use traditional key-value matching
+            elif param and isinstance(param, dict) and "key" in param and "value" in param:
+                # Legacy param mode with key/value structure
                 key_ = param["key"]
                 value_ = param["value"]
-                if not all(isinstance(item, dict) for item in items):
-                    return {
-                        "value": None,
-                        "error": "All items must be dicts for find_by.",
-                    }
                 for item in items:
-                    v = item.get(key_)
-                    if v == value_:
+                    if isinstance(item, dict) and item.get(key_) == value_:
                         return {"value": item}
                 return {"value": None}
+            else:
+                return {
+                    "value": None,
+                    "error": "Missing required expression parameter or param with key/value for operation 'find_by'.",
+                }
         elif operation == "head":
             if not isinstance(items, list):
                 return {"value": None, "error": "head operation requires a list"}
@@ -839,55 +770,33 @@ def lists(
                 return {"value": items[idx]}
             return {"value": None}
         elif operation == "min_by":
-            if expression:
-                # Use Lua expression for min comparison
-                def min_key_expr(x):
-                    result = evaluate_expression(expression, x)
-                    return result if result is not None else float("inf")
-
-                return {"value": min(items, key=min_key_expr)}
-            elif param:
-                # Use traditional key-based min
-                key_ = param
-
-                def min_key_param(x):
-                    v = x.get(key_) if isinstance(x, dict) else getattr(x, key_, None)
-                    return v if v is not None else float("inf")
-
-                return {"value": min(items, key=min_key_param)}
-            else:
+            # Use expression if provided, otherwise use param as expression
+            min_expr = expression or (param if isinstance(param, str) else None)
+            if not min_expr:
                 return {
                     "value": None,
-                    "error": (
-                        "Missing required param (key name) or expression for operation "
-                        "'min_by'.",
-                    ),
+                    "error": "Missing required expression or param parameter for operation 'min_by'.",
                 }
+            
+            def min_key(x):
+                result = evaluate_expression_optimized(min_expr, x)
+                return result if result is not None else float("inf")
+
+            return {"value": min(items, key=min_key)}
         elif operation == "max_by":
-            if expression:
-                # Use Lua expression for max comparison
-                def max_key_expr(x):
-                    result = evaluate_expression(expression, x)
-                    return result if result is not None else float("-inf")
-
-                return {"value": max(items, key=max_key_expr)}
-            elif param:
-                # Use traditional key-based max
-                key_ = param
-
-                def max_key_param(x):
-                    v = x.get(key_) if isinstance(x, dict) else getattr(x, key_, None)
-                    return v if v is not None else float("-inf")
-
-                return {"value": max(items, key=max_key_param)}
-            else:
+            # Use expression if provided, otherwise use param as expression
+            max_expr = expression or (param if isinstance(param, str) else None)
+            if not max_expr:
                 return {
                     "value": None,
-                    "error": (
-                        "Missing required param (key name) or expression for operation "
-                        "'max_by'.",
-                    ),
+                    "error": "Missing required expression or param parameter for operation 'max_by'.",
                 }
+            
+            def max_key(x):
+                result = evaluate_expression_optimized(max_expr, x)
+                return result if result is not None else float("-inf")
+
+            return {"value": max(items, key=max_key)}
         elif operation == "index_of":
             key_ = param["key"]
             value_ = param["value"]
@@ -1556,7 +1465,7 @@ def _register_mcp_tools_in_lua(lua_runtime: lupa.LuaRuntime):
                 if tool_name == 'strings':
                     param_keys = {'text', 'param', 'data'}
                 elif tool_name == 'lists':
-                    param_keys = {'items', 'param', 'others', 'key', 'text', 'expression'}
+                    param_keys = {'items', 'param', 'others', 'expression'}
                 elif tool_name == 'dicts':
                     param_keys = {'obj', 'param', 'path', 'value', 'default'}
                 elif tool_name == 'any_tool':
@@ -1585,8 +1494,6 @@ def _register_mcp_tools_in_lua(lua_runtime: lupa.LuaRuntime):
                             operation=operation_name,
                             param=params_table.get('param'),
                             others=params_table.get('others'),
-                            key=params_table.get('key', ''),
-                            text=params_table.get('text'),
                             expression=params_table.get('expression')
                         )
                     elif tool_name == 'dicts':
@@ -1678,19 +1585,13 @@ def _register_mcp_tools_in_lua(lua_runtime: lupa.LuaRuntime):
                                       param=py_args[1] if len(py_args) > 1 else None,
                                       data=py_args[2] if len(py_args) > 2 else None)
                 elif tool_name == 'lists':
-                    # For lists, the second argument is usually expression, third is param, fourth is key
+                    # For lists, the second argument is usually expression, third is param
                     items_arg = py_args[0] if py_args else None
                     expression_arg = py_args[1] if len(py_args) > 1 else None
-                    key_arg = py_args[3] if len(py_args) > 3 else ""
-                    if operation_name == 'key_by':
-                        print(f"DEBUG lists.key_by: items={items_arg}, key={key_arg}")
                     result = lists.fn(items=items_arg, operation=operation_name,
                                     expression=expression_arg,
                                     param=py_args[2] if len(py_args) > 2 else None,
-                                    key=key_arg,
-                                    others=py_args[4] if len(py_args) > 4 else None)
-                    if operation_name == 'key_by':
-                        print(f"DEBUG lists.key_by result: {result}")
+                                    others=py_args[3] if len(py_args) > 3 else None)
                 elif tool_name == 'dicts':
                     result = dicts.fn(obj=py_args[0] if py_args else None, operation=operation_name,
                                     param=py_args[1] if len(py_args) > 1 else None,

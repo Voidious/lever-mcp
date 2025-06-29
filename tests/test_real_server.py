@@ -161,7 +161,7 @@ async def test_lists_functional_operations(shared_client):
     
     # uniq_by
     result = await shared_client.call_tool(
-        "lists", {"items": [{"id": 1}, {"id": 1}, {"id": 2}], "operation": "uniq_by", "key": "id"}
+        "lists", {"items": [{"id": 1}, {"id": 1}, {"id": 2}], "operation": "uniq_by", "expression": "id"}
     )
     result_value = json.loads(result[0].text)["value"]
     # uniq_by may only keep first occurrence, so check we get at least 1 unique
@@ -170,7 +170,7 @@ async def test_lists_functional_operations(shared_client):
     
     # count_by
     result = await shared_client.call_tool(
-        "lists", {"items": [{"type": "a"}, {"type": "b"}, {"type": "a"}], "operation": "count_by", "key": "type"}
+        "lists", {"items": [{"type": "a"}, {"type": "b"}, {"type": "a"}], "operation": "count_by", "expression": "type"}
     )
     assert json.loads(result[0].text)["value"] == {"a": 2, "b": 1}
 

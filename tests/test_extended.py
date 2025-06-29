@@ -647,7 +647,7 @@ async def test_has(client, obj, key, expected):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "items, key, expected",
+    "items, expression, expected",
     [
         (
             [{"id": "a", "v": 1}, {"id": "b", "v": 2}],
@@ -657,9 +657,9 @@ async def test_has(client, obj, key, expected):
         ([], "id", {}),
     ],
 )
-async def test_key_by(client, items, key, expected):
+async def test_key_by(client, items, expression, expected):
     value, error = await make_tool_call(
-        client, "lists", {"items": items, "operation": "key_by", "key": key}
+        client, "lists", {"items": items, "operation": "key_by", "expression": expression}
     )
     assert error is None
     assert value == expected

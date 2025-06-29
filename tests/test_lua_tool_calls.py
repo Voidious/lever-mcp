@@ -450,7 +450,7 @@ class TestLuaListsOperations:
     
     def test_lists_count_by(self):
         # Use table syntax with key parameter
-        result = evaluate_expression('lists.count_by({items={{type="A"}, {type="B"}, {type="A"}, {type="A"}}, key="type"})', {})
+        result = evaluate_expression('lists.count_by({{type="A"}, {type="B"}, {type="A"}, {type="A"}}, "type")', {})
         assert result["A"] == 3
         assert result["B"] == 1
     
@@ -486,13 +486,13 @@ class TestLuaListsOperations:
     
     def test_lists_key_by(self):
         # Create dict keyed by key field - now with proper parameter passing
-        result = evaluate_expression('lists.key_by({{id=1, name="alice"}, {id=2, name="bob"}}, nil, nil, "id")', {})
+        result = evaluate_expression('lists.key_by({{id=1, name="alice"}, {id=2, name="bob"}}, "id")', {})
         assert isinstance(result, dict)
         assert result["1"] == {"id": 1, "name": "alice"}
         assert result["2"] == {"id": 2, "name": "bob"}
         
         # Table syntax should also work now
-        result = evaluate_expression('lists.key_by({items={{key="x", val=10}, {key="y", val=20}}, key="key"})', {})
+        result = evaluate_expression('lists.key_by({{key="x", val=10}, {key="y", val=20}}, "key")', {})
         assert result["x"]["val"] == 10
         assert result["y"]["val"] == 20
     
