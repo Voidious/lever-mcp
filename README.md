@@ -387,6 +387,32 @@ chain(
 
 ---
 
+## Lua Expressions
+
+Enable powerful filtering, grouping, sorting, and extraction with Lua expressions:
+- **Filtering**: `"age > 25"`, `"score >= 80"`, `"name == 'Alice'"`
+- **Complex conditions**: `"age > 25 and score >= 80"`, `"status == 'active' or priority == 'high'"`
+- **Grouping**: `"age >= 30 and 'senior' or 'junior'"` (returns group key)
+- **Sorting**: `"age * -1"` (reverse age), `"string.lower(name)"` (case-insensitive)
+- **Extraction**: `"string.upper(name)"`, `"age > 18 and name or 'minor'"`
+- **Math**: `"math.abs(score - 50)"`, `"x*x + y*y"` (distance squared)
+- **Null handling**: `"item == null"`, `"age ~= null"`, `"item[2] == null"` (JSON null becomes `null`)
+
+You can pass either a single Lua expression (e.g., `"age > 25"`) or a block of Lua code with one or more statements. For multi-line code, use the `return` statement to specify the value to return. For example:
+
+```lua
+if age > 25 then
+  return 'adult'
+end
+return 'young'
+```
+
+Available functions: `math.*`, `string.*`, `os.time/date/clock`, `type()`, `tonumber()`, `tostring()`. Dictionary keys accessible directly (`age`, `name`) or via `item.key`.
+
+In all Lua expressions, the special variable `item` is always available and refers to the current object (which may be a dictionary, string, number, or other value).
+
+**Null Handling**: JSON null values become `null` table (not Lua `nil`). This is because Lua does not support `nil` as a list value—using `nil` would remove the element from the list. Important: `null` is truthy, use `== null` for null checks, `type(null)` returns "table". This preserves array indices and enables consistent null checking.
+
 ## Lua Function Calls
 
 Lever MCP tools are exposed as Lua functions, enabling powerful expression-based data transformations. You can call tools directly from Lua expressions using either positional or table syntax.
@@ -460,41 +486,15 @@ any.eval({score=85, passed=true}, [[
 
 ### All Available Functions
 
-- **strings**: `upper_case`, `lower_case`, `capitalize`, `contains`, `starts_with`, `ends_with`, `is_empty`, `is_equal`, `camel_case`, `snake_case`, `kebab_case`, `reverse`, `trim`, `replace`, `template`, `deburr`, `is_alpha`, `is_digit`, `is_upper`, `is_lower`, `xor`, `shuffle`, `sample_size`
+- **strings**: `camel_case`, `capitalize`, `contains`, `deburr`, `ends_with`, `is_alpha`, `is_digit`, `is_empty`, `is_equal`, `is_lower`, `is_upper`, `kebab_case`, `lower_case`, `replace`, `reverse`, `sample_size`, `shuffle`, `snake_case`, `starts_with`, `template`, `trim`, `upper_case`, `xor`
 
-- **lists**: `head`, `last`, `tail`, `initial`, `nth`, `take`, `take_right`, `drop`, `drop_right`, `contains`, `is_empty`, `is_equal`, `compact`, `flatten`, `flatten_deep`, `shuffle`, `sample`, `sample_size`, `chunk`, `filter_by`, `find_by`, `map`, `reduce`, `all_by`, `any_by`, `every`, `some`, `sort_by`, `group_by`, `count_by`, `key_by`, `partition`, `pluck`, `uniq_by`, `max_by`, `min_by`, `difference`, `intersection`, `union`, `xor`, `remove_by`, `index_of`, `random_except`, `zip_lists`, `unzip_list`, `flat_map`, `zip_with`
+- **lists**: `all_by`, `any_by`, `chunk`, `compact`, `contains`, `count_by`, `difference`, `difference_by`, `drop`, `drop_right`, `every`, `filter_by`, `find_by`, `flat_map`, `flatten`, `flatten_deep`, `group_by`, `head`, `index_of`, `initial`, `intersection`, `intersection_by`, `is_empty`, `is_equal`, `key_by`, `last`, `map`, `max_by`, `min_by`, `nth`, `partition`, `pluck`, `random_except`, `reduce`, `remove_by`, `sample`, `sample_size`, `shuffle`, `some`, `sort_by`, `tail`, `take`, `take_right`, `union`, `uniq_by`, `unzip_list`, `xor`, `zip_lists`, `zip_with`
 
-- **dicts**: `has_key`, `get_value`, `set_value`, `pick`, `omit`, `invert`, `is_empty`, `is_equal`, `merge`
+- **dicts**: `get_value`, `has_key`, `invert`, `is_empty`, `is_equal`, `merge`, `omit`, `pick`, `set_value`
 
-- **any**: `is_equal`, `is_empty`, `is_nil`, `contains`, `eval`
+- **any**: `contains`, `eval`, `is_empty`, `is_equal`, `is_nil`
 
-- **generate**: `range`, `repeat`, `cycle`, `accumulate`, `cartesian_product`, `combinations`, `permutations`, `powerset`, `unique_pairs`, `windowed`, `zip_with_index`
-
-## Lua Expressions
-
-Enable powerful filtering, grouping, sorting, and extraction with Lua expressions:
-- **Filtering**: `"age > 25"`, `"score >= 80"`, `"name == 'Alice'"`
-- **Complex conditions**: `"age > 25 and score >= 80"`, `"status == 'active' or priority == 'high'"`
-- **Grouping**: `"age >= 30 and 'senior' or 'junior'"` (returns group key)
-- **Sorting**: `"age * -1"` (reverse age), `"string.lower(name)"` (case-insensitive)
-- **Extraction**: `"string.upper(name)"`, `"age > 18 and name or 'minor'"`
-- **Math**: `"math.abs(score - 50)"`, `"x*x + y*y"` (distance squared)
-- **Null handling**: `"item == null"`, `"age ~= null"`, `"item[2] == null"` (JSON null becomes `null`)
-
-You can pass either a single Lua expression (e.g., `"age > 25"`) or a block of Lua code with one or more statements. For multi-line code, use the `return` statement to specify the value to return. For example:
-
-```lua
-if age > 25 then
-  return 'adult'
-end
-return 'young'
-```
-
-Available functions: `math.*`, `string.*`, `os.time/date/clock`, `type()`, `tonumber()`, `tostring()`. Dictionary keys accessible directly (`age`, `name`) or via `item.key`.
-
-In all Lua expressions, the special variable `item` is always available and refers to the current object (which may be a dictionary, string, number, or other value).
-
-**Null Handling**: JSON null values become `null` table (not Lua `nil`). This is because Lua does not support `nil` as a list value—using `nil` would remove the element from the list. Important: `null` is truthy, use `== null` for null checks, `type(null)` returns "table". This preserves array indices and enables consistent null checking.
+- **generate**: `accumulate`, `cartesian_product`, `combinations`, `cycle`, `permutations`, `powerset`, `range`, `repeat`, `unique_pairs`, `windowed`, `zip_with_index`
 
 ## Error Handling
 
