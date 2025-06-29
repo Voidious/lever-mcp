@@ -1048,6 +1048,127 @@ class TestLuaErrorHandling:
         assert result is not None and len(result) == 100 and result.isupper()
 
 
+class TestLuaToolFunctionReferences:
+    """Test using tool functions directly as expressions."""
+    
+    def test_lists_partition_with_string_function_ref(self):
+        """Test lists.partition using strings.is_digit as expression."""
+        # Mix of digit and non-digit strings
+        items = ["123", "abc", "456", "def", "789"]
+        result = evaluate_expression('lists.partition(items, "strings.is_digit")', {'items': items})
+        
+        # partition returns a list [truthy_items, falsy_items]
+        assert isinstance(result, list)
+        assert len(result) == 2
+        
+        # Check that digit strings are correctly identified
+        digit_strings = result[0]  # truthy items
+        non_digit_strings = result[1]  # falsy items
+        assert "123" in digit_strings
+        assert "456" in digit_strings  
+        assert "789" in digit_strings
+        assert "abc" in non_digit_strings
+        assert "def" in non_digit_strings
+    
+    def test_lists_filter_by_with_string_function_ref(self):
+        """Test lists.filter_by using strings.is_alpha as expression."""
+        items = ["hello", "world123", "test", "abc456", "pure"]
+        result = evaluate_expression('lists.filter_by(items, "strings.is_alpha")', {'items': items})
+        
+        # Should only keep alphabetic strings
+        expected = ["hello", "test", "pure"]
+        assert result == expected
+    
+    def test_lists_map_with_string_function_ref(self):
+        """Test lists.map using strings.upper_case as expression."""
+        items = ["hello", "world", "test"]
+        result = evaluate_expression('lists.map(items, "strings.upper_case")', {'items': items})
+        
+        expected = ["HELLO", "WORLD", "TEST"]
+        assert result == expected
+    
+    def test_lists_all_by_with_string_function_ref(self):
+        """Test lists.all_by using strings.is_alpha as expression."""
+        # All alphabetic
+        items1 = ["hello", "world", "test"]
+        result1 = evaluate_expression('lists.all_by(items, "strings.is_alpha")', {'items': items1})
+        assert result1 == True
+        
+        # Mixed (not all alphabetic)
+        items2 = ["hello", "world123", "test"]
+        result2 = evaluate_expression('lists.all_by(items, "strings.is_alpha")', {'items': items2})
+        assert result2 == False
+    
+    def test_lists_any_by_with_string_function_ref(self):
+        """Test lists.any_by using strings.is_digit as expression."""
+        # Contains at least one digit string
+        items1 = ["hello", "123", "world"]
+        result1 = evaluate_expression('lists.any_by(items, "strings.is_digit")', {'items': items1})
+        assert result1 == True
+        
+        # No digit strings
+        items2 = ["hello", "world", "test"]
+        result2 = evaluate_expression('lists.any_by(items, "strings.is_digit")', {'items': items2})
+        assert result2 == False
+    
+    def test_lists_count_by_with_function_ref(self):
+        """Test lists.count_by using a function reference to group by result."""
+        items = ["123", "abc", "456", "def", "789", "xyz"]
+        result = evaluate_expression('lists.count_by(items, "strings.is_digit")', {'items': items})
+        
+        # Should count True/False as string keys
+        expected = {"True": 3, "False": 3}  # 3 digit strings, 3 non-digit strings
+        assert result == expected
+    
+    def test_lists_group_by_with_function_ref(self):
+        """Test lists.group_by using a function reference."""
+        items = ["123", "abc", "456", "def"]
+        result = evaluate_expression('lists.group_by(items, "strings.is_digit")', {'items': items})
+        
+        # Should group by whether string is all digits
+        # group_by converts boolean results to string keys
+        assert "True" in result
+        assert "False" in result
+        assert "123" in result["True"]
+        assert "456" in result["True"]
+        assert "abc" in result["False"]
+        assert "def" in result["False"]
+    
+    def test_lists_sort_by_with_function_ref(self):
+        """Test lists.sort_by using a function reference."""
+        # Sort by string length
+        items = ["hello", "hi", "world", "a"]
+        result = evaluate_expression('lists.sort_by(items, "strings.trim")', {'items': items})
+        
+        # strings.trim doesn't change order but returns the strings
+        # This tests that function refs work, even if sorting by trim doesn't change much
+        assert len(result) == 4
+        assert all(item in result for item in items)
+    
+    def test_chained_function_refs(self):
+        """Test using function references in more complex expressions."""
+        items = [{"name": "ALICE"}, {"name": "bob"}, {"name": "CHARLIE"}]
+        result = evaluate_expression(
+            'lists.map(items, "strings.lower_case(name)")', 
+            {'items': items}
+        )
+        
+        expected = ["alice", "bob", "charlie"]
+        assert result == expected
+    
+    def test_nested_function_calls_in_expressions(self):
+        """Test nested function calls within expressions."""
+        items = ["  hello  ", "  WORLD  ", "  test  "]
+        # Trim and then uppercase
+        result = evaluate_expression(
+            'lists.map(items, "strings.upper_case(strings.trim(item))")', 
+            {'items': items}
+        )
+        
+        expected = ["HELLO", "WORLD", "TEST"]
+        assert result == expected
+
+
 def run_comprehensive_tests():
     """Run all test classes."""
     import traceback
@@ -1060,7 +1181,8 @@ def run_comprehensive_tests():
         TestLuaGenerateOperations,
         TestLuaFunctionReturns,
         TestLuaEdgeCases,
-        TestLuaErrorHandling
+        TestLuaErrorHandling,
+        TestLuaToolFunctionReferences
     ]
     
     total_tests = 0

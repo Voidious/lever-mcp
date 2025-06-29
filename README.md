@@ -484,6 +484,55 @@ any.eval({score=85, passed=true}, [[
 -- => "excellent"
 ```
 
+### Tool Function References in Expressions
+
+You can use tool functions directly as expressions, enabling powerful functional programming patterns:
+
+**Basic function references:**
+```lua
+-- Partition strings by whether they're all digits
+lists.partition({"123", "abc", "456", "def"}, "strings.is_digit")
+-- => [["123", "456"], ["abc", "def"]]
+
+-- Filter to keep only alphabetic strings  
+lists.filter_by({"hello", "world123", "test"}, "strings.is_alpha")
+-- => ["hello", "test"]
+
+-- Transform all strings to uppercase
+lists.map({"hello", "world"}, "strings.upper_case")
+-- => ["HELLO", "WORLD"]
+```
+
+**Advanced function reference patterns:**
+```lua
+-- Group by result of function call
+lists.group_by({"123", "abc", "456"}, "strings.is_digit")
+-- => {"True": ["123", "456"], "False": ["abc"]}
+
+-- Check if all items satisfy a condition
+lists.all_by({"hello", "world", "test"}, "strings.is_alpha")
+-- => true
+
+-- Check if any items satisfy a condition  
+lists.any_by({"hello", "123", "world"}, "strings.is_digit")
+-- => true
+
+-- Sort using function transformation
+lists.sort_by({"  hello  ", "  world  "}, "strings.trim")
+-- => ["  hello  ", "  world  "] (sorted by trimmed values)
+```
+
+**Nested function calls in expressions:**
+```lua
+-- Chain multiple functions within expressions
+lists.map({"  HELLO  ", "  WORLD  "}, "strings.lower_case(strings.trim(item))")
+-- => ["hello", "world"]
+
+-- Use tool functions in complex expressions
+lists.filter_by(users, "strings.contains(email, '@gmail.com')")
+-- Filter users with Gmail addresses
+```
+
 ### All Available Functions
 
 - **strings**: `camel_case`, `capitalize`, `contains`, `deburr`, `ends_with`, `is_alpha`, `is_digit`, `is_empty`, `is_equal`, `is_lower`, `is_upper`, `kebab_case`, `lower_case`, `replace`, `reverse`, `sample_size`, `shuffle`, `snake_case`, `starts_with`, `template`, `trim`, `upper_case`, `xor`

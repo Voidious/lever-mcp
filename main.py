@@ -748,19 +748,27 @@ def lists(
                     result.setdefault(k, []).append(item)
                 return {"value": result}
         elif operation == "count_by":
-            if not key:
+            if not key and not expression:
                 return {
                     "value": None,
-                    "error": "Missing required key parameter for operation 'count_by'.",
-                }
-            if not all(isinstance(item, dict) for item in items):
-                return {
-                    "value": None,
-                    "error": "All items must be dicts for operation 'count_by'.",
+                    "error": "Missing required key or expression parameter for operation 'count_by'.",
                 }
             result = {}
             for item in items:
-                k = item.get(key)
+                if expression:
+                    # Use expression evaluation
+                    k = evaluate_expression(expression, item)
+                    # Convert result to string for consistent dictionary keys
+                    k = str(k) if k is not None else "null"
+                else:
+                    # Use key parameter (legacy behavior)
+                    if not isinstance(item, dict):
+                        return {
+                            "value": None,
+                            "error": "All items must be dicts when using key parameter for 'count_by'.",
+                        }
+                    k = item.get(key)
+                    k = str(k) if k is not None else "null"
                 result[k] = result.get(k, 0) + 1
             return {"value": result}
         elif operation == "key_by":

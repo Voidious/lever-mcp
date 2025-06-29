@@ -245,8 +245,36 @@ else:
 - Use math and string functions: `math.abs(score)`, `string.upper(name)`.
 - Combine conditions: `age >= 18 and score > 80`.
 
-## 12. Performance Tips
+## 12. Tool Function References in Expressions
+- Use tool functions directly as expressions for powerful functional programming.
+- Pass function names as strings to operations like `filter_by`, `map`, `partition`.
+- Combine tool functions within expressions for complex transformations.
+
+*MCP Tool Examples:*
+```python
+# Partition strings by whether they're all digits
+result = lists(items, 'partition', expression='strings.is_digit')['value']
+# Filter to keep only alphabetic strings
+filtered = lists(items, 'filter_by', expression='strings.is_alpha')['value']
+# Transform using function reference
+transformed = lists(items, 'map', expression='strings.upper_case')['value']
+```
+
+*Lua Function Examples:*
+```lua
+-- Partition by digit check
+local partitioned = lists.partition(items, "strings.is_digit")
+-- Filter alphabetic only
+local filtered = lists.filter_by(items, "strings.is_alpha")
+-- Transform to uppercase
+local transformed = lists.map(items, "strings.upper_case")
+-- Complex nested function calls
+local cleaned = lists.map(items, "strings.lower_case(strings.trim(item))")
+```
+
+## 13. Performance Tips
 - Use key-based operations when possible (faster than expressions).
 - Prefer built-in operations over complex expressions.
 - Use `compact` to remove null/empty values before further processing.
 - Consider using `chunk` for processing large datasets in batches.
+- Use tool function references for cleaner, more readable functional code.
