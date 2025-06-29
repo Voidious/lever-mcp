@@ -266,8 +266,11 @@ def lists(
         - Extraction: "string.upper(name)", "age > 18 and name or 'minor'"
         - Math: "math.abs(score - 50)", "x*x + y*y" (distance squared)
 
-    Available in expressions: math.*, string.*, os.time/date/clock, type(), tonumber(),
-    tostring(). Dictionary keys accessible directly (age, name, etc.) or via item.key.
+    In Lua expressions, item refers to the current object. Available in expressions:
+    math.*, string.*, os.time/date/clock, type(), tonumber(), tostring(). Dictionary
+    keys accessible directly (age, name, etc.) or via item.key. You may pass a single
+    Lua expression or a block of Lua code. For multi-line code, use return to specify
+    the result.
 
     Returns:
         dict: Result with 'value' key. On error, includes 'error' key.
@@ -1042,6 +1045,19 @@ def any_tool(
             - 'is_nil': Checks if the value is None.
         param (Any, optional): The parameter for the operation, if required.
         expression (str, optional): Lua expression to evaluate (for 'eval' operation).
+
+    Expression Examples:
+        - Boolean check: "age > 25", "score >= 80", "name == 'Alice'"
+        - Math: "math.abs(x - y)", "x*x + y*y"
+        - String manipulation: "string.upper(item)", "string.sub(item, 1, 3)"
+        - Null check: "item == null", "score ~= null"
+        - Type check: "type(item) == 'table'", "type(item) == 'string'"
+
+    In Lua expressions, item refers to the current object. Available in expressions:
+    math.*, string.*, os.time/date/clock, type(), tonumber(), tostring(). Dictionary
+    keys accessible directly (age, name, etc.) or via item.key. You may pass a single
+    Lua expression or a block of Lua code. For multi-line code, use return to specify
+    the result.
 
     Returns:
         dict: The result, always wrapped in a dictionary with a 'value' key. If an error

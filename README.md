@@ -164,7 +164,9 @@ strings('foo bar foo', 'replace', data={'old': 'foo', 'new': 'baz'})  # => {'val
 ---
 
 ### lists
-Performs list operations and mutations with support for Lua expressions.
+Performs list operations, including merge, set/get value, and property checks.
+
+**Note:** For details on using Lua expressions in filtering, grouping, sorting, and extraction, see the [Lua Expressions](#lua-expressions) section below.
 
 **Parameters:**
 - `items` (list): The input list to operate on.
@@ -213,20 +215,6 @@ Performs list operations and mutations with support for Lua expressions.
 - `others` (list, optional): Second list for set operations like difference/intersection
 - `key` (str, optional): Property name for *_by operations (faster, alternative to expression)
 - `expression` (str, optional): Lua expression for advanced filtering/grouping/sorting/extraction
-
-**Lua Expressions:**
-Enable powerful filtering, grouping, sorting, and extraction with Lua expressions:
-- **Filtering**: `"age > 25"`, `"score >= 80"`, `"name == 'Alice'"`
-- **Complex conditions**: `"age > 25 and score >= 80"`, `"status == 'active' or priority == 'high'"`
-- **Grouping**: `"age >= 30 and 'senior' or 'junior'"` (returns group key)
-- **Sorting**: `"age * -1"` (reverse age), `"string.lower(name)"` (case-insensitive)
-- **Extraction**: `"string.upper(name)"`, `"age > 18 and name or 'minor'"`
-- **Math**: `"math.abs(score - 50)"`, `"x*x + y*y"` (distance squared)
-- **Null handling**: `"item == null"`, `"age ~= null"`, `"item[2] == null"` (JSON null becomes `null`)
-
-Available functions: `math.*`, `string.*`, `os.time/date/clock`, `type()`, `tonumber()`, `tostring()`. Dictionary keys accessible directly (`age`, `name`) or via `item.key`.
-
-**Null Handling**: JSON null values become `null` table (not Lua `nil`). This is because Lua does not support `nil` as a list value—using `nil` would remove the element from the list. Important: `null` is truthy, use `== null` for null checks, `type(null)` returns "table". This preserves array indices and enables consistent null checking.
 
 **Returns:**
 - `dict`: Always returns a dictionary with a 'value' key containing the result. If an error occurs, the dict will also have an 'error' key.
@@ -294,6 +282,8 @@ dicts({'a': 1}, 'get_value', path='b', default=42)  # => {'value': 42}
 
 ### any
 Performs type-agnostic property checks, comparisons, and expression evaluation.
+
+**Note:** For details on using Lua expressions in evaluation, see the [Lua Expressions](#lua-expressions) section below.
 
 **Parameters:**
 - `value` (Any): The value to check or use as context for expression evaluation.
@@ -389,6 +379,32 @@ chain(
 ```
 
 ---
+
+## Lua Expressions
+
+Enable powerful filtering, grouping, sorting, and extraction with Lua expressions:
+- **Filtering**: `"age > 25"`, `"score >= 80"`, `"name == 'Alice'"`
+- **Complex conditions**: `"age > 25 and score >= 80"`, `"status == 'active' or priority == 'high'"`
+- **Grouping**: `"age >= 30 and 'senior' or 'junior'"` (returns group key)
+- **Sorting**: `"age * -1"` (reverse age), `"string.lower(name)"` (case-insensitive)
+- **Extraction**: `"string.upper(name)"`, `"age > 18 and name or 'minor'"`
+- **Math**: `"math.abs(score - 50)"`, `"x*x + y*y"` (distance squared)
+- **Null handling**: `"item == null"`, `"age ~= null"`, `"item[2] == null"` (JSON null becomes `null`)
+
+You can pass either a single Lua expression (e.g., `"age > 25"`) or a block of Lua code with one or more statements. For multi-line code, use the `return` statement to specify the value to return. For example:
+
+```lua
+if age > 25 then
+  return 'adult'
+end
+return 'young'
+```
+
+Available functions: `math.*`, `string.*`, `os.time/date/clock`, `type()`, `tonumber()`, `tostring()`. Dictionary keys accessible directly (`age`, `name`) or via `item.key`.
+
+In all Lua expressions, the special variable `item` is always available and refers to the current object (which may be a dictionary, string, number, or other value).
+
+**Null Handling**: JSON null values become `null` table (not Lua `nil`). This is because Lua does not support `nil` as a list value—using `nil` would remove the element from the list. Important: `null` is truthy, use `== null` for null checks, `type(null)` returns "table". This preserves array indices and enables consistent null checking.
 
 ## Error Handling
 
