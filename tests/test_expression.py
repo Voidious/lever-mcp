@@ -60,6 +60,7 @@ async def test_find_by_expression(client, items, expression, expected_name):
         {"items": items, "operation": "find_by", "expression": expression},
     )
     assert error is None
+    assert result is not None
     assert result["name"] == expected_name
 
 
@@ -94,6 +95,7 @@ async def test_remove_by_expression(client, items, expression, expected_count):
         {"items": items, "operation": "remove_by", "expression": expression},
     )
     assert error is None
+    assert result is not None
     assert len(result) == expected_count
 
 
@@ -182,6 +184,7 @@ async def test_sort_by_expression(client, items, expression, expected_order):
         {"items": items, "operation": "sort_by", "expression": expression},
     )
     assert error is None
+    assert result is not None
     if "name" in items[0]:
         actual_order = [item["name"] for item in result]
     elif "age" in items[0]:
@@ -321,6 +324,7 @@ async def test_difference_intersection_by_expression(
         },
     )
     assert error is None
+    assert result is not None
     assert len(result) == expected_count
 
 
@@ -523,6 +527,7 @@ async def test_complex_expressions(
         {"items": items, "operation": operation, "expression": expression},
     )
     assert error is None
+    assert result is not None
     if isinstance(expected_result, str):
         assert result["name"] == expected_result
     else:

@@ -171,6 +171,8 @@ Performs list operations, including merge, set/get value, and property checks.
 **Parameters:**
 - `items` (list): The input list to operate on.
 - `operation` (str): The operation to perform. Key operations include:
+    - 'all_by'/'every': Return True if all items satisfy the expression
+    - 'any_by'/'some': Return True if any item satisfies the expression
     - 'chunk': Split into chunks (param: int)
     - 'compact': Remove falsy values
     - 'contains': Check if item exists (param: value)
@@ -179,7 +181,9 @@ Performs list operations, including merge, set/get value, and property checks.
     - 'difference_by': Items in first list not matching expression in second
     - 'drop': Drop n elements from start (param: int)
     - 'drop_right': Drop n elements from end (param: int)
+    - 'filter_by': Return all items matching the expression (predicate)
     - 'find_by': Find first item matching expression/key-value
+    - 'flat_map': Like map, but flattens one level if the mapping returns lists
     - 'flatten': Flatten one level
     - 'flatten_deep': Flatten completely
     - 'group_by': Group items by expression result/key value
@@ -192,12 +196,14 @@ Performs list operations, including merge, set/get value, and property checks.
     - 'is_equal': Check if lists are equal (param: list)
     - 'key_by': Create dict keyed by expression result/field
     - 'last': Last element
+    - 'map': Apply a Lua expression to each item and return the transformed list
     - 'max_by': Find max by expression result/key
     - 'min_by': Find min by expression result/key
     - 'nth': Get nth element (param: int, supports negative indexing)
     - 'partition': Split by expression result/boolean key
     - 'pluck': Extract values by expression/key (expression: any value)
     - 'random_except': Random item excluding condition (param: dict with 'key' and 'value')
+    - 'reduce': Aggregate the list using a binary Lua expression (uses 'acc' and 'item') and optional initializer (param)
     - 'remove_by': Remove items matching expression/key-value
     - 'sample': Get one random item
     - 'sample_size': Get n random items (param: int)
@@ -211,6 +217,7 @@ Performs list operations, including merge, set/get value, and property checks.
     - 'unzip_list': Unzip list of tuples
     - 'xor': Symmetric difference (others: list)
     - 'zip_lists': Zip multiple lists
+    - 'zip_with': Combine two lists element-wise using a binary Lua expression (uses 'item1' and 'item2')
 - `param` (Any, optional): Parameter for operations (int for take/drop, str for sort_by)
 - `others` (list, optional): Second list for set operations like difference/intersection
 - `key` (str, optional): Property name for *_by operations (faster, alternative to expression)

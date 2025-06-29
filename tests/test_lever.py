@@ -853,3 +853,143 @@ async def test_get_value_edge_cases(client):
         client, "dicts", {"obj": {}, "operation": "get_value", "path": [1, 2]}
     )
     assert error is not None
+
+
+@pytest.mark.asyncio
+async def test_map(client):
+    items = [1, 2, 3]
+    value, error = await make_tool_call(
+        client, "lists", {"items": items, "operation": "map", "expression": "item * 2"}
+    )
+    assert value == [2, 4, 6]
+
+
+@pytest.mark.asyncio
+async def test_reduce(client):
+    items = [1, 2, 3, 4]
+    value, error = await make_tool_call(
+        client,
+        "lists",
+        {"items": items, "operation": "reduce", "expression": "acc + item", "param": 0},
+    )
+    assert value == 10
+    # Without param (should use first item as acc)
+    value, error = await make_tool_call(
+        client,
+        "lists",
+        {"items": items, "operation": "reduce", "expression": "acc + item"},
+    )
+    assert value == 10
+    # Empty list
+    value, error = await make_tool_call(
+        client,
+        "lists",
+        {"items": [], "operation": "reduce", "expression": "acc + item", "param": 0},
+    )
+    assert value == 0
+
+
+@pytest.mark.asyncio
+async def test_flat_map(client):
+    items = [1, 2, 3]
+    value, error = await make_tool_call(
+        client,
+        "lists",
+        {"items": items, "operation": "flat_map", "expression": "{item, item * 10}"},
+    )
+    assert value == [1, 10, 2, 20, 3, 30]
+    # If expression returns non-list
+    value, error = await make_tool_call(
+        client,
+        "lists",
+        {"items": items, "operation": "flat_map", "expression": "item * 2"},
+    )
+    assert value == [2, 4, 6]
+
+
+@pytest.mark.asyncio
+async def test_all_by_any_by(client):
+    items = [2, 4, 6]
+    value, error = await make_tool_call(
+        client,
+        "lists",
+        {"items": items, "operation": "all_by", "expression": "item % 2 == 0"},
+    )
+    assert value is True
+    value, error = await make_tool_call(
+        client,
+        "lists",
+        {"items": items, "operation": "any_by", "expression": "item == 4"},
+    )
+    assert value is True
+    value, error = await make_tool_call(
+        client,
+        "lists",
+        {"items": items, "operation": "any_by", "expression": "item == 5"},
+    )
+    assert value is False
+    value, error = await make_tool_call(
+        client,
+        "lists",
+        {"items": items, "operation": "all_by", "expression": "item > 0"},
+    )
+    assert value is True
+    value, error = await make_tool_call(
+        client,
+        "lists",
+        {"items": items, "operation": "every", "expression": "item < 10"},
+    )
+    assert value is True
+    value, error = await make_tool_call(
+        client,
+        "lists",
+        {"items": items, "operation": "some", "expression": "item == 2"},
+    )
+    assert value is True
+
+
+@pytest.mark.asyncio
+async def test_filter_by(client):
+    items = [1, 2, 3, 4]
+    value, error = await make_tool_call(
+        client,
+        "lists",
+        {"items": items, "operation": "filter_by", "expression": "item % 2 == 0"},
+    )
+    assert value == [2, 4]
+    # No matches
+    value, error = await make_tool_call(
+        client,
+        "lists",
+        {"items": items, "operation": "filter_by", "expression": "item > 10"},
+    )
+    assert value == []
+
+
+@pytest.mark.asyncio
+async def test_zip_with(client):
+    items = [1, 2, 3]
+    others = [10, 20, 30]
+    value, error = await make_tool_call(
+        client,
+        "lists",
+        {
+            "items": items,
+            "others": others,
+            "operation": "zip_with",
+            "expression": "item1 + item2",
+        },
+    )
+    assert value == [11, 22, 33]
+    # Different lengths
+    value, error = await make_tool_call(
+        client,
+        "lists",
+        {
+            "items": [1, 2],
+            "others": [10, 20, 30],
+            "operation": "zip_with",
+            "expression": "item1 * item2",
+        },
+    )
+    assert value == [10, 40]

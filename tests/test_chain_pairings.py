@@ -1318,6 +1318,162 @@ async def client():
             list,
             [10],
         ),
+        # --- New: map, reduce, flat_map, filter_by, zip_with, all_by, any_by ---
+        # map -> reduce
+        (
+            "lists",
+            {"operation": "map", "expression": "item * 2"},
+            "lists",
+            {"operation": "reduce", "expression": "acc + item", "param": 0},
+            [1, 2, 3],
+            int,
+            12,
+        ),
+        # filter_by -> map
+        (
+            "lists",
+            {"operation": "filter_by", "expression": "item % 2 == 0"},
+            "lists",
+            {"operation": "map", "expression": "item * 10"},
+            [1, 2, 3, 4],
+            list,
+            [20, 40],
+        ),
+        # map -> filter_by
+        (
+            "lists",
+            {"operation": "map", "expression": "item * 2"},
+            "lists",
+            {"operation": "filter_by", "expression": "item > 2"},
+            [1, 2, 3],
+            list,
+            [4, 6],
+        ),
+        # flat_map -> reduce
+        (
+            "lists",
+            {"operation": "flat_map", "expression": "{item, item * 10}"},
+            "lists",
+            {"operation": "reduce", "expression": "acc + item", "param": 0},
+            [1, 2],
+            int,
+            33,
+        ),
+        # map -> all_by
+        (
+            "lists",
+            {"operation": "map", "expression": "item * 2"},
+            "lists",
+            {"operation": "all_by", "expression": "item % 2 == 0"},
+            [1, 2, 3],
+            bool,
+            True,
+        ),
+        # map -> any_by
+        (
+            "lists",
+            {"operation": "map", "expression": "item * 2"},
+            "lists",
+            {"operation": "any_by", "expression": "item == 4"},
+            [1, 2, 3],
+            bool,
+            True,
+        ),
+        # zip_with -> map
+        (
+            "lists",
+            {
+                "operation": "zip_with",
+                "others": [10, 20, 30],
+                "expression": "item1 + item2",
+            },
+            "lists",
+            {"operation": "map", "expression": "item * 2"},
+            [1, 2, 3],
+            list,
+            [22, 44, 66],
+        ),
+        # map -> compact
+        (
+            "lists",
+            {"operation": "map", "expression": "item > 1 and item or None"},
+            "lists",
+            {"operation": "compact"},
+            [0, 1, 2, 3],
+            list,
+            [2, 3],
+        ),
+        # compact -> map
+        (
+            "lists",
+            {"operation": "compact"},
+            "lists",
+            {"operation": "map", "expression": "item * 3"},
+            [None, 1, 2],
+            list,
+            [3, 6],
+        ),
+        # filter_by -> reduce
+        (
+            "lists",
+            {"operation": "filter_by", "expression": "item > 1"},
+            "lists",
+            {"operation": "reduce", "expression": "acc + item", "param": 0},
+            [0, 1, 2, 3],
+            int,
+            5,
+        ),
+        # map -> flat_map
+        (
+            "lists",
+            {"operation": "map", "expression": "item + 1"},
+            "lists",
+            {"operation": "flat_map", "expression": "{item, item * 2}"},
+            [1, 2],
+            list,
+            [2, 4, 3, 6],
+        ),
+        # flat_map -> filter_by
+        (
+            "lists",
+            {"operation": "flat_map", "expression": "{item, item * 2}"},
+            "lists",
+            {"operation": "filter_by", "expression": "item > 2"},
+            [1, 2],
+            list,
+            [4],
+        ),
+        # map -> head
+        (
+            "lists",
+            {"operation": "map", "expression": "item * 2"},
+            "lists",
+            {"operation": "head"},
+            [1, 2, 3],
+            int,
+            2,
+        ),
+        # filter_by -> head
+        (
+            "lists",
+            {"operation": "filter_by", "expression": "item > 1"},
+            "lists",
+            {"operation": "head"},
+            [0, 1, 2, 3],
+            int,
+            2,
+        ),
+        # map -> reduce (no param)
+        (
+            "lists",
+            {"operation": "map", "expression": "item * 2"},
+            "lists",
+            {"operation": "reduce", "expression": "acc + item"},
+            [1, 2, 3],
+            int,
+            12,
+        ),
+        # --- End new chain pairings ---
     ],
 )
 async def test_chain_all_tool_pairs(

@@ -201,20 +201,29 @@ def lists(
         items (list): The input list to operate on.
         operation (str): The operation to perform. Available operations:
             EXPRESSION OPERATIONS (use expression parameter):
+            - 'all_by'/'every': Return True if all items satisfy the expression
+            - 'any_by'/'some': Return True if any item satisfies the expression
             - 'count_by': Count occurrences by expression result/key
             - 'difference_by': Items in first list not matching expression in second
+            - 'filter_by': Return all items matching the expression (predicate)
             - 'find_by': Find first item matching expression/key-value
+            - 'flat_map': Like map, but flattens one level if the mapping returns lists
             - 'group_by': Group items by expression result/key value
             - 'intersection_by': Items in first list matching expression in second
             - 'key_by': Create dict keyed by expression result/field
+            - 'map': Apply a Lua expression to each item and return the transformed list
             - 'max_by': Find max by expression result/key
             - 'min_by': Find min by expression result/key
             - 'partition': Split by expression result/boolean key
             - 'pluck': Extract values by expression/key (expression: any value)
+            - 'reduce': Aggregate the list using a binary Lua expression (uses 'acc' and
+              'item') and optional initializer (param)
             - 'remove_by': Remove items matching expression/key-value
             - 'sort_by': Sort by expression result/key
               (expression: any comparable value)
             - 'uniq_by': Remove duplicates by expression result/key
+            - 'zip_with': Combine two lists element-wise using a binary Lua expression
+              (uses 'item1' and 'item2')
 
             BASIC OPERATIONS:
             - 'chunk': Split into chunks (param: int)
@@ -345,11 +354,13 @@ def lists(
     Performs list operations, including mutation, selection, set-like, grouping, and
     property checks. For set-like operations, use items as the first list and others as
     the second list.
-    Supported operations: flatten_deep, sort_by, uniq_by, partition, pluck, compact,
-    chunk, zip_lists, unzip_list, remove_by, tail, initial, drop, drop_right, take,
-    take_right, flatten, union, difference_by, intersection_by, intersection,
-    difference, group_by, count_by, key_by, find_by, head, last, sample, nth, min_by,
-    max_by, index_of, random_except, contains, is_equal
+
+    Supported operations: all_by, any_by, chunk, compact, contains, count_by,
+    difference, difference_by, drop, drop_right, filter_by, find_by, flat_map, flatten,
+    flatten_deep, group_by, head, index_of, initial, intersection, intersection_by,
+    is_equal, key_by, last, map, max_by, min_by, nth, partition, pluck, random_except,
+    reduce, remove_by, sample, sort_by, tail, take, take_right, union, uniq_by,
+    unzip_list, zip_lists, zip_with
     """
     import random, json
 
@@ -859,6 +870,96 @@ def lists(
             return {"value": param in items}
         elif operation == "is_equal":
             return {"value": items == param}
+        # --- New Functional Operations ---
+        elif operation == "map":
+            if not expression:
+                return {"value": None, "error": "'expression' is required for map."}
+            return {"value": [evaluate_expression(expression, item) for item in items]}
+        elif operation == "reduce":
+            if not expression:
+                return {"value": None, "error": "'expression' is required for reduce."}
+            if not items:
+                return {"value": param if param is not None else None}
+            acc = param if param is not None else items[0]
+            start_idx = 0 if param is not None else 1
+            for i in range(start_idx, len(items)):
+                # The Lua expression can use 'acc' and 'item'
+                acc = evaluate_expression(
+                    expression, None, context={"acc": acc, "item": items[i]}
+                )
+            return {"value": acc}
+        elif operation == "flat_map":
+            if not expression:
+                return {
+                    "value": None,
+                    "error": "'expression' is required for flat_map.",
+                }
+            result = []
+            for item in items:
+                mapped = evaluate_expression(expression, item)
+                # Convert Lua tables to Python lists
+                if "LuaTable" in type(mapped).__name__:
+                    mapped = decode_null_from_lua(mapped)
+                if isinstance(mapped, list):
+                    result.extend(mapped)
+                else:
+                    result.append(mapped)
+            return {"value": result}
+        elif operation in ("all_by", "every"):
+            if not expression:
+                return {
+                    "value": None,
+                    "error": "'expression' is required for all_by/every.",
+                }
+            return {
+                "value": all(
+                    bool(evaluate_expression(expression, item)) for item in items
+                )
+            }
+        elif operation in ("any_by", "some"):
+            if not expression:
+                return {
+                    "value": None,
+                    "error": "'expression' is required for any_by/some.",
+                }
+            return {
+                "value": any(
+                    bool(evaluate_expression(expression, item)) for item in items
+                )
+            }
+        elif operation == "filter_by":
+            if not expression:
+                return {
+                    "value": None,
+                    "error": "'expression' is required for filter_by.",
+                }
+            return {
+                "value": [
+                    item
+                    for item in items
+                    if bool(evaluate_expression(expression, item))
+                ]
+            }
+        elif operation == "zip_with":
+            if not expression:
+                return {
+                    "value": None,
+                    "error": "'expression' is required for zip_with.",
+                }
+            if not isinstance(items, list) or not isinstance(others, list):
+                return {
+                    "value": None,
+                    "error": "Both 'items' and 'others' must be lists for zip_with.",
+                }
+            min_len = min(len(items), len(others))
+            result = []
+            for i in range(min_len):
+                val = evaluate_expression(
+                    expression, None, context={"item1": items[i], "item2": others[i]}
+                )
+                result.append(val)
+            return {"value": result}
+        # --- End New Functional Operations ---
         else:
             raise ValueError(f"Unknown operation: {operation}")
     except Exception as e:
@@ -1434,13 +1535,24 @@ def decode_null_from_lua(obj, null_sentinel=None):
     """
     Recursively replace the Lua 'null' table with None (for JSON null output). Converts
     all 'null' sentinels back to Python None for JSON serialization.
+    Also converts Lua tables with only positive integer keys starting at 1 to lists.
     """
     if null_sentinel is not None and obj is null_sentinel:
         return None
     elif isinstance(obj, list):
         return [decode_null_from_lua(x, null_sentinel) for x in obj]
     elif isinstance(obj, dict):
-        # Preserve dicts as dicts (no longer convert integer-keyed dicts to lists)
+        # If all keys are positive integers starting at 1, treat as list
+        keys = list(obj.keys())
+        if keys and all(isinstance(k, int) and k > 0 for k in keys):
+            min_k, max_k = min(keys), max(keys)
+            if min_k == 1 and max_k == len(keys):
+                # Convert to list in order
+                return [
+                    decode_null_from_lua(obj[k], null_sentinel)
+                    for k in range(1, max_k + 1)
+                ]
+        # Otherwise, keep as dict
         return {k: decode_null_from_lua(v, null_sentinel) for k, v in obj.items()}
     # Check for LuaTable objects that might be the null sentinel
     elif "LuaTable" in type(obj).__name__:
@@ -1459,7 +1571,10 @@ def decode_null_from_lua(obj, null_sentinel=None):
 
 
 def evaluate_expression(
-    expression: str, item: Any, safe_mode: Optional[bool] = None
+    expression: str,
+    item: Any,
+    safe_mode: Optional[bool] = None,
+    context: Optional[Dict] = None,
 ) -> Any:
     """
     Evaluate a Lua expression against an item. The item is available as 'item' in the
@@ -1471,31 +1586,28 @@ def evaluate_expression(
         item: The data item to evaluate against (None values become 'null')
         safe_mode: If True, applies safety rails. If None, uses global SAFE_MODE
             setting.
+        context: Optional dict of additional variables to set in the Lua context.
     """
     try:
         lua_runtime = create_lua_runtime(safe_mode)
         # Set up context
-        if isinstance(item, dict):
-            for key, value in item.items():
-                if (
-                    isinstance(key, str)
-                    and key.isidentifier()
-                    and key not in ["and", "or", "not", "if", "then", "else", "end"]
-                ):
-                    lua_runtime.globals()[key] = encode_null_for_lua(value, lua_runtime)  # type: ignore  # noqa
-
-        # Convert the top-level item (encode_null_for_lua now handles table conversion)
-        lua_runtime.globals()["item"] = encode_null_for_lua(item, lua_runtime)  # type: ignore  # noqa
-
+        if context is not None:
+            for k, v in context.items():
+                lua_runtime.globals()[k] = encode_null_for_lua(v, lua_runtime)  # type: ignore  # noqa
+        else:
+            if isinstance(item, dict):
+                for key, value in item.items():
+                    if (
+                        isinstance(key, str)
+                        and key.isidentifier()
+                        and key not in ["and", "or", "not", "if", "then", "else", "end"]
+                    ):
+                        lua_runtime.globals()[key] = encode_null_for_lua(value, lua_runtime)  # type: ignore  # noqa
+            lua_runtime.globals()["item"] = encode_null_for_lua(item, lua_runtime)  # type: ignore  # noqa
         try:
-            # Try to execute as a statement returning a value. This works for simple
-            # expressions.
             return lua_runtime.execute("return (" + expression + ")")
         except lupa.LuaError:
-            # If that fails, it's likely a multi-line script that already contains
-            # 'return'.
             return lua_runtime.execute(expression)
-
     except Exception:
         return None
 
