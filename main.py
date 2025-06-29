@@ -131,40 +131,36 @@ def strings(
         elif operation == "ends_with":
             result = text.endswith(param)
         elif operation == "is_empty":
-            if isinstance(text, str):
-                result = len(text) == 0
-            elif isinstance(text, list) or isinstance(text, dict):
-                result = len(text) == 0
-            elif text is None:
-                result = True
-            elif text == 0 or text is False:
-                result = True
-            else:
-                result = False
+            result = len(text) == 0
         elif operation == "xor":
-            # Symmetric difference of two lists
-            if not isinstance(text, list) or not isinstance(param, list):
-                return {"value": None, "error": "Both arguments must be lists for xor."}
-            result = list(set(text) ^ set(param))
+            # Symmetric difference of two strings (unique characters in either, not
+            # both)
+            if not isinstance(text, str) or not isinstance(param, str):
+                return {
+                    "value": None,
+                    "error": "Both arguments must be strings for xor.",
+                }
+            set1 = set(text)
+            set2 = set(param)
+            result = "".join(sorted(set1 ^ set2))
         elif operation == "shuffle":
             import random
 
-            if not isinstance(text, list):
-                return {"value": None, "error": "Argument must be a list for shuffle."}
-            result = list(text)
-            random.shuffle(result)
+            chars = list(text)
+            random.shuffle(chars)
+            result = "".join(chars)
         elif operation == "sample_size":
             import random
 
-            if not isinstance(text, list):
-                return {
-                    "value": None,
-                    "error": "Argument must be a list for sample_size.",
-                }
             n = param if isinstance(param, int) else 1
             if n < 0:
                 return {"value": None, "error": "sample_size must be non-negative."}
-            result = random.sample(text, min(n, len(text)))
+            if not isinstance(text, str):
+                return {
+                    "value": None,
+                    "error": "Argument must be a string for sample_size.",
+                }
+            result = "".join(random.sample(text, min(n, len(text))))
         elif operation == "is_equal":
             result = text == param
         elif operation == "contains":

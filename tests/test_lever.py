@@ -993,3 +993,58 @@ async def test_zip_with(client):
         },
     )
     assert value == [10, 40]
+
+
+@pytest.mark.asyncio
+async def test_strings_shuffle(client):
+    # Normal usage
+    value, error = await make_tool_call(
+        client, "strings", {"text": "abcde", "operation": "shuffle"}
+    )
+    assert error is None
+    assert value is not None and sorted(value) == list("abcde")
+    # Edge case: empty string
+    value, error = await make_tool_call(
+        client, "strings", {"text": "", "operation": "shuffle"}
+    )
+    assert error is None
+    assert value == ""
+
+
+@pytest.mark.asyncio
+async def test_strings_xor(client):
+    # Normal usage
+    value, error = await make_tool_call(
+        client, "strings", {"text": "abc", "operation": "xor", "param": "bcd"}
+    )
+    assert error is None
+    assert value is not None and set(value) == set("ad")
+    # Edge case: identical strings
+    value, error = await make_tool_call(
+        client, "strings", {"text": "abc", "operation": "xor", "param": "abc"}
+    )
+    assert error is None
+    assert value == ""
+
+
+@pytest.mark.asyncio
+async def test_strings_sample_size(client):
+    # Normal usage
+    value, error = await make_tool_call(
+        client, "strings", {"text": "abcdef", "operation": "sample_size", "param": 3}
+    )
+    assert error is None
+    assert value is not None and len(value) == 3
+    assert set(value).issubset(set("abcdef"))
+    # Edge case: n > len(text)
+    value, error = await make_tool_call(
+        client, "strings", {"text": "abc", "operation": "sample_size", "param": 10}
+    )
+    assert error is None
+    assert value is not None and sorted(value) == sorted("abc")
+    # Edge case: empty string
+    value, error = await make_tool_call(
+        client, "strings", {"text": "", "operation": "sample_size", "param": 2}
+    )
+    assert error is None
+    assert value == ""
