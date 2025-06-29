@@ -190,6 +190,30 @@ class TestLuaStringsOperations:
         
         result = evaluate_expression('strings.xor({text="abc", param="xyz"})', {})
         assert isinstance(result, str)
+    
+    def test_string_sample_size(self):
+        # Test getting n random characters
+        result = evaluate_expression('strings.sample_size("hello", 3)', {})
+        assert isinstance(result, str)
+        assert len(result) == 3
+        
+        # Table syntax
+        result = evaluate_expression('strings.sample_size({text="abcdefg", param=2})', {})
+        assert isinstance(result, str)
+        assert len(result) == 2
+    
+    def test_string_shuffle(self):
+        # Test shuffling string characters
+        original = "hello"
+        result = evaluate_expression('strings.shuffle("hello")', {})
+        assert isinstance(result, str)
+        assert len(result) == len(original)
+        assert sorted(result) == sorted(original)
+        
+        # Table syntax
+        result = evaluate_expression('strings.shuffle({text="world"})', {})
+        assert isinstance(result, str)
+        assert len(result) == 5
 
 
 class TestLuaListsOperations:
@@ -540,6 +564,51 @@ class TestLuaListsOperations:
         # Unzip list of tuples
         result = evaluate_expression('lists.unzip_list({{1, "a"}, {2, "b"}})', {})
         assert result == [[1, 2], ["a", "b"]]
+    
+    def test_lists_difference(self):
+        # Set operation - items in first not in second  
+        # Use table syntax which works properly
+        result = evaluate_expression('lists.difference({items={1, 2, 3}, others={2, 3}})', {})
+        assert 1 in result
+        assert 2 not in result and 3 not in result
+        
+        # Test with different lists
+        result = evaluate_expression('lists.difference({items={1, 2, 3}, others={2, 4}})', {})
+        assert 1 in result and 3 in result
+        assert 2 not in result
+    
+    def test_lists_intersection(self):
+        # Set operation - items in both lists
+        # Use table syntax which works properly
+        result = evaluate_expression('lists.intersection({items={1, 2, 3}, others={2, 3, 4}})', {})
+        assert 2 in result and 3 in result
+        assert 1 not in result and 4 not in result
+        
+        # Test with strings
+        result = evaluate_expression('lists.intersection({items={"a", "b", "c"}, others={"b", "c", "d"}})', {})
+        assert "b" in result and "c" in result
+        assert "a" not in result and "d" not in result
+    
+    def test_lists_xor(self):
+        # Symmetric difference - items in either list but not both
+        # Use table syntax which works properly
+        result = evaluate_expression('lists.xor({items={1, 2, 3}, others={2, 3, 4}})', {})
+        assert 1 in result and 4 in result
+        assert 2 not in result and 3 not in result
+        
+        # Test another case
+        result = evaluate_expression('lists.xor({items={1, 2}, others={2, 3}})', {})
+        assert 1 in result and 3 in result
+        assert 2 not in result
+    
+    def test_lists_remove_by(self):
+        # Remove items matching expression/key-value
+        result = evaluate_expression('lists.remove_by({{age=20}, {age=30}, {age=15}}, "age < 18")', {})
+        # Should remove items where age < 18 (the 15-year-old)
+        assert len(result) == 2
+        ages = [item["age"] for item in result]
+        assert 15 not in ages
+        assert 20 in ages and 30 in ages
 
 
 class TestLuaDictsOperations:
@@ -838,7 +907,7 @@ class TestLuaEdgeCases:
         assert result == True
         
         result = evaluate_expression('strings.upper_case(null)', {})
-        # Should handle null gracefully (might return null or empty)
+        # Should handle null gracefully
         assert result is None or result == ""
     
     def test_mixed_syntax_in_expression(self):
@@ -859,6 +928,126 @@ class TestLuaEdgeCases:
         assert result == ["ALICE", "BOB"]
 
 
+class TestLuaErrorHandling:
+    """Test error handling and boundary conditions for Lua tool calls."""
+    
+    def test_invalid_operation_names(self):
+        # Test calling non-existent operations - should return None gracefully
+        result = evaluate_expression('strings.nonexistent("test")', {})
+        assert result is None
+        
+        result = evaluate_expression('lists.invalid_op({1, 2, 3})', {})
+        assert result is None
+    
+    def test_malformed_expressions(self):
+        # Test invalid Lua expressions - should return None gracefully
+        result = evaluate_expression('lists.filter_by({1, 2, 3}, "invalid lua ++ syntax")', {})
+        assert result is None
+        
+        result = evaluate_expression('strings.upper_case(unclosed_paren(', {})
+        assert result is None
+    
+    def test_boundary_conditions_numeric_params(self):
+        # Test edge cases for numeric parameters
+        
+        # Negative sample_size should handle gracefully
+        result = evaluate_expression('strings.sample_size("hello", -1)', {})
+        assert result is None
+        
+        # Zero sample_size
+        result = evaluate_expression('strings.sample_size("hello", 0)', {})
+        assert result == ""
+        
+        # Sample size larger than string
+        result = evaluate_expression('strings.sample_size("hi", 10)', {})
+        assert isinstance(result, str) and len(result) <= 2
+        
+        # Negative nth index
+        result = evaluate_expression('lists.nth({1, 2, 3}, nil, -1)', {})
+        assert result == 3  # Should work (negative indexing)
+        
+        # Out of bounds nth
+        result = evaluate_expression('lists.nth({1, 2, 3}, nil, 10)', {})
+        assert result is None
+    
+    def test_type_validation_errors(self):
+        # Test operations with wrong input types - should return None with error
+        
+        # String operations on non-strings
+        result = evaluate_expression('strings.upper_case(123)', {})
+        assert result is None
+        
+        # List operations on non-lists  
+        result = evaluate_expression('lists.head("not a list")', {})
+        assert result is None
+        
+        # Dict operations on non-dicts
+        result = evaluate_expression('dicts.has_key("not a dict", "key")', {})
+        assert result is None
+    
+    def test_missing_required_parameters(self):
+        # Test operations missing required parameters - should return None
+        
+        # strings.contains without param
+        result = evaluate_expression('strings.contains("hello")', {})
+        assert result is None
+        
+        # lists.nth without param (index)
+        result = evaluate_expression('lists.nth({1, 2, 3})', {})
+        assert result is None
+        
+        # strings.template without data
+        result = evaluate_expression('strings.template("Hello {name}!")', {})
+        assert result is None
+        
+        # strings.starts_with without param
+        result = evaluate_expression('strings.starts_with("hello")', {})
+        assert result is None
+    
+    def test_empty_data_structures(self):
+        # Test operations on empty inputs
+        
+        # Operations on empty lists
+        result = evaluate_expression('lists.head({})', {})
+        assert result is None
+        
+        result = evaluate_expression('lists.max_by({}, "value")', {})
+        assert result is None
+        
+        # Operations on empty strings
+        result = evaluate_expression('strings.sample_size("", 1)', {})
+        assert result == ""
+        
+        result = evaluate_expression('strings.reverse("")', {})
+        assert result == ""
+    
+    def test_complex_nested_data_edge_cases(self):
+        # Test edge cases with complex nested structures
+        
+        # Deeply nested null values
+        result = evaluate_expression('any.eval({deep={nested=null}}, "deep.nested == null")', {})
+        assert result == True
+        
+        # Mixed type operations
+        result = evaluate_expression('lists.filter_by({{id=1}, "string", {id=2}}, "type(item) == \'table\'")', {})
+        # Should filter to only the dict items
+        assert len(result) == 2
+        assert all(isinstance(item, dict) for item in result)
+    
+    def test_resource_intensive_operations(self):
+        # Test operations with larger inputs (not exhaustive, just basic checks)
+        
+        # Large list operations - pass the list as context item
+        large_list = list(range(100))  # Reduce size for testing
+        result = evaluate_expression('lists.shuffle(item)', large_list)
+        assert result is not None and len(result) == 100
+        
+        # Large string operations  
+        large_string = "a" * 100  # Reduce size for testing
+        result = evaluate_expression('strings.upper_case(item)', large_string)
+        assert result is not None and len(result) == 100 and result.isupper()
+
+
 def run_comprehensive_tests():
     """Run all test classes."""
     import traceback
@@ -870,7 +1059,8 @@ def run_comprehensive_tests():
         TestLuaAnyOperations,
         TestLuaGenerateOperations,
         TestLuaFunctionReturns,
-        TestLuaEdgeCases
+        TestLuaEdgeCases,
+        TestLuaErrorHandling
     ]
     
     total_tests = 0

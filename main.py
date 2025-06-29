@@ -65,11 +65,17 @@ def strings(
         dict: The result, always wrapped in a dictionary with a 'value' key. If an error
             occurs, an 'error' key is also present.
 
-    Usage Example:
+    MCP Usage Examples:
         strings('foo bar', 'camel_case')  # => {'value': 'fooBar'}
         strings('Hello, {name}!', 'template', data={'name': 'World'})
           # => {'value': 'Hello, World!'}
         strings('abc', 'contains', param='a')  # => {'value': True}
+
+    Lua Function Call Examples:
+        strings.upper_case("hello")  # => "HELLO"
+        strings.contains("hello world", "world")  # => true
+        strings.replace({text="hello world", data={old="world", new="Lua"}})  # => "hello Lua"
+        strings.template({text="Hello {name}!", data={name="World"}})  # => "Hello World!"
     """
     # Accept 'items' as an alias for text for compatibility with test_extended.py
     if text is None and items is not None:
@@ -86,6 +92,17 @@ def strings(
     import unicodedata
 
     try:
+        # Add type validation for string operations that specifically require strings
+        # is_empty and is_equal can work on any type
+        string_only_operations = [
+            "deburr", "template", "replace", "starts_with", "ends_with", 
+            "upper_case", "lower_case", "capitalize", "reverse", "trim",
+            "camel_case", "snake_case", "kebab_case", "contains", "is_digit", 
+            "is_alpha", "is_upper", "is_lower", "xor", "shuffle", "sample_size"
+        ]
+        if operation in string_only_operations and text is not None and not isinstance(text, str):
+            return {"value": None, "error": f"String operation '{operation}' requires a string input, got {type(text).__name__}"}
+        
         if operation == "deburr":
             result = "".join(
                 c
@@ -127,8 +144,12 @@ def strings(
                 )
             result = text.replace(data["old"], data["new"])
         elif operation == "starts_with":
+            if param is None:
+                raise ValueError("'param' argument is required for 'starts_with' operation")
             result = text.startswith(param)
         elif operation == "ends_with":
+            if param is None:
+                raise ValueError("'param' argument is required for 'ends_with' operation")
             result = text.endswith(param)
         elif operation == "is_empty":
             result = len(text) == 0
@@ -164,6 +185,8 @@ def strings(
         elif operation == "is_equal":
             result = text == param
         elif operation == "contains":
+            if param is None:
+                raise ValueError("'param' argument is required for 'contains' operation")
             result = param in text
         elif operation == "is_digit":
             result = text.isdigit()
@@ -280,7 +303,7 @@ def lists(
     Returns:
         dict: Result with 'value' key. On error, includes 'error' key.
 
-    Examples:
+    MCP Usage Examples:
         lists([{'id': 1}, {'id': 2}, {'id': 1}], 'uniq_by', key='id')
           # => {'value': [{'id': 1}, {'id': 2}]}
         lists([{'age': 30}, {'age': 20}], 'find_by', expression="age > 25")
@@ -290,15 +313,16 @@ def lists(
             'group_by',
             expression="age >= 25 and 'adult' or 'young'"
         )  # => {'value': {'adult': [{'age': 30}], 'young': [{'age': 20}]}}
-        lists(
-            [{'name': 'bob'},
-            {'name': 'Alice'}],
-            'sort_by', expression="string.lower(name)"
-        )  # => {'value': [{'name': 'Alice'}, {'name': 'bob'}]}
-        lists([{'x': 1, 'y': 2}, {'x': 3, 'y': 4}], 'pluck', expression="x + y")
-          # => {'value': [3, 7]}
         lists([1, 2, 3], 'chunk', param=2)  # => {'value': [[1, 2], [3]]}
         lists([1, 2, 3], 'difference', others=[2, 3])  # => {'value': [1]}
+
+    Lua Function Call Examples:
+        lists.head({1, 2, 3})  # => 1
+        lists.filter_by({{age=25}, {age=30}}, "age > 25")  # => [{"age": 30}]
+        lists.map({items={{name="alice"}, {name="bob"}}, expression="strings.upper_case(name)"})  # => ["ALICE", "BOB"]
+        lists.sort_by({items={{"name":"charlie"}, {"name":"alice"}}, expression="strings.lower_case(name)"})  # => [{"name":"alice"}, {"name":"charlie"}]
+        lists.difference({items={1, 2, 3}, others={2, 3}})  # => [1]
+        lists.group_by({items={{age=30}, {age=20}}, expression="age >= 25 and 'adult' or 'young'"})  # => {adult=[{age=30}], young=[{age=20}]}
     """
     # Accept 'text' as an alias for items for compatibility with test_extended.py
     if items is None and text is not None:
@@ -784,15 +808,25 @@ def lists(
                         return {"value": item}
                 return {"value": None}
         elif operation == "head":
+            if not isinstance(items, list):
+                return {"value": None, "error": "head operation requires a list"}
             return {"value": items[0] if items else None}
         elif operation == "last":
+            if not isinstance(items, list):
+                return {"value": None, "error": "last operation requires a list"}
             return {"value": items[-1] if items else None}
         elif operation == "sample":
+            if not isinstance(items, list):
+                return {"value": None, "error": "sample operation requires a list"}
             if not items:
                 return {"value": None}
             return {"value": random.choice(items)}
         elif operation == "nth":
+            if not isinstance(items, list):
+                return {"value": None, "error": "nth operation requires a list"}
             idx = param
+            if param is None:
+                return {"value": None, "error": "nth operation requires an index parameter"}
             if -len(items) <= idx < len(items):
                 return {"value": items[idx]}
             return {"value": None}
@@ -1010,11 +1044,17 @@ def dicts(
         dict: The result, always wrapped in a dictionary with a 'value' key. If an error
             occurs, an 'error' key is also present.
 
-    Usage Example:
+    MCP Usage Examples:
         dicts({'a': 1, 'b': 2}, 'pick', ['a'])  # => {'value': {'a': 1}}
         dicts({'a': {'b': 1}}, 'set_value', path=['a', 'b'], value=2)
           # => {'value': {'a': {'b': 2}}}
         dicts({'a': 1}, 'get_value', path='b', default=42)  # => {'value': 42}
+
+    Lua Function Call Examples:
+        dicts.has_key({a=1, b=2}, "a")  # => true
+        dicts.get_value({obj={a={b=1}}, path="a.b"})  # => 1
+        dicts.pick({obj={a=1, b=2, c=3}, param={"a", "c"}})  # => {a=1, c=3}
+        dicts.merge({obj={{a=1}, {b=2}}})  # => {a=1, b=2}
     """
     """
     Performs dictionary operations, including merge, set/get value, and property checks.
@@ -1026,6 +1066,11 @@ def dicts(
     import copy, re
 
     try:
+        # Add type validation for dict operations - dicts tool should only work on dictionaries
+        # For comparing any types, use any.is_equal instead
+        if operation not in ["merge", "is_empty"] and obj is not None and not isinstance(obj, dict):
+            return {"value": None, "error": f"Dict operation '{operation}' requires a dictionary input, got {type(obj).__name__}. Use 'any.is_equal' for comparing non-dictionary types."}
+        
         if operation == "merge":
 
             def deep_merge(a, b):
@@ -1173,12 +1218,18 @@ def any_tool(
         dict: The result, always wrapped in a dictionary with a 'value' key. If an error
             occurs, an 'error' key is also present.
 
-    Usage Example:
+    MCP Usage Examples:
         any('abc', 'contains', 'b')  # => {'value': True}
         any([1, 2, 3], 'contains', 2)  # => {'value': True}
         any([], 'is_empty')  # => {'value': True}
         any(None, 'is_nil')  # => {'value': True}
         any(42, 'is_equal', 42)  # => {'value': True}
+
+    Lua Function Call Examples:
+        any.is_equal(42, 42)  # => true
+        any.is_empty("")  # => true
+        any.contains("hello", "ell")  # => true
+        any.eval({age=30}, "age > 25")  # => true
         any({'age': 30, 'name': 'Alice'}, 'eval', expression="age > 25")
           # => {'value': True}
         any({'x': 3, 'y': 4}, 'eval', expression="math.sqrt(x*x + y*y)")
@@ -1249,13 +1300,19 @@ def generate(
         dict: The result, always wrapped in a dictionary with a 'value' key. If an error
             occurs, an 'error' key is also present.
 
-    Usage Example:
+    MCP Usage Examples:
         generate(None, 'range', [0, 5])  # => {'value': [0, 1, 2, 3, 4]}
         generate('x', 'repeat', 3)  # => {'value': ['x', 'x', 'x']}
         generate([1, 2, 3], 'powerset')
           # => {'value': [[], [1], [2], [1, 2], [3], [1, 3], [2, 3], [1, 2, 3]]}
         generate([[1, 2], ['a', 'b']], 'cartesian_product')
           # => {'value': [(1, 'a'), (1, 'b'), (2, 'a'), (2, 'b')]}
+
+    Lua Function Call Examples:
+        generate.range(nil, {0, 5})  # => [0, 1, 2, 3, 4]
+        generate["repeat"]("x", 3)  # => ["x", "x", "x"] (bracket syntax for reserved keyword)
+        generate.powerset({1, 2})  # => [[], [1], [2], [1, 2]]
+        generate.cartesian_product({{1, 2}, {"a", "b"}})  # => [[1, "a"], [1, "b"], [2, "a"], [2, "b"]]
     """
     import itertools
     import operator
@@ -1361,7 +1418,7 @@ async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> dict:
         parameter. You must not specify the primary parameter in params for any tool in
         the chain.
 
-    Usage Example:
+    MCP Usage Examples:
         chain(
             [1, [2, [3, 4], 5]],
             [
@@ -1371,6 +1428,12 @@ async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> dict:
             ]
         )
         # => {'value': [1, 2, 3, 4, 5]}
+
+    Lua Function Call Examples:
+        -- Note: chain is not exposed as a Lua function since it operates on tool calls
+        -- Use direct tool function calls instead:
+        local result = lists.sort_by(lists.compact(lists.flatten_deep({1, {2, {3, 4}, 5}})))
+        -- => [1, 2, 3, 4, 5]
     """
     value = input
     for i, step in enumerate(tool_calls):

@@ -387,6 +387,89 @@ chain(
 
 ---
 
+## Lua Function Calls
+
+Lever MCP tools are exposed as Lua functions, enabling powerful expression-based data transformations. You can call tools directly from Lua expressions using either positional or table syntax.
+
+### Function Call Syntax
+
+**Positional syntax:**
+```lua
+strings.upper_case("hello")  -- => "HELLO"
+lists.head({1, 2, 3})       -- => 1
+dicts.has_key({a=1}, "a")   -- => true
+any.is_equal(42, 42)        -- => true
+```
+
+**Table syntax (recommended for complex parameters):**
+```lua
+strings.replace({text="hello world", data={old="world", new="Lua"}})  -- => "hello Lua"
+lists.filter_by({items={{age=25}, {age=30}}, expression="age > 25"})  -- => [{"age": 30}]
+dicts.get_value({obj={a={b=1}}, path="a.b"})  -- => 1
+```
+
+### Function Returns
+
+Functions return their direct values when called (not wrapped in `{value: ...}`):
+```lua
+-- In Lua expressions, functions return the value directly
+local name = strings.upper_case("alice")  -- name = "ALICE"
+local first = lists.head({"a", "b", "c"}) -- first = "a"
+local empty = any.is_empty("")           -- empty = true
+
+-- You can chain function calls
+local result = strings.upper_case(lists.head({"hello", "world"}))  -- => "HELLO"
+```
+
+### Advanced Examples
+
+**Nested tool calls in expressions:**
+```lua
+-- Use lists functions in expressions
+lists.map({items={{"name": "alice"}, {"name": "bob"}}, expression="strings.upper_case(name)"})
+-- => ["ALICE", "BOB"]
+
+-- Complex data transformations
+lists.filter_by({
+  items={{name="Alice", age=25}, {name="Bob", age=17}}, 
+  expression="age >= 18"
+})
+-- => [{"name": "Alice", "age": 25}]
+
+-- String processing in list operations
+lists.sort_by({
+  items={{"name": "charlie"}, {"name": "alice"}, {"name": "bob"}},
+  expression="strings.lower_case(name)"
+})
+-- => [{"name": "alice"}, {"name": "bob"}, {"name": "charlie"}]
+```
+
+**Using any.eval for complex logic:**
+```lua
+any.eval({score=85, passed=true}, [[
+  if passed and score >= 80 then
+    return "excellent"
+  elseif passed then 
+    return "good"
+  else
+    return "needs improvement"
+  end
+]])
+-- => "excellent"
+```
+
+### All Available Functions
+
+- **strings**: `upper_case`, `lower_case`, `capitalize`, `contains`, `starts_with`, `ends_with`, `is_empty`, `is_equal`, `camel_case`, `snake_case`, `kebab_case`, `reverse`, `trim`, `replace`, `template`, `deburr`, `is_alpha`, `is_digit`, `is_upper`, `is_lower`, `xor`, `shuffle`, `sample_size`
+
+- **lists**: `head`, `last`, `tail`, `initial`, `nth`, `take`, `take_right`, `drop`, `drop_right`, `contains`, `is_empty`, `is_equal`, `compact`, `flatten`, `flatten_deep`, `shuffle`, `sample`, `sample_size`, `chunk`, `filter_by`, `find_by`, `map`, `reduce`, `all_by`, `any_by`, `every`, `some`, `sort_by`, `group_by`, `count_by`, `key_by`, `partition`, `pluck`, `uniq_by`, `max_by`, `min_by`, `difference`, `intersection`, `union`, `xor`, `remove_by`, `index_of`, `random_except`, `zip_lists`, `unzip_list`, `flat_map`, `zip_with`
+
+- **dicts**: `has_key`, `get_value`, `set_value`, `pick`, `omit`, `invert`, `is_empty`, `is_equal`, `merge`
+
+- **any**: `is_equal`, `is_empty`, `is_nil`, `contains`, `eval`
+
+- **generate**: `range`, `repeat`, `cycle`, `accumulate`, `cartesian_product`, `combinations`, `permutations`, `powerset`, `unique_pairs`, `windowed`, `zip_with_index`
+
 ## Lua Expressions
 
 Enable powerful filtering, grouping, sorting, and extraction with Lua expressions:
