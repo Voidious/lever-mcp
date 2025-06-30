@@ -299,7 +299,7 @@ async def test_min_max_by_expression(
             [{"id": 3, "category": "vegetable"}],
             "category == 'fruit'",
             "difference_by",
-            2,  # All fruits from items (since others has no fruits)
+            1,  # Only the fruit item (True) since vegetable item matches others (False)
         ),
         (
             [{"id": 1, "category": "fruit"}, {"id": 2, "category": "vegetable"}],

@@ -27,7 +27,7 @@ async def test_group_by(client):
         {"type": "vegetable", "name": "carrot"},
     ]
     value, error = await make_tool_call(
-        client, "lists", {"items": items, "operation": "group_by", "key": "type"}
+        client, "lists", {"items": items, "operation": "group_by", "expression": "type"}
     )
     assert value == {
         "fruit": [
@@ -184,7 +184,7 @@ async def test_group_by_string(client):
         {"type": "vegetable", "name": "carrot"},
     ]
     value, error = await make_tool_call(
-        client, "lists", {"items": items, "operation": "group_by", "key": "type"}
+        client, "lists", {"items": items, "operation": "group_by", "expression": "type"}
     )
     assert value == {
         "fruit": [
@@ -205,7 +205,7 @@ async def test_group_by_number(client):
     value, error = await make_tool_call(
         client,
         "lists",
-        {"items": items, "operation": "group_by", "key": "value"},
+        {"items": items, "operation": "group_by", "expression": "value"},
     )
     assert value == {
         "1": [{"value": 1, "name": "a"}, {"value": 1, "name": "c"}],
@@ -221,11 +221,11 @@ async def test_group_by_boolean(client):
         {"flag": True, "name": "c"},
     ]
     value, error = await make_tool_call(
-        client, "lists", {"items": items, "operation": "group_by", "key": "flag"}
+        client, "lists", {"items": items, "operation": "group_by", "expression": "flag"}
     )
     assert value == {
-        "true": [{"flag": True, "name": "a"}, {"flag": True, "name": "c"}],
-        "false": [{"flag": False, "name": "b"}],
+        "True": [{"flag": True, "name": "a"}, {"flag": True, "name": "c"}],
+        "False": [{"flag": False, "name": "b"}],
     }
 
 
@@ -241,7 +241,7 @@ async def test_group_by_dict(client):
         value, error = await make_tool_call(
             client,
             "lists",
-            {"items": items, "operation": "group_by", "key": "meta"},
+            {"items": items, "operation": "group_by", "expression": "meta"},
         )
         if (
             isinstance(value, list)
@@ -362,7 +362,7 @@ async def test_chunk(client):
 async def test_count_by(client):
     items = [{"type": "a"}, {"type": "b"}, {"type": "a"}, {"type": "c"}, {"type": "b"}]
     value, error = await make_tool_call(
-        client, "lists", {"items": items, "operation": "count_by", "key": "type"}
+        client, "lists", {"items": items, "operation": "count_by", "expression": "type"}
     )
     assert value == {"a": 2, "b": 2, "c": 1}
 
@@ -374,7 +374,7 @@ async def test_difference_by(client):
     value, error = await make_tool_call(
         client,
         "lists",
-        {"items": a, "others": b, "operation": "difference_by", "key": "id"},
+        {"items": a, "others": b, "operation": "difference_by", "expression": "id"},
     )
     assert value == [{"id": 1}, {"id": 3}]
 
@@ -386,7 +386,7 @@ async def test_intersection_by(client):
     value, error = await make_tool_call(
         client,
         "lists",
-        {"items": a, "others": b, "operation": "intersection_by", "key": "id"},
+        {"items": a, "others": b, "operation": "intersection_by", "expression": "id"},
     )
     assert value == [{"id": 2}]
 
@@ -425,14 +425,14 @@ async def test_find_by(client):
     value, error = await make_tool_call(
         client,
         "lists",
-        {"items": items, "operation": "find_by", "param": {"key": "id", "value": 2}},
+        {"items": items, "operation": "find_by", "expression": "id == 2"},
     )
     assert value == {"id": 2}
     # Test not found
     value, error = await make_tool_call(
         client,
         "lists",
-        {"items": items, "operation": "find_by", "param": {"key": "id", "value": 99}},
+        {"items": items, "operation": "find_by", "expression": "id == 99"},
     )
     assert value is None
 
@@ -443,7 +443,7 @@ async def test_remove_by(client):
     value, error = await make_tool_call(
         client,
         "lists",
-        {"items": items, "operation": "remove_by", "param": {"key": "id", "value": 1}},
+        {"items": items, "operation": "remove_by", "expression": "id == 1"},
     )
     assert value == [{"id": 2}]
 
@@ -533,7 +533,7 @@ async def test_chain_type_chaining(client):
                 {"tool": "lists", "params": {"operation": "flatten_deep"}},
                 {
                     "tool": "lists",
-                    "params": {"operation": "group_by", "key": "type"},
+                    "params": {"operation": "group_by", "expression": "type"},
                 },
             ],
         },
@@ -666,7 +666,11 @@ async def test_select_from_list_edge_cases(client):
     value, error = await make_tool_call(
         client,
         "lists",
-        {"items": [1, 2], "operation": "find_by", "param": {"key": "id", "value": 1}},
+        {
+            "items": [1, 2],
+            "operation": "find_by",
+            "param": {"expression": "id", "value": 1},
+        },
     )
     assert error is not None
 
@@ -689,7 +693,12 @@ async def test_compare_lists_edge_cases(client):
     value, error = await make_tool_call(
         client,
         "lists",
-        {"items": [1, 2], "others": [2, 3], "operation": "difference_by", "key": "id"},
+        {
+            "items": [1, 2],
+            "others": [2, 3],
+            "operation": "difference_by",
+            "expression": "id",
+        },
     )
     assert (value or []) == []
 
@@ -716,17 +725,18 @@ async def test_process_list_edge_cases(client):
     )
     assert error is not None
 
-    # Non-dict items
+    # Non-dict items - should group under "None" key when property doesn't exist
     value, error = await make_tool_call(
-        client, "lists", {"items": [1, 2], "operation": "group_by", "key": "a"}
+        client, "lists", {"items": [1, 2], "operation": "group_by", "expression": "a"}
     )
-    assert error is not None
+    assert error is None
+    assert value == {"None": [1, 2]}
 
     # Unknown operation returns error
     value, error = await make_tool_call(
         client,
         "lists",
-        {"items": [{"a": 1}], "operation": "unknown", "key": "a"},
+        {"items": [{"a": 1}], "operation": "unknown", "expression": "a"},
     )
     assert error is not None
 

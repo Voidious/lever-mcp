@@ -176,51 +176,49 @@ Performs list operations, including merge, set/get value, and property checks.
     - 'chunk': Split into chunks (param: int)
     - 'compact': Remove falsy values
     - 'contains': Check if item exists (param: value)
-    - 'count_by': Count occurrences by expression result/key
+    - 'count_by': Count occurrences by expression result
     - 'difference': Items in first not in second (others: list)
     - 'difference_by': Items in first list not matching expression in second
     - 'drop': Drop n elements from start (param: int)
     - 'drop_right': Drop n elements from end (param: int)
     - 'filter_by': Return all items matching the expression (predicate)
-    - 'find_by': Find first item matching expression/key-value
+    - 'find_by': Find first item matching expression
     - 'flat_map': Like map, but flattens one level if the mapping returns lists
     - 'flatten': Flatten one level
     - 'flatten_deep': Flatten completely
-    - 'group_by': Group items by expression result/key value
+    - 'group_by': Group items by expression result
     - 'head': First element
-    - 'index_of': Find index of item (param: dict with 'key' and 'value')
+    - 'index_of': Find index of item (expression: Lua expression)
     - 'initial': All but last element
     - 'intersection': Items in both lists (others: list)
     - 'intersection_by': Items in first list matching expression in second
     - 'is_empty': Check if list is empty
     - 'is_equal': Check if lists are equal (param: list)
-    - 'key_by': Create dict keyed by expression result/field
+    - 'key_by': Create dict keyed by expression result
     - 'last': Last element
     - 'map': Apply a Lua expression to each item and return the transformed list
-    - 'max_by': Find max by expression result/key
-    - 'min_by': Find min by expression result/key
+    - 'max_by': Find max by expression result
+    - 'min_by': Find min by expression result
     - 'nth': Get nth element (param: int, supports negative indexing)
-    - 'partition': Split by expression result/boolean key
-    - 'pluck': Extract values by expression/key (expression: any value)
-    - 'random_except': Random item excluding condition (param: dict with 'key' and 'value')
+    - 'partition': Split by expression result/boolean
+    - 'pluck': Extract values by expression (expression: any value)
+    - 'random_except': Random item excluding condition (expression: Lua expression)
     - 'reduce': Aggregate the list using a binary Lua expression (uses 'acc' and 'item') and optional initializer (param)
-    - 'remove_by': Remove items matching expression/key-value
+    - 'remove_by': Remove items matching expression
     - 'sample': Get one random item
     - 'sample_size': Get n random items (param: int)
     - 'shuffle': Randomize order
-    - 'sort_by': Sort by expression result/key (expression: any comparable value)
+    - 'sort_by': Sort by expression result (expression: any comparable value)
     - 'tail': All but first element
     - 'take': Take n elements from start (param: int)
     - 'take_right': Take n elements from end (param: int)
     - 'union': Unique values from all lists (others: list)
-    - 'uniq_by': Remove duplicates by expression result/key
+    - 'uniq_by': Remove duplicates by expression result
     - 'unzip_list': Unzip list of tuples
     - 'xor': Symmetric difference (others: list)
     - 'zip_lists': Zip multiple lists
     - 'zip_with': Combine two lists element-wise using a binary Lua expression (uses 'item1' and 'item2')
-- `param` (Any, optional): Parameter for operations (int for take/drop, str for sort_by)
 - `others` (list, optional): Second list for set operations like difference/intersection
-- `key` (str, optional): Property name for *_by operations (faster, alternative to expression)
 - `expression` (str, optional): Lua expression for advanced filtering/grouping/sorting/extraction
 
 **Returns:**
@@ -232,8 +230,8 @@ Performs list operations, including merge, set/get value, and property checks.
 lists([[1, [2, 3], 4], 5], 'flatten_deep')  # => {'value': [1, 2, 3, 4, 5]}
 lists([1, 2, 3], 'difference', others=[2, 3])  # => {'value': [1]}
 
-# Using key parameter for *_by operations
-lists([{'id': 1, 'name': 'Alice'}, {'id': 2, 'name': 'Bob'}, {'id': 1, 'name': 'Alice'}], 'uniq_by', key='id')  # => {'value': [{'id': 1, 'name': 'Alice'}, {'id': 2, 'name': 'Bob'}]}
+# Using expression for *_by operations
+lists([{'id': 1, 'name': 'Alice'}, {'id': 2, 'name': 'Bob'}, {'id': 1, 'name': 'Alice'}], 'uniq_by', expression='id')  # => {'value': [{'id': 1, 'name': 'Alice'}, {'id': 2, 'name': 'Bob'}]}
 
 # Expression-based operations
 lists([{'age': 30, 'score': 85}, {'age': 20, 'score': 95}], 'find_by', expression="age > 25")
@@ -331,31 +329,31 @@ any({'score': None}, 'eval', expression="score ~= null and 'has score' or 'no sc
 ---
 
 ### generate
-Generates sequences or derived data from input using the specified operation.
+Generates sequences or derived data using the specified operation.
 
 **Parameters:**
-- `text` (Any): The input list or value.
-- `operation` (str): The operation to perform. One of:
-    - 'accumulate': Running totals (or with a binary function if param is provided). param: None or a supported function name (e.g., 'mul')
-    - 'cartesian_product': Cartesian product of multiple input lists. param: None
-    - 'combinations': All combinations of a given length (param: int, required)
-    - 'cycle': Repeat the sequence up to param times. param: int (max length, optional)
-    - 'permutations': All permutations of a given length (param: int, optional, default=len(input))
-    - 'powerset': All possible subsets of a list. param: None
-    - 'range': Generate a list of numbers from start to end (optionally step). param: [start, end, step?]
-    - 'repeat': Repeat a value or sequence a specified number of times. param: int (number of times)
-    - 'unique_pairs': All unique pairs from a list. param: None
-    - 'windowed': Sliding windows of a given size. param: int (window size)
-    - 'zip_with_index': Tuples of (index, value). param: None
-- `param` (Any, optional): Parameter for the operation, if required.
+- `options` (dict): Configuration options for the operation (parameter names vary by operation).
+- `operation` (str): The operation to perform. Supported operations:
+    - 'accumulate': Running totals. options: {'items': list}
+    - 'cartesian_product': Cartesian product of multiple lists. options: {'lists': list_of_lists}
+    - 'combinations': All combinations of a given length. options: {'items': list, 'length': int}
+    - 'cycle': Repeat the sequence up to count times. options: {'items': list, 'count': int}
+    - 'permutations': All permutations of a given length. options: {'items': list, 'length': int (optional)}
+    - 'powerset': All possible subsets of a list. options: {'items': list}
+    - 'range': Generate a list of numbers from start to end. options: {'from': int, 'to': int, 'step': int (optional)}
+    - 'repeat': Repeat a value a specified number of times. options: {'value': any, 'count': int}
+    - 'unique_pairs': All unique pairs from a list. options: {'items': list}
+    - 'windowed': Sliding windows of a given size. options: {'items': list, 'size': int}
+    - 'zip_with_index': Tuples of (index, value). options: {'items': list}
 
 **Returns:**
 - `dict`: Always returns a dictionary with a 'value' key containing the result. If an error occurs, the dict will also have an 'error' key.
 
 **Usage Example:**
 ```python
-generate(None, 'range', [0, 5])  # => {'value': [0, 1, 2, 3, 4]}
-generate('x', 'repeat', 3)  # => {'value': ['x', 'x', 'x']}
+generate({'from': 0, 'to': 5}, 'range')  # => {'value': [0, 1, 2, 3, 4]}
+generate({'value': 'x', 'count': 3}, 'repeat')  # => {'value': ['x', 'x', 'x']}
+generate({'items': [1, 2, 3], 'length': 2}, 'combinations')  # => {'value': [[1, 2], [1, 3], [2, 3]]}
 ```
 
 ---
@@ -379,7 +377,7 @@ chain(
     [
         {"tool": "lists", "params": {"operation": "flatten"}},
         {"tool": "lists", "params": {"operation": "compact"}},
-        {"tool": "lists", "params": {"operation": "sort_by", "param": "id"}}
+        {"tool": "lists", "params": {"operation": "sort_by", "expression": "id"}}
     ]
 )
 # => {'value': [{"id": 1}, {"id": 2}}
@@ -412,6 +410,138 @@ Available functions: `math.*`, `string.*`, `os.time/date/clock`, `type()`, `tonu
 In all Lua expressions, the special variable `item` is always available and refers to the current object (which may be a dictionary, string, number, or other value).
 
 **Null Handling**: JSON null values become `null` table (not Lua `nil`). This is because Lua does not support `nil` as a list value—using `nil` would remove the element from the list. Important: `null` is truthy, use `== null` for null checks, `type(null)` returns "table". This preserves array indices and enables consistent null checking.
+
+## Lua Function Calls
+
+Lever MCP tools are exposed as Lua functions, enabling powerful expression-based data transformations. You can call tools directly from Lua expressions using either positional or table syntax.
+
+### Function Call Syntax
+
+**Positional syntax:**
+```lua
+strings.upper_case("hello")  -- => "HELLO"
+lists.head({1, 2, 3})       -- => 1
+dicts.has_key({a=1}, "a")   -- => true
+any.is_equal(42, 42)        -- => true
+```
+
+**Table syntax (recommended for complex parameters):**
+```lua
+strings.replace({text="hello world", data={old="world", new="Lua"}})  -- => "hello Lua"
+lists.filter_by({items={{age=25}, {age=30}}, expression="age > 25"})  -- => [{"age": 30}]
+dicts.get_value({obj={a={b=1}}, path="a.b"})  -- => 1
+```
+
+### Function Returns
+
+Functions return their direct values when called (not wrapped in `{value: ...}`):
+```lua
+-- In Lua expressions, functions return the value directly
+local name = strings.upper_case("alice")  -- name = "ALICE"
+local first = lists.head({"a", "b", "c"}) -- first = "a"
+local empty = any.is_empty("")           -- empty = true
+
+-- You can chain function calls
+local result = strings.upper_case(lists.head({"hello", "world"}))  -- => "HELLO"
+```
+
+### Advanced Examples
+
+**Nested tool calls in expressions:**
+```lua
+-- Use lists functions in expressions
+lists.map({items={{"name": "alice"}, {"name": "bob"}}, expression="strings.upper_case(name)"})
+-- => ["ALICE", "BOB"]
+
+-- Complex data transformations
+lists.filter_by({
+  items={{name="Alice", age=25}, {name="Bob", age=17}},
+  expression="age >= 18"
+})
+-- => [{"name": "Alice", "age": 25}]
+
+-- String processing in list operations
+lists.sort_by({
+  items={{"name": "charlie"}, {"name": "alice"}, {"name": "bob"}},
+  expression="strings.lower_case(name)"
+})
+-- => [{"name": "alice"}, {"name": "bob"}, {"name": "charlie"}]
+```
+
+**Using any.eval for complex logic:**
+```lua
+any.eval({score=85, passed=true}, [[
+  if passed and score >= 80 then
+    return "excellent"
+  elseif passed then
+    return "good"
+  else
+    return "needs improvement"
+  end
+]])
+-- => "excellent"
+```
+
+### Tool Function References in Expressions
+
+You can use tool functions directly as expressions, enabling powerful functional programming patterns:
+
+**Basic function references:**
+```lua
+-- Partition strings by whether they're all digits
+lists.partition({"123", "abc", "456", "def"}, "strings.is_digit")
+-- => [["123", "456"], ["abc", "def"]]
+
+-- Filter to keep only alphabetic strings
+lists.filter_by({"hello", "world123", "test"}, "strings.is_alpha")
+-- => ["hello", "test"]
+
+-- Transform all strings to uppercase
+lists.map({"hello", "world"}, "strings.upper_case")
+-- => ["HELLO", "WORLD"]
+```
+
+**Advanced function reference patterns:**
+```lua
+-- Group by result of function call
+lists.group_by({"123", "abc", "456"}, "strings.is_digit")
+-- => {"True": ["123", "456"], "False": ["abc"]}
+
+-- Check if all items satisfy a condition
+lists.all_by({"hello", "world", "test"}, "strings.is_alpha")
+-- => true
+
+-- Check if any items satisfy a condition
+lists.any_by({"hello", "123", "world"}, "strings.is_digit")
+-- => true
+
+-- Sort using function transformation
+lists.sort_by({"  hello  ", "  world  "}, "strings.trim")
+-- => ["  hello  ", "  world  "] (sorted by trimmed values)
+```
+
+**Nested function calls in expressions:**
+```lua
+-- Chain multiple functions within expressions
+lists.map({"  HELLO  ", "  WORLD  "}, "strings.lower_case(strings.trim(item))")
+-- => ["hello", "world"]
+
+-- Use tool functions in complex expressions
+lists.filter_by(users, "strings.contains(email, '@gmail.com')")
+-- Filter users with Gmail addresses
+```
+
+### All Available Functions
+
+- **strings**: `camel_case`, `capitalize`, `contains`, `deburr`, `ends_with`, `is_alpha`, `is_digit`, `is_empty`, `is_equal`, `is_lower`, `is_upper`, `kebab_case`, `lower_case`, `replace`, `reverse`, `sample_size`, `shuffle`, `snake_case`, `starts_with`, `template`, `trim`, `upper_case`, `xor`
+
+- **lists**: `all_by`, `any_by`, `chunk`, `compact`, `contains`, `count_by`, `difference`, `difference_by`, `drop`, `drop_right`, `every`, `filter_by`, `find_by`, `flat_map`, `flatten`, `flatten_deep`, `group_by`, `head`, `index_of`, `initial`, `intersection`, `intersection_by`, `is_empty`, `is_equal`, `key_by`, `last`, `map`, `max_by`, `min_by`, `nth`, `partition`, `pluck`, `random_except`, `reduce`, `remove_by`, `sample`, `sample_size`, `shuffle`, `some`, `sort_by`, `tail`, `take`, `take_right`, `union`, `uniq_by`, `unzip_list`, `xor`, `zip_lists`, `zip_with`
+
+- **dicts**: `get_value`, `has_key`, `invert`, `is_empty`, `is_equal`, `merge`, `omit`, `pick`, `set_value`
+
+- **any**: `contains`, `eval`, `is_empty`, `is_equal`, `is_nil`
+
+- **generate**: `accumulate`, `cartesian_product`, `combinations`, `cycle`, `permutations`, `powerset`, `range`, `repeat`, `unique_pairs`, `windowed`, `zip_with_index`
 
 ## Error Handling
 

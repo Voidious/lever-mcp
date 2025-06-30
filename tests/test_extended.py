@@ -647,7 +647,7 @@ async def test_has(client, obj, key, expected):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "items, key, expected",
+    "items, expression, expected",
     [
         (
             [{"id": "a", "v": 1}, {"id": "b", "v": 2}],
@@ -657,9 +657,11 @@ async def test_has(client, obj, key, expected):
         ([], "id", {}),
     ],
 )
-async def test_key_by(client, items, key, expected):
+async def test_key_by(client, items, expression, expected):
     value, error = await make_tool_call(
-        client, "lists", {"items": items, "operation": "key_by", "key": key}
+        client,
+        "lists",
+        {"items": items, "operation": "key_by", "expression": expression},
     )
     assert error is None
     assert value == expected
@@ -788,11 +790,11 @@ async def test_has_property_new_options(client, obj, property, param, expected):
         ([10, 20, 30], "nth", -1, 30),
         ([{"score": 5}, {"score": 2}, {"score": 8}], "min_by", "score", {"score": 2}),
         ([{"score": 5}, {"score": 2}, {"score": 8}], "max_by", "score", {"score": 8}),
-        ([{"id": 1}, {"id": 2}, {"id": 3}], "index_of", {"key": "id", "value": 2}, 1),
+        ([{"id": 1}, {"id": 2}, {"id": 3}], "index_of", "id == 2", 1),
         (
             [{"status": "active"}, {"status": "inactive"}, {"status": "active"}],
             "random_except",
-            {"key": "status", "value": "inactive"},
+            "status == 'inactive'",
             {"status": "active"},
         ),
     ],
@@ -800,7 +802,11 @@ async def test_has_property_new_options(client, obj, property, param, expected):
 async def test_select_from_list_new_options(client, items, operation, param, expected):
     params = {"items": items, "operation": operation}
     if param is not None:
-        params["param"] = param
+        # For expression-based operations, use expression parameter
+        if operation in ["index_of", "random_except"]:
+            params["expression"] = param
+        else:
+            params["param"] = param
     value, error = await make_tool_call(client, "lists", params)
     if operation == "random_except":
         assert value is not None
@@ -868,9 +874,41 @@ async def test_select_from_list_new_options(client, items, operation, param, exp
     ],
 )
 async def test_generate(client, input, operation, param, expected):
-    params = {"text": input, "operation": operation}
-    if param is not None:
-        params["param"] = param
+    # Map old parameters to new options format
+    options = {}
+
+    if operation == "range":
+        if isinstance(param, list) and len(param) >= 2:
+            options["from"] = param[0]
+            options["to"] = param[1]
+            if len(param) > 2:
+                options["step"] = param[2]
+    elif operation == "cartesian_product":
+        options["lists"] = input
+    elif operation == "repeat":
+        options["value"] = input
+        options["count"] = param
+    elif operation in ["powerset", "unique_pairs", "zip_with_index"]:
+        options["items"] = input
+    elif operation == "windowed":
+        options["items"] = input
+        options["size"] = param
+    elif operation == "cycle":
+        options["items"] = input
+        options["count"] = param
+    elif operation == "accumulate":
+        options["items"] = input
+        if param is not None:
+            options["func"] = param
+    elif operation == "permutations":
+        options["items"] = input
+        if param is not None:
+            options["length"] = param
+    elif operation == "combinations":
+        options["items"] = input
+        options["length"] = param
+
+    params = {"options": options, "operation": operation}
     value, error = await make_tool_call(client, "generate", params)
     if expected is ValueError:
         assert error is not None
@@ -891,7 +929,9 @@ async def test_generate(client, input, operation, param, expected):
 async def test_generate_powerset_direct():
     import main
 
-    result = await main.generate.run({"text": [], "operation": "powerset"})
+    result = await main.generate.run(
+        {"options": {"items": []}, "operation": "powerset"}
+    )
     actual = json.loads(result[0].text)  # type: ignore
     assert actual["value"] == [[]]
 
@@ -900,7 +940,9 @@ async def test_generate_powerset_direct():
 async def test_generate_permutations_direct():
     import main
 
-    result = await main.generate.run({"text": [], "operation": "permutations"})
+    result = await main.generate.run(
+        {"options": {"items": []}, "operation": "permutations"}
+    )
     actual = json.loads(result[0].text)  # type: ignore
     assert actual["value"] == [[]]
 
@@ -920,7 +962,9 @@ async def test_generate_permutations_direct():
 )
 async def test_generate_repeat_all_types(client, input, param, expected):
     value, error = await make_tool_call(
-        client, "generate", {"text": input, "operation": "repeat", "param": param}
+        client,
+        "generate",
+        {"options": {"value": input, "count": param}, "operation": "repeat"},
     )
     assert value == expected
 
@@ -982,32 +1026,32 @@ async def test_get_value_all_types(client, obj, path, default, expected):
         ("foo", [{"tool": "strings", "params": {"operation": "reverse"}}], "oof"),
         (
             42,
-            [{"tool": "generate", "params": {"operation": "repeat", "param": 2}}],
+            [{"tool": "generate", "params": {"operation": "repeat", "count": 2}}],
             [42, 42],
         ),
         (
             3.14,
-            [{"tool": "generate", "params": {"operation": "repeat", "param": 2}}],
+            [{"tool": "generate", "params": {"operation": "repeat", "count": 2}}],
             [3.14, 3.14],
         ),
         (
             True,
-            [{"tool": "generate", "params": {"operation": "repeat", "param": 2}}],
+            [{"tool": "generate", "params": {"operation": "repeat", "count": 2}}],
             [True, True],
         ),
         (
             [1, 2],
-            [{"tool": "generate", "params": {"operation": "repeat", "param": 2}}],
+            [{"tool": "generate", "params": {"operation": "repeat", "count": 2}}],
             [[1, 2], [1, 2]],
         ),
         (
             {"a": 1},
-            [{"tool": "generate", "params": {"operation": "repeat", "param": 2}}],
+            [{"tool": "generate", "params": {"operation": "repeat", "count": 2}}],
             [{"a": 1}, {"a": 1}],
         ),
         (
             None,
-            [{"tool": "generate", "params": {"operation": "repeat", "param": 2}}],
+            [{"tool": "generate", "params": {"operation": "repeat", "count": 2}}],
             [None, None],
         ),
     ],

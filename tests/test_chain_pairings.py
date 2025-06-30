@@ -44,7 +44,7 @@ async def client():
             "strings",
             {"operation": "capitalize"},
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             "foo",
             list,
             ["Foo", "Foo"],
@@ -74,7 +74,7 @@ async def client():
             "lists",
             {"operation": "compact"},
             "lists",
-            {"operation": "count_by", "key": 0},
+            {"operation": "count_by", "expression": 0},
             [[0], [0], [1]],
             dict,
             None,
@@ -134,7 +134,7 @@ async def client():
             "lists",
             {"operation": "compact"},
             "generate",
-            {"operation": "windowed", "param": 2},
+            {"operation": "windowed", "size": 2},
             [1, 2, 3],
             list,
             [[1, 2], [2, 3]],
@@ -144,7 +144,7 @@ async def client():
             "lists",
             {"operation": "compact"},
             "generate",
-            {"operation": "cycle", "param": 3},
+            {"operation": "cycle", "count": 3},
             [1, 2],
             list,
             [1, 2, 1],
@@ -184,7 +184,7 @@ async def client():
             "lists",
             {"operation": "compact"},
             "generate",
-            {"operation": "combinations", "param": 2},
+            {"operation": "combinations", "length": 2},
             [1, 2, 3],
             list,
             [[1, 2], [1, 3], [2, 3]],
@@ -194,7 +194,7 @@ async def client():
             "lists",
             {"operation": "compact"},
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             [1],
             list,
             [[1], [1]],
@@ -224,7 +224,7 @@ async def client():
             "lists",
             {"operation": "compact"},
             "lists",
-            {"operation": "difference_by", "others": [{"id": 2}], "key": "id"},
+            {"operation": "difference_by", "others": [{"id": 2}], "expression": "id"},
             [{"id": 1}, None, {"id": 2}],
             list,
             [{"id": 1}],
@@ -234,7 +234,7 @@ async def client():
             "lists",
             {"operation": "compact"},
             "lists",
-            {"operation": "intersection_by", "others": [{"id": 2}], "key": "id"},
+            {"operation": "intersection_by", "others": [{"id": 2}], "expression": "id"},
             [{"id": 1}, None, {"id": 2}],
             list,
             [{"id": 2}],
@@ -242,7 +242,7 @@ async def client():
         # lists (list -> dict) -> dicts (dict -> dict) (error due to non-string keys)
         (
             "lists",
-            {"operation": "count_by", "key": 0},
+            {"operation": "count_by", "expression": 0},
             "dicts",
             {"operation": "invert"},
             [[0], [0], [1]],
@@ -252,7 +252,7 @@ async def client():
         # lists (list -> dict) -> dicts (dict -> bool) is_empty (error case)
         (
             "lists",
-            {"operation": "count_by", "key": 0},
+            {"operation": "count_by", "expression": 0},
             "any",
             {"operation": "is_empty"},
             [[0], [0], [1]],
@@ -262,7 +262,7 @@ async def client():
         # lists (list -> dict) -> dicts (dict -> bool) is_empty (working case)
         (
             "lists",
-            {"operation": "count_by", "key": "x"},
+            {"operation": "count_by", "expression": "x"},
             "dicts",
             {"operation": "is_empty"},
             [{"x": 1}, {"x": 1}, {"x": 2}],
@@ -272,7 +272,7 @@ async def client():
         # lists (list -> dict) -> dicts (dict -> bool) has_key (error case)
         (
             "lists",
-            {"operation": "count_by", "key": 0},
+            {"operation": "count_by", "expression": 0},
             "dicts",
             {"operation": "has_key", "param": 0},
             [[0], [0], [1]],
@@ -282,7 +282,7 @@ async def client():
         # lists (list -> dict) -> dicts (dict -> bool) has_key (working case)
         (
             "lists",
-            {"operation": "count_by", "key": "x"},
+            {"operation": "count_by", "expression": "x"},
             "dicts",
             {"operation": "has_key", "param": "1"},
             [{"x": 1}, {"x": 1}, {"x": 2}],
@@ -292,7 +292,7 @@ async def client():
         # lists (list -> dict) -> any (any -> bool) is_nil (error case)
         (
             "lists",
-            {"operation": "count_by", "key": 0},
+            {"operation": "count_by", "expression": 0},
             "any",
             {"operation": "is_nil"},
             [[0], [0], [1]],
@@ -302,7 +302,7 @@ async def client():
         # lists (list -> dict) -> any (any -> bool) is_nil (working case)
         (
             "lists",
-            {"operation": "count_by", "key": "x"},
+            {"operation": "count_by", "expression": "x"},
             "any",
             {"operation": "is_nil"},
             [{"x": 1}, {"x": 1}, {"x": 2}],
@@ -312,7 +312,7 @@ async def client():
         # lists (list -> dict) -> any (any -> bool) contains (error case)
         (
             "lists",
-            {"operation": "count_by", "key": 0},
+            {"operation": "count_by", "expression": 0},
             "any",
             {"operation": "contains", "param": 2},
             [[0], [0], [1]],
@@ -322,7 +322,7 @@ async def client():
         # lists (list -> dict) -> any (any -> bool) contains (working case)
         (
             "lists",
-            {"operation": "count_by", "key": "x"},
+            {"operation": "count_by", "expression": "x"},
             "any",
             {"operation": "contains", "param": "2"},
             [{"x": 1}, {"x": 1}, {"x": 2}],
@@ -332,7 +332,7 @@ async def client():
         # lists (list -> dict) -> dicts (dict -> Any) (error case)
         (
             "lists",
-            {"operation": "count_by", "key": 0},
+            {"operation": "count_by", "expression": 0},
             "dicts",
             {"operation": "get_value", "path": 0},
             [[0], [0], [1]],
@@ -342,7 +342,7 @@ async def client():
         # lists (list -> dict) -> dicts (dict -> Any) (working case)
         (
             "lists",
-            {"operation": "count_by", "key": "x"},
+            {"operation": "count_by", "expression": "x"},
             "dicts",
             {"operation": "get_value", "path": "1"},
             [{"x": 1}, {"x": 1}, {"x": 2}],
@@ -352,7 +352,7 @@ async def client():
         # generate (Any -> Any, repeat str) -> lists (list -> list)
         (
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             "lists",
             {"operation": "compact"},
             "foo",
@@ -362,7 +362,7 @@ async def client():
         # generate (Any -> Any, range) -> lists (list -> list) (compact removes 0)
         (
             "generate",
-            {"operation": "range", "param": [0, 3]},
+            {"operation": "range", "from": 0, "to": 3},
             "lists",
             {"operation": "compact"},
             None,
@@ -372,7 +372,7 @@ async def client():
         # generate (Any -> Any, repeat str) -> lists (list -> Any)
         (
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             "lists",
             {"operation": "head"},
             "foo",
@@ -456,7 +456,7 @@ async def client():
             "dicts",
             {"operation": "get_value", "path": "a"},
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             {"a": 7},
             list,
             [7, 7],
@@ -476,7 +476,7 @@ async def client():
             "any",
             {"operation": "is_nil"},
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             0,
             list,
             [False, False],
@@ -554,9 +554,9 @@ async def client():
         # lists -> lists (list of dicts)
         (
             "lists",
-            {"operation": "difference_by", "others": [{"id": 2}], "key": "id"},
+            {"operation": "difference_by", "others": [{"id": 2}], "expression": "id"},
             "lists",
-            {"operation": "count_by", "key": "id"},
+            {"operation": "count_by", "expression": "id"},
             [{"id": 1}, {"id": 2}, {"id": 1}],
             dict,
             {"1": 2},
@@ -566,7 +566,7 @@ async def client():
             "lists",
             {"operation": "difference", "others": [2]},
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             [1, 2],
             list,
             [[1], [1]],
@@ -574,7 +574,7 @@ async def client():
         # lists -> dicts (difference_by, expect {"x": 1})
         (
             "lists",
-            {"operation": "difference_by", "others": [{"x": 2}], "key": "x"},
+            {"operation": "difference_by", "others": [{"x": 2}], "expression": "x"},
             "dicts",
             {"operation": "merge"},
             [{"x": 1}, {"x": 2}],
@@ -584,7 +584,7 @@ async def client():
         # lists -> dicts
         (
             "lists",
-            {"operation": "key_by", "key": "id"},
+            {"operation": "key_by", "expression": "id"},
             "dicts",
             {"operation": "set_value", "path": "x", "value": 99},
             [{"id": "a", "val": 1}],
@@ -594,7 +594,7 @@ async def client():
         # lists -> dicts
         (
             "lists",
-            {"operation": "key_by", "key": "id"},
+            {"operation": "key_by", "expression": "id"},
             "dicts",
             {"operation": "get_value", "path": "a"},
             [{"id": "a", "val": 1}],
@@ -616,7 +616,7 @@ async def client():
             "dicts",
             {"operation": "invert"},
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             {"a": 1, "b": 2},
             list,
             [{"1": "a", "2": "b"}, {"1": "a", "2": "b"}],
@@ -644,7 +644,7 @@ async def client():
         # generate -> lists
         (
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             "lists",
             {"operation": "is_empty"},
             [1, 2],
@@ -654,9 +654,9 @@ async def client():
         # generate -> lists (list of dicts)
         (
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             "lists",
-            {"operation": "count_by", "key": "a"},
+            {"operation": "count_by", "expression": "a"},
             {"a": 1},
             dict,
             {"1": 2},
@@ -664,7 +664,7 @@ async def client():
         # generate -> dicts (list of dicts)
         (
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             "dicts",
             {"operation": "merge"},
             {"a": 1, "b": 2},
@@ -686,7 +686,7 @@ async def client():
             "dicts",
             {"operation": "merge"},
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             [{"a": 1, "b": 2}],
             list,
             [{"a": 1, "b": 2}, {"a": 1, "b": 2}],
@@ -726,7 +726,7 @@ async def client():
             "dicts",
             {"operation": "set_value", "path": "a", "value": 1},
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             {"b": 2},
             list,
             [{"b": 2, "a": 1}, {"b": 2, "a": 1}],
@@ -755,7 +755,7 @@ async def client():
         #   (list[str], list[int], list[dict], list[bool], list[list])
         (
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             "any",
             {"operation": "is_equal", "param": ["a", "a"]},
             "a",
@@ -764,7 +764,7 @@ async def client():
         ),
         (
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             "any",
             {"operation": "is_equal", "param": [1, 1]},
             1,
@@ -773,7 +773,7 @@ async def client():
         ),
         (
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             "any",
             {"operation": "is_equal", "param": [{"x": 1}, {"x": 1}]},
             {"x": 1},
@@ -782,7 +782,7 @@ async def client():
         ),
         (
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             "any",
             {"operation": "is_equal", "param": [True, True]},
             True,
@@ -791,7 +791,7 @@ async def client():
         ),
         (
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             "any",
             {"operation": "is_equal", "param": [[1], [1]]},
             [1],
@@ -801,7 +801,7 @@ async def client():
         # generate -> lists (contains) (list[str])
         (
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             "any",
             {"operation": "contains", "param": "a"},
             "a",
@@ -946,7 +946,7 @@ async def client():
             "any",
             {"operation": "eval", "expression": "item * 2"},
             "generate",
-            {"operation": "repeat", "param": 3},
+            {"operation": "repeat", "count": 3},
             5,
             list,
             [10, 10, 10],
@@ -956,7 +956,7 @@ async def client():
             "any",
             {"operation": "eval", "expression": "math.sqrt(item)"},
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             16,
             list,
             [4.0, 4.0],
@@ -966,7 +966,7 @@ async def client():
             "any",
             {"operation": "eval", "expression": "item > 5"},
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             10,
             list,
             [True, True],
@@ -986,7 +986,7 @@ async def client():
             "any",
             {"operation": "eval", "expression": "item * 3"},
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             5,
             list,
             [15, 15],
@@ -1108,7 +1108,7 @@ async def client():
         # lists (list -> dict) -> any.eval (dict -> str)
         (
             "lists",
-            {"operation": "count_by", "key": "type"},
+            {"operation": "count_by", "expression": "type"},
             "any",
             {
                 "operation": "eval",
@@ -1121,7 +1121,7 @@ async def client():
         # lists (list -> dict) -> any.eval (dict -> int)
         (
             "lists",
-            {"operation": "count_by", "key": "category"},
+            {"operation": "count_by", "expression": "category"},
             "any",
             {"operation": "eval", "expression": "item.A or 0"},
             [{"category": "A"}, {"category": "A"}, {"category": "B"}],
@@ -1131,7 +1131,7 @@ async def client():
         # lists (list -> dict) -> any.eval (dict -> bool)
         (
             "lists",
-            {"operation": "count_by", "key": "status"},
+            {"operation": "count_by", "expression": "status"},
             "any",
             {"operation": "eval", "expression": "item.active and item.active > 1"},
             [{"status": "active"}, {"status": "active"}, {"status": "inactive"}],
@@ -1234,7 +1234,7 @@ async def client():
         # generate (Any -> list) -> any.eval (list -> int)
         (
             "generate",
-            {"operation": "repeat", "param": 3},
+            {"operation": "repeat", "count": 3},
             "any",
             {"operation": "eval", "expression": "item[2] and 3 or 0"},
             "x",
@@ -1244,7 +1244,7 @@ async def client():
         # generate (Any -> list) -> any.eval (list -> str)
         (
             "generate",
-            {"operation": "range", "param": [1, 4]},
+            {"operation": "range", "from": 1, "to": 4},
             "any",
             {
                 "operation": "eval",
@@ -1260,7 +1260,7 @@ async def client():
         # generate (Any -> list) -> any.eval (list -> bool)
         (
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             "any",
             {"operation": "eval", "expression": "item[1] == item[2]"},
             42,
@@ -1270,7 +1270,7 @@ async def client():
         # generate (Any -> list) -> any.eval (list -> float)
         (
             "generate",
-            {"operation": "range", "param": [1, 6]},
+            {"operation": "range", "from": 1, "to": 6},
             "any",
             {"operation": "eval", "expression": "(item[1] + item[5]) / 2.0"},
             None,
@@ -1293,7 +1293,7 @@ async def client():
             "any",
             {"operation": "eval", "expression": "math.floor(item / 2)"},
             "generate",
-            {"operation": "repeat", "param": 2},
+            {"operation": "repeat", "count": 2},
             7,
             list,
             [3, 3],
@@ -1303,7 +1303,7 @@ async def client():
             "any",
             {"operation": "eval", "expression": "item * 3"},
             "generate",
-            {"operation": "repeat", "param": 1},
+            {"operation": "repeat", "count": 1},
             10,
             list,
             [30],
@@ -1313,7 +1313,7 @@ async def client():
             "any",
             {"operation": "eval", "expression": "item * 2"},
             "generate",
-            {"operation": "repeat", "param": 1},
+            {"operation": "repeat", "count": 1},
             5,
             list,
             [10],
