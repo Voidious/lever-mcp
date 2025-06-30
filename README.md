@@ -331,31 +331,31 @@ any({'score': None}, 'eval', expression="score ~= null and 'has score' or 'no sc
 ---
 
 ### generate
-Generates sequences or derived data from input using the specified operation.
+Generates sequences or derived data using the specified operation.
 
 **Parameters:**
-- `text` (Any): The input list or value.
-- `operation` (str): The operation to perform. One of:
-    - 'accumulate': Running totals (or with a binary function if param is provided). param: None or a supported function name (e.g., 'mul')
-    - 'cartesian_product': Cartesian product of multiple input lists. param: None
-    - 'combinations': All combinations of a given length (param: int, required)
-    - 'cycle': Repeat the sequence up to param times. param: int (max length, optional)
-    - 'permutations': All permutations of a given length (param: int, optional, default=len(input))
-    - 'powerset': All possible subsets of a list. param: None
-    - 'range': Generate a list of numbers from start to end (optionally step). param: [start, end, step?]
-    - 'repeat': Repeat a value or sequence a specified number of times. param: int (number of times)
-    - 'unique_pairs': All unique pairs from a list. param: None
-    - 'windowed': Sliding windows of a given size. param: int (window size)
-    - 'zip_with_index': Tuples of (index, value). param: None
-- `param` (Any, optional): Parameter for the operation, if required.
+- `options` (dict): Configuration options for the operation (parameter names vary by operation).
+- `operation` (str): The operation to perform. Supported operations:
+    - 'accumulate': Running totals. options: {'items': list}
+    - 'cartesian_product': Cartesian product of multiple lists. options: {'lists': list_of_lists}
+    - 'combinations': All combinations of a given length. options: {'items': list, 'length': int}
+    - 'cycle': Repeat the sequence up to count times. options: {'items': list, 'count': int}
+    - 'permutations': All permutations of a given length. options: {'items': list, 'length': int (optional)}
+    - 'powerset': All possible subsets of a list. options: {'items': list}
+    - 'range': Generate a list of numbers from start to end. options: {'from': int, 'to': int, 'step': int (optional)}
+    - 'repeat': Repeat a value a specified number of times. options: {'value': any, 'count': int}
+    - 'unique_pairs': All unique pairs from a list. options: {'items': list}
+    - 'windowed': Sliding windows of a given size. options: {'items': list, 'size': int}
+    - 'zip_with_index': Tuples of (index, value). options: {'items': list}
 
 **Returns:**
 - `dict`: Always returns a dictionary with a 'value' key containing the result. If an error occurs, the dict will also have an 'error' key.
 
 **Usage Example:**
 ```python
-generate(None, 'range', [0, 5])  # => {'value': [0, 1, 2, 3, 4]}
-generate('x', 'repeat', 3)  # => {'value': ['x', 'x', 'x']}
+generate({'from': 0, 'to': 5}, 'range')  # => {'value': [0, 1, 2, 3, 4]}
+generate({'value': 'x', 'count': 3}, 'repeat')  # => {'value': ['x', 'x', 'x']}
+generate({'items': [1, 2, 3], 'length': 2}, 'combinations')  # => {'value': [[1, 2], [1, 3], [2, 3]]}
 ```
 
 ---

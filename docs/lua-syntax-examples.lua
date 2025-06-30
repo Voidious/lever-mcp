@@ -50,13 +50,14 @@ local nested_value = dicts.get_value({
 
 -- Generate operations  
 local number_range = generate.range({
-    text = nil,
-    param = {1, 10, 2}  -- start, end, step
+    from = 1,
+    to = 10,
+    step = 2
 })
 
 local combinations = generate.combinations({
-    text = {"A", "B", "C"},
-    param = 2  -- combinations of length 2
+    items = {"A", "B", "C"},
+    length = 2  -- combinations of length 2
 })
 
 -- FUNCTION RETURNS (apply operation to current item)

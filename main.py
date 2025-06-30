@@ -37,9 +37,8 @@ PARAM_DESCRIPTIONS = {
         "expression": "(str, optional) Lua expression to evaluate (for 'eval' operation)",
     },
     "generate": {
-        "text": "(any) The input list or value",
+        "options": "(dict) Configuration options for the operation (parameter names vary by operation)",
         "operation": "(str) The operation to perform. One of: 'accumulate', 'cartesian_product', 'combinations', 'cycle', 'permutations', 'powerset', 'range', 'repeat', 'unique_pairs', 'windowed', 'zip_with_index'",
-        "param": "(any, optional) Parameter for the operation, if required",
     },
     "chain": {
         "input": "(any) The initial input to the chain",
@@ -86,8 +85,8 @@ mcp = LeverMCP("Lever MCP")
 
 @mcp.tool()
 def strings(
-    text: Optional[str] = None,
-    operation: Optional[str] = None,
+    text: str,
+    operation: str,
     param: Any = None,
     data: Optional[dict] = None,
 ) -> dict:
@@ -139,8 +138,6 @@ def strings(
         strings.replace({text="hello world", data={old="world", new="Lua"}})  # => "hello Lua"
         strings.template({text="Hello {name}!", data={name="World"}})  # => "Hello World!"
     """
-    if text is None:
-        text = ""
     if data is None:
         data = {}
     import re
@@ -260,8 +257,8 @@ def strings(
 
 @mcp.tool()
 def lists(
-    items: Optional[list] = None,
-    operation: Optional[str] = None,
+    items: list,
+    operation: str,
     param: Any = None,
     others: Optional[list] = None,
     expression: Optional[str] = None,
@@ -354,13 +351,6 @@ def lists(
         lists.difference({items={1, 2, 3}, others={2, 3}})  # => [1]
         lists.group_by({items={{age=30}, {age=20}}, expression="age >= 25 and 'adult' or 'young'"})  # => {adult=[{age=30}], young=[{age=20}]}
     """
-    # Initialize items if None
-    if items is None:
-        items = []
-    if others is None:
-        others = []
-    if items is None:
-        items = []
     if others is None:
         others = []
     # Support xor, shuffle, sample_size, is_empty as well
@@ -911,8 +901,8 @@ def lists(
 
 @mcp.tool()
 def dicts(
-    obj: Any = None,
-    operation: Optional[str] = None,
+    obj: Any,
+    operation: str,
     param: Any = None,
     path: Any = None,
     value: Any = None,
@@ -1078,8 +1068,8 @@ def dicts(
 
 @mcp.tool("any")
 def any_tool(
-    value: Any = None,
-    operation: Optional[str] = None,
+    value: Any,
+    operation: str,
     param: Any = None,
     expression: Optional[str] = None,
 ) -> dict:
@@ -1162,73 +1152,90 @@ def any_tool(
 
 @mcp.tool()
 def generate(
-    text: Any = None, operation: Optional[str] = None, param: Any = None
+    options: dict, operation: str
 ) -> dict:
     """
-    Generates sequences or derived data from input using the specified operation.
+    Generates sequences or derived data using the specified operation.
 
-    text (any): The input list or value
+    options (dict): Configuration options for the operation (parameter names vary by operation)
     operation (str): The operation to perform. One of: 'accumulate', 'cartesian_product', 'combinations', 'cycle', 'permutations', 'powerset', 'range', 'repeat', 'unique_pairs', 'windowed', 'zip_with_index'
-    param (any, optional): Parameter for the operation, if required
 
     Supported operations:
-        - 'accumulate': Running totals (or with a binary function if param is provided). param: None or a supported function name (e.g., 'mul')
-        - 'cartesian_product': Cartesian product of multiple input lists. param: None
-        - 'combinations': All combinations of a given length (param: int, required)
-        - 'cycle': Repeat the sequence up to param times. param: int (max length, optional)
-        - 'permutations': All permutations of a given length (param: int, optional, default=len(input))
-        - 'powerset': All possible subsets of a list. param: None
-        - 'range': Generate a list of numbers from start to end (optionally step). param: [start, end, step?]
-        - 'repeat': Repeat a value or sequence a specified number of times. param: int (number of times)
-        - 'unique_pairs': All unique pairs from a list. param: None
-        - 'windowed': Sliding windows of a given size. param: int (window size)
-        - 'zip_with_index': Tuples of (index, value). param: None
+        - 'accumulate': Running totals. options: {'items': list, 'func': 'mul'/'add'/None}
+        - 'cartesian_product': Cartesian product of multiple lists. options: {'lists': list_of_lists}
+        - 'combinations': All combinations of a given length. options: {'items': list, 'length': int}
+        - 'cycle': Repeat the sequence up to N times. options: {'items': list, 'count': int}
+        - 'permutations': All permutations of a given length. options: {'items': list, 'length': int (optional)}
+        - 'powerset': All possible subsets of a list. options: {'items': list}
+        - 'range': Generate a list of numbers. options: {'from': int, 'to': int, 'step': int (optional)}
+        - 'repeat': Repeat a value N times. options: {'value': any, 'count': int}
+        - 'unique_pairs': All unique pairs from a list. options: {'items': list}
+        - 'windowed': Sliding windows of a given size. options: {'items': list, 'size': int}
+        - 'zip_with_index': Tuples of (index, value). options: {'items': list}
 
     Returns:
         dict: The result, always wrapped in a dictionary with a 'value' key. If an error
             occurs, an 'error' key is also present.
 
     MCP Usage Examples:
-        generate(None, 'range', [0, 5])  # => {'value': [0, 1, 2, 3, 4]}
-        generate('x', 'repeat', 3)  # => {'value': ['x', 'x', 'x']}
-        generate([1, 2, 3], 'powerset')
+        generate({'from': 0, 'to': 5}, 'range')  # => {'value': [0, 1, 2, 3, 4]}
+        generate({'value': 'x', 'count': 3}, 'repeat')  # => {'value': ['x', 'x', 'x']}
+        generate({'items': [1, 2, 3]}, 'powerset')
           # => {'value': [[], [1], [2], [1, 2], [3], [1, 3], [2, 3], [1, 2, 3]]}
-        generate([[1, 2], ['a', 'b']], 'cartesian_product')
+        generate({'lists': [[1, 2], ['a', 'b']]}, 'cartesian_product')
           # => {'value': [(1, 'a'), (1, 'b'), (2, 'a'), (2, 'b')]}
 
     Lua Function Call Examples:
-        generate.range(nil, {0, 5})  # => [0, 1, 2, 3, 4]
-        generate["repeat"]("x", 3)  # => ["x", "x", "x"] (bracket syntax for reserved keyword)
-        generate.powerset({1, 2})  # => [[], [1], [2], [1, 2]]
-        generate.cartesian_product({{1, 2}, {"a", "b"}})  # => [[1, "a"], [1, "b"], [2, "a"], [2, "b"]]
+        generate.range({from=0, to=5})  # => [0, 1, 2, 3, 4]
+        generate["repeat"]({value="x", count=3})  # => ["x", "x", "x"]
+        generate.powerset({items={1, 2}})  # => [[], [1], [2], [1, 2]]
+        generate.cartesian_product({lists={{1, 2}, {"a", "b"}}})  # => [[1, "a"], [1, "b"], [2, "a"], [2, "b"]]
     """
     import itertools
     import operator
 
     try:
         if operation == "range":
-            if not isinstance(param, list) or len(param) < 2:
+            from_val = options.get('from')
+            to_val = options.get('to') 
+            step = options.get('step', 1)
+            
+            if from_val is None or to_val is None:
                 return {
                     "value": None,
-                    "error": (
-                        "'param' must be [start, end] or [start, end, step] for "
-                        "'range'.",
-                    ),
+                    "error": "range requires 'from' and 'to' in options dict",
                 }
-            start, end = param[0], param[1]
-            step = param[2] if len(param) > 2 else 1
-            return {"value": list(range(start, end, step))}
+            return {"value": list(range(from_val, to_val, step))}
         elif operation == "cartesian_product":
-            return {"value": list(itertools.product(*text))}
-        elif operation == "repeat":
-            if not isinstance(param, int):
+            lists = options.get('lists')
+            if lists is None:
                 return {
                     "value": None,
-                    "error": "'param' must be an integer for 'repeat'.",
+                    "error": "cartesian_product requires 'lists' in options dict",
                 }
-            return {"value": list(itertools.repeat(text, param))}
+            return {"value": list(itertools.product(*lists))}
+        elif operation == "repeat":
+            if 'value' not in options or 'count' not in options:
+                return {
+                    "value": None,
+                    "error": "repeat requires 'value' and 'count' in options dict",
+                }
+            value = options['value']
+            count = options['count']
+            if not isinstance(count, int):
+                return {
+                    "value": None,
+                    "error": "'count' must be an integer for 'repeat'",
+                }
+            return {"value": list(itertools.repeat(value, count))}
         elif operation == "powerset":
-            s = list(text)
+            items = options.get('items')
+            if items is None:
+                return {
+                    "value": None,
+                    "error": "powerset requires 'items' in options dict",
+                }
+            s = list(items)
             if not s:
                 return {"value": [[]]}
             return {
@@ -1239,47 +1246,101 @@ def generate(
                 ]
             }
         elif operation == "windowed":
-            if not isinstance(param, int) or param < 1:
+            items = options.get('items')
+            size = options.get('size')
+            
+            if items is None or size is None:
                 return {
                     "value": None,
-                    "error": "'param' must be a positive integer for 'windowed'.",
+                    "error": "windowed requires 'items' and 'size' in options dict",
                 }
-            s = list(text)
+            if not isinstance(size, int) or size < 1:
+                return {
+                    "value": None,
+                    "error": "'size' must be a positive integer for 'windowed'",
+                }
+            s = list(items)
             return {
-                "value": [list(s[i : i + param]) for i in range(len(s) - param + 1)]
+                "value": [list(s[i : i + size]) for i in range(len(s) - size + 1)]
             }
         elif operation == "cycle":
-            s = list(text)
-            if param is not None:
-                return {"value": [s[i % len(s)] for i in range(param)] if s else []}
-            else:
-                raise ValueError("'cycle' without a length limit is not supported.")
+            items = options.get('items')
+            count = options.get('count')
+            
+            if items is None or count is None:
+                return {
+                    "value": None,
+                    "error": "cycle requires 'items' and 'count' in options dict",
+                }
+            s = list(items)
+            return {"value": [s[i % len(s)] for i in range(count)] if s else []}
         elif operation == "accumulate":
-            s = list(text)
-            if param is None:
+            items = options.get('items')
+            func = options.get('func')
+            
+            if items is None:
+                return {
+                    "value": None,
+                    "error": "accumulate requires 'items' in options dict",
+                }
+            s = list(items)
+            if func is None:
                 return {"value": list(itertools.accumulate(s))}
-            elif param == "mul":
+            elif func == "mul":
                 return {"value": list(itertools.accumulate(s, operator.mul))}
             else:
-                raise ValueError("'accumulate' only supports param=None or 'mul'.")
+                return {
+                    "value": None,
+                    "error": "accumulate only supports func=None or 'mul'",
+                }
         elif operation == "zip_with_index":
-            return {"value": [[i, v] for i, v in enumerate(text)]}
+            items = options.get('items')
+            if items is None:
+                return {
+                    "value": None,
+                    "error": "zip_with_index requires 'items' in options dict",
+                }
+            return {"value": [[i, v] for i, v in enumerate(items)]}
         elif operation == "unique_pairs":
-            s = list(text)
+            items = options.get('items')
+            if items is None:
+                return {
+                    "value": None,
+                    "error": "unique_pairs requires 'items' in options dict",
+                }
+            s = list(items)
             return {"value": [list(pair) for pair in itertools.combinations(s, 2)]}
         elif operation == "permutations":
-            s = list(text)
-            r = param if isinstance(param, int) else None
+            items = options.get('items')
+            length = options.get('length')
+            
+            if items is None:
+                return {
+                    "value": None,
+                    "error": "permutations requires 'items' in options dict",
+                }
+            s = list(items)
             if not s:
                 return {"value": [[]]}
-            return {"value": [list(p) for p in itertools.permutations(s, r)]}
+            return {"value": [list(p) for p in itertools.permutations(s, length)]}
         elif operation == "combinations":
-            s = list(text)
-            if not isinstance(param, int):
-                raise ValueError("'param' must be an integer for 'combinations'.")
+            items = options.get('items')
+            length = options.get('length')
+            
+            if items is None or length is None:
+                return {
+                    "value": None,
+                    "error": "combinations requires 'items' and 'length' in options dict",
+                }
+            if not isinstance(length, int):
+                return {
+                    "value": None,
+                    "error": "'length' must be an integer for 'combinations'",
+                }
+            s = list(items)
             if not s:
                 return {"value": []}
-            return {"value": [list(c) for c in itertools.combinations(s, param)]}
+            return {"value": [list(c) for c in itertools.combinations(s, length)]}
         else:
             raise ValueError(f"Unknown operation: {operation}")
     except Exception as e:
@@ -1342,7 +1403,7 @@ async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> dict:
         primary_param = None
 
         # Prioritize common primary parameter names
-        for p_name in ["text", "items", "obj", "value"]:
+        for p_name in ["text", "items", "obj", "value", "options"]:
             if p_name in param_schema:
                 primary_param = p_name
                 break
@@ -1362,7 +1423,102 @@ async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> dict:
                     break
 
         arguments = dict(params)
-        if primary_param:
+        
+        # Special handling for the generate tool
+        if tool_name == "generate":
+            if "options" in arguments:
+                return {
+                    "value": None,
+                    "error": f"Step {i}: Chaining does not allow specifying the "
+                    "primary parameter 'options' in params for generate tool.",
+                }
+            # For generate tool, construct the options dict based on operation
+            operation = arguments.get("operation")
+            unwrapped_value = unwrap_result(value)
+            
+            if operation == "repeat":
+                count = arguments.get("count")
+                if count is None:
+                    return {
+                        "value": None,
+                        "error": f"Step {i}: Generate 'repeat' operation requires 'count' parameter.",
+                    }
+                arguments["options"] = {"value": unwrapped_value, "count": count}
+                arguments.pop("count", None)
+            elif operation == "range":
+                # Range doesn't use the input value, just pass the from/to/step parameters
+                from_val = arguments.get("from")
+                to_val = arguments.get("to")
+                step_val = arguments.get("step")
+                if from_val is None or to_val is None:
+                    return {
+                        "value": None,
+                        "error": f"Step {i}: Generate 'range' operation requires 'from' and 'to' parameters.",
+                    }
+                options = {"from": from_val, "to": to_val}
+                if step_val is not None:
+                    options["step"] = step_val
+                arguments["options"] = options
+                arguments.pop("from", None)
+                arguments.pop("to", None)
+                arguments.pop("step", None)
+            elif operation == "cycle":
+                count = arguments.get("count")
+                if count is None:
+                    return {
+                        "value": None,
+                        "error": f"Step {i}: Generate 'cycle' operation requires 'count' parameter.",
+                    }
+                arguments["options"] = {"items": unwrapped_value, "count": count}
+                arguments.pop("count", None)
+            elif operation == "windowed":
+                size = arguments.get("size") or arguments.get("param")  # Support both size and param for compatibility
+                if size is None:
+                    return {
+                        "value": None,
+                        "error": f"Step {i}: Generate 'windowed' operation requires 'size' parameter.",
+                    }
+                arguments["options"] = {"items": unwrapped_value, "size": size}
+                arguments.pop("size", None)
+                arguments.pop("param", None)
+            elif operation == "combinations":
+                length = arguments.get("length") or arguments.get("param")  # Support both length and param for compatibility
+                if length is None:
+                    return {
+                        "value": None,
+                        "error": f"Step {i}: Generate 'combinations' operation requires 'length' parameter.",
+                    }
+                arguments["options"] = {"items": unwrapped_value, "length": length}
+                arguments.pop("length", None)
+                arguments.pop("param", None)
+            elif operation == "permutations":
+                length = arguments.get("length") or arguments.get("param")  # Support both length and param for compatibility
+                # Length is optional for permutations
+                options = {"items": unwrapped_value}
+                if length is not None:
+                    options["length"] = length
+                arguments["options"] = options
+                arguments.pop("length", None)
+                arguments.pop("param", None)
+            elif operation in ["powerset", "unique_pairs", "zip_with_index", "accumulate"]:
+                # These operations only need the items from the previous tool
+                arguments["options"] = {"items": unwrapped_value}
+            elif operation == "cartesian_product":
+                # Cartesian product expects lists parameter
+                lists = arguments.get("lists")
+                if lists is None:
+                    return {
+                        "value": None,
+                        "error": f"Step {i}: Generate 'cartesian_product' operation requires 'lists' parameter.",
+                    }
+                arguments["options"] = {"lists": lists}
+                arguments.pop("lists", None)
+            else:
+                return {
+                    "value": None,
+                    "error": f"Step {i}: Generate operation '{operation}' is not supported in chains yet.",
+                }
+        elif primary_param:
             if primary_param in arguments:
                 return {
                     "value": None,
@@ -1434,7 +1590,7 @@ def _register_mcp_tools_in_lua(lua_runtime: lupa.LuaRuntime):
                 elif tool_name == 'any_tool':
                     param_keys = {'value', 'param', 'expression'}
                 elif tool_name == 'generate':
-                    param_keys = {'text', 'param'}
+                    param_keys = {'options'}
                 
                 # If any table key matches parameter names, treat as parameter table
                 is_param_table = bool(param_keys.intersection(table_dict.keys()))
@@ -1477,9 +1633,8 @@ def _register_mcp_tools_in_lua(lua_runtime: lupa.LuaRuntime):
                         )
                     elif tool_name == 'generate':
                         result = generate.fn(
-                            text=params_table.get('text'),
-                            operation=operation_name,
-                            param=params_table.get('param')
+                            options=params_table.get('options', {}),
+                            operation=operation_name
                         )
                     else:
                         return None
@@ -1497,7 +1652,7 @@ def _register_mcp_tools_in_lua(lua_runtime: lupa.LuaRuntime):
                     elif tool_name == 'any_tool':
                         result = any_tool.fn(value=data_table, operation=operation_name)
                     elif tool_name == 'generate':
-                        result = generate.fn(text=data_table, operation=operation_name)
+                        result = generate.fn(options=data_table, operation=operation_name)
                     else:
                         return None
             else:
@@ -1526,9 +1681,9 @@ def _register_mcp_tools_in_lua(lua_runtime: lupa.LuaRuntime):
                                 elif tool_name == 'any_tool' and 'value' in converted_table:
                                     # Extract the value for any_tool operations
                                     py_args.append(converted_table['value'])
-                                elif tool_name == 'generate' and 'text' in converted_table:
-                                    # Extract the text value for generate operations
-                                    py_args.append(converted_table['text'])
+                                elif tool_name == 'generate':
+                                    # For generate operations, the table itself is the options
+                                    py_args.append(converted_table)
                                 else:
                                     # Not a parameter table, use as-is
                                     py_args.append(converted_table)
@@ -1582,8 +1737,7 @@ def _register_mcp_tools_in_lua(lua_runtime: lupa.LuaRuntime):
                                            expression=py_args[1] if len(py_args) > 1 else None,
                                            param=py_args[2] if len(py_args) > 2 else None)
                 elif tool_name == 'generate':
-                    result = generate.fn(text=py_args[0] if py_args else None, operation=operation_name,
-                                       param=py_args[1] if len(py_args) > 1 else None)
+                    result = generate.fn(options=py_args[0] if py_args else {}, operation=operation_name)
                 else:
                     return None
             

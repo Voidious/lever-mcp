@@ -768,100 +768,96 @@ class TestLuaGenerateOperations:
     """Test generate tool operations via Lua function calls."""
     
     def test_generate_range(self):
-        # Positional
-        result = evaluate_expression('generate.range(null, {0, 5})', {})
+        # Table syntax with from/to parameters
+        result = evaluate_expression('generate.range({from=0, to=5})', {})
         assert result == [0, 1, 2, 3, 4]
         
-        result = evaluate_expression('generate.range(null, {1, 10, 2})', {})
+        result = evaluate_expression('generate.range({from=1, to=10, step=2})', {})
         assert result == [1, 3, 5, 7, 9]
         
-        # Table syntax
-        result = evaluate_expression('generate.range({param={0, 3}})', {})
+        result = evaluate_expression('generate.range({from=0, to=3})', {})
         assert result == [0, 1, 2]
     
     def test_generate_repeat(self):
         # Use bracket syntax because 'repeat' is a Lua reserved keyword
-        result = evaluate_expression('generate["repeat"]("x", 3)', {})
+        result = evaluate_expression('generate["repeat"]({value="x", count=3})', {})
         assert result == ["x", "x", "x"]
         
-        # Table syntax
-        result = evaluate_expression('generate["repeat"]({text="hello", param=2})', {})
+        result = evaluate_expression('generate["repeat"]({value="hello", count=2})', {})
         assert result == ["hello", "hello"]
     
     def test_generate_cycle(self):
-        result = evaluate_expression('generate.cycle({1, 2}, 5)', {})
+        result = evaluate_expression('generate.cycle({items={1, 2}, count=5})', {})
         assert result == [1, 2, 1, 2, 1]
         
-        # Table syntax
-        result = evaluate_expression('generate.cycle({text={"a", "b", "c"}, param=7})', {})
+        result = evaluate_expression('generate.cycle({items={"a", "b", "c"}, count=7})', {})
         assert result == ["a", "b", "c", "a", "b", "c", "a"]
     
     def test_generate_accumulate(self):
         # Running totals
-        result = evaluate_expression('generate.accumulate({1, 2, 3, 4})', {})
+        result = evaluate_expression('generate.accumulate({items={1, 2, 3, 4}})', {})
         assert result == [1, 3, 6, 10]  # [1, 1+2, 1+2+3, 1+2+3+4]
         
-        # Table syntax
-        result = evaluate_expression('generate.accumulate({text={5, 10, 15}})', {})
+        result = evaluate_expression('generate.accumulate({items={5, 10, 15}})', {})
         assert result == [5, 15, 30]
     
     def test_generate_cartesian_product(self):
         # Cartesian product of multiple lists
-        result = evaluate_expression('generate.cartesian_product({{1, 2}, {"a", "b"}})', {})
+        result = evaluate_expression('generate.cartesian_product({lists={{1, 2}, {"a", "b"}}})', {})
         # Result comes as tuples, not lists
         expected = [(1, "a"), (1, "b"), (2, "a"), (2, "b")]
         assert sorted(result) == sorted(expected)
     
     def test_generate_combinations(self):
         # All combinations of given length
-        result = evaluate_expression('generate.combinations({"a", "b", "c"}, 2)', {})
+        result = evaluate_expression('generate.combinations({items={"a", "b", "c"}, length=2})', {})
         assert len(result) == 3  # C(3,2) = 3
         assert ["a", "b"] in result or ("a", "b") in result
     
     def test_generate_permutations(self):
         # All permutations of given length
-        result = evaluate_expression('generate.permutations({"a", "b"}, 2)', {})
+        result = evaluate_expression('generate.permutations({items={"a", "b"}, length=2})', {})
         assert len(result) == 2  # P(2,2) = 2
         
         # Default length (all permutations)
-        result = evaluate_expression('generate.permutations({"x", "y"})', {})
+        result = evaluate_expression('generate.permutations({items={"x", "y"}})', {})
         assert len(result) == 2
     
     def test_generate_powerset(self):
         # All possible subsets
-        result = evaluate_expression('generate.powerset({1, 2})', {})
+        result = evaluate_expression('generate.powerset({items={1, 2}})', {})
         assert len(result) == 4  # 2^2 = 4 subsets
         assert None in result  # Empty subset represented as None
         
         # Table syntax
-        result = evaluate_expression('generate.powerset({text={"a"}})', {})
+        result = evaluate_expression('generate.powerset({items={"a"}})', {})
         assert len(result) == 2  # None and ["a"]
     
     def test_generate_unique_pairs(self):
         # All unique pairs from a list
-        result = evaluate_expression('generate.unique_pairs({1, 2, 3})', {})
+        result = evaluate_expression('generate.unique_pairs({items={1, 2, 3}})', {})
         assert len(result) == 3  # (1,2), (1,3), (2,3)
         
         # Table syntax
-        result = evaluate_expression('generate.unique_pairs({text={"a", "b", "c", "d"}})', {})
+        result = evaluate_expression('generate.unique_pairs({items={"a", "b", "c", "d"}})', {})
         assert len(result) == 6  # C(4,2) = 6
     
     def test_generate_windowed(self):
         # Sliding windows of given size
-        result = evaluate_expression('generate.windowed({1, 2, 3, 4}, 3)', {})
+        result = evaluate_expression('generate.windowed({items={1, 2, 3, 4}, size=3})', {})
         assert result == [[1, 2, 3], [2, 3, 4]]
         
         # Table syntax
-        result = evaluate_expression('generate.windowed({text={"a", "b", "c"}, param=2})', {})
+        result = evaluate_expression('generate.windowed({items={"a", "b", "c"}, size=2})', {})
         assert result == [["a", "b"], ["b", "c"]]
     
     def test_generate_zip_with_index(self):
         # Tuples of (index, value)
-        result = evaluate_expression('generate.zip_with_index({"a", "b", "c"})', {})
+        result = evaluate_expression('generate.zip_with_index({items={"a", "b", "c"}})', {})
         assert result == [[0, "a"], [1, "b"], [2, "c"]]
         
         # Table syntax
-        result = evaluate_expression('generate.zip_with_index({text={10, 20}})', {})
+        result = evaluate_expression('generate.zip_with_index({items={10, 20}})', {})
         assert result == [[0, 10], [1, 20]]
 
 

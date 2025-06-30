@@ -274,26 +274,26 @@ async def test_generate_tool_operations(shared_client):
     """Test generate tool operations."""
     # repeat
     result = await shared_client.call_tool(
-        "generate", {"text": 3, "operation": "repeat", "param": 2}
+        "generate", {"options": {"value": 3, "count": 2}, "operation": "repeat"}
     )
     assert json.loads(result[0].text)["value"] == [3, 3]
     
     # range
     result = await shared_client.call_tool(
-        "generate", {"operation": "range", "param": [0, 5]}
+        "generate", {"options": {"from": 0, "to": 5}, "operation": "range"}
     )
     assert json.loads(result[0].text)["value"] == [0, 1, 2, 3, 4]
     
     # powerset
     result = await shared_client.call_tool(
-        "generate", {"text": [1, 2], "operation": "powerset"}
+        "generate", {"options": {"items": [1, 2]}, "operation": "powerset"}
     )
     result_value = json.loads(result[0].text)["value"]
     assert len(result_value) == 4  # 2^2 = 4 subsets
     
     # cartesian_product
     result = await shared_client.call_tool(
-        "generate", {"text": [[1, 2], ["a", "b"]], "operation": "cartesian_product"}
+        "generate", {"options": {"lists": [[1, 2], ["a", "b"]]}, "operation": "cartesian_product"}
     )
     result_value = json.loads(result[0].text)["value"]
     # Check that we get the right number of combinations
