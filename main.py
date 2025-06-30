@@ -17,14 +17,14 @@ PARAM_DESCRIPTIONS = {
     },
     "lists": {
         "items": "(list) The input list to operate on",
-        "operation": "(str) The operation to perform. One of: chunk, compact, contains, drop, drop_right, flatten, flatten_deep, head, index_of, initial, is_empty, is_equal, last, nth, random_except, sample, sample_size, shuffle, tail, take, take_right, union, difference, intersection, xor, uniq_by, difference_by, intersection_by, group_by, sort_by, filter_by, find_by, map, reduce, partition, pluck, count_by, flat_map, key_by, zip_with, zip_lists, unzip_list",
+        "operation": "(str) The operation to perform. One of: 'chunk', 'compact', 'contains', 'drop', 'drop_right', 'flatten', 'flatten_deep', 'head', 'index_of', 'initial', 'is_empty', 'is_equal', 'last', 'nth', 'random_except', 'sample', 'sample_size', 'shuffle', 'tail', 'take', 'take_right', 'union', 'difference', 'intersection', 'xor', 'uniq_by', 'difference_by', 'intersection_by', 'group_by', 'sort_by', 'filter_by', 'find_by', 'map', 'reduce', 'partition', 'pluck', 'count_by', 'flat_map', 'key_by', 'zip_with', 'zip_lists', 'unzip_list'",
         "param": "(any, optional) Parameter for operations that require one",
         "others": "(list, optional) Second list for set operations",
         "expression": "(str, optional) Lua expression for advanced filtering, grouping, sorting, or extraction",
     },
     "dicts": {
         "obj": "(dict or list) The source dictionary, or a list of dicts for 'merge'. Must be a dict for all operations except 'merge'",
-        "operation": "(str) The operation to perform. One of: get_value, has_key, invert, is_empty, is_equal, merge, omit, pick, set_value",
+        "operation": "(str) The operation to perform. One of: 'get_value', 'has_key', 'invert', 'is_empty', 'is_equal', 'merge', 'omit', 'pick', 'set_value'",
         "param": "(any, optional) Used for 'pick', 'omit', 'has_key', 'is_equal'",
         "path": "(str or list, optional) Used for 'set_value' and 'get_value'",
         "value": "(any, optional) Used for 'set_value'",
@@ -32,13 +32,13 @@ PARAM_DESCRIPTIONS = {
     },
     "any_tool": {
         "value": "(any) The value to check or use as context for expression evaluation",
-        "operation": "(str) The operation to perform. One of: contains, eval, is_empty, is_equal, is_nil",
+        "operation": "(str) The operation to perform. One of: 'contains', 'eval', 'is_empty', 'is_equal', 'is_nil'",
         "param": "(any, optional) The parameter for the operation, if required",
         "expression": "(str, optional) Lua expression to evaluate (for 'eval' operation)",
     },
     "generate": {
         "text": "(any) The input list or value",
-        "operation": "(str) The operation to perform. One of: accumulate, cartesian_product, combinations, cycle, permutations, powerset, range, repeat, unique_pairs, windowed, zip_with_index",
+        "operation": "(str) The operation to perform. One of: 'accumulate', 'cartesian_product', 'combinations', 'cycle', 'permutations', 'powerset', 'range', 'repeat', 'unique_pairs', 'windowed', 'zip_with_index'",
         "param": "(any, optional) Parameter for the operation, if required",
     },
     "chain": {
@@ -93,6 +93,11 @@ def strings(
 ) -> dict:
     """
     Performs string operations and mutations.
+
+    text (str): The input string to operate on
+    operation (str): The operation to perform. One of: 'camel_case', 'capitalize', 'contains', 'deburr', 'ends_with', 'is_alpha', 'is_digit', 'is_empty', 'is_equal', 'is_lower', 'is_upper', 'kebab_case', 'lower_case', 'replace', 'reverse', 'sample_size', 'shuffle', 'snake_case', 'starts_with', 'template', 'trim', 'upper_case', 'xor'
+    param (any, optional): Parameter for operations that require one (e.g., substring for 'contains', int for 'sample_size')
+    data (dict, optional): Data for 'template' and 'replace' operations (e.g., {'old': 'x', 'new': 'y'} for 'replace')
 
     Supported operations:
         - 'camel_case': Converts to camelCase (e.g., 'foo bar' → 'fooBar').
@@ -263,6 +268,12 @@ def lists(
 ) -> dict:
     """
     Performs list operations and mutations with support for Lua expressions.
+
+    items (list): The input list to operate on
+    operation (str): The operation to perform. One of: 'chunk', 'compact', 'contains', 'drop', 'drop_right', 'flatten', 'flatten_deep', 'head', 'index_of', 'initial', 'is_empty', 'is_equal', 'last', 'nth', 'random_except', 'sample', 'sample_size', 'shuffle', 'tail', 'take', 'take_right', 'union', 'difference', 'intersection', 'xor', 'uniq_by', 'difference_by', 'intersection_by', 'group_by', 'sort_by', 'filter_by', 'find_by', 'map', 'reduce', 'partition', 'pluck', 'count_by', 'flat_map', 'key_by', 'zip_with', 'zip_lists', 'unzip_list'
+    param (any, optional): Parameter for operations that require one
+    others (list, optional): Second list for set operations
+    expression (str, optional): Lua expression for advanced filtering, grouping, sorting, or extraction
 
     Supported operations:
         - 'chunk': Split into chunks (param: int)
@@ -962,6 +973,13 @@ def dicts(
     """
     Performs dictionary operations, including merge, set/get value, and property checks.
 
+    obj (dict or list): The source dictionary, or a list of dicts for 'merge'. Must be a dict for all operations except 'merge'
+    operation (str): The operation to perform. One of: 'get_value', 'has_key', 'invert', 'is_empty', 'is_equal', 'merge', 'omit', 'pick', 'set_value'
+    param (any, optional): Used for 'pick', 'omit', 'has_key', 'is_equal'
+    path (str or list, optional): Used for 'set_value' and 'get_value'
+    value (any, optional): Used for 'set_value'
+    default (any, optional): Used for 'get_value'
+
     Supported operations:
         - 'get_value': Gets a deep property by path (path: str or list, default: any).
         - 'has_key': Checks if a dict has a given key (param: str).
@@ -1120,6 +1138,11 @@ def any_tool(
     """
     Performs type-agnostic property checks, comparisons, and expression evaluation.
 
+    value (any): The value to check or use as context for expression evaluation
+    operation (str): The operation to perform. One of: 'contains', 'eval', 'is_empty', 'is_equal', 'is_nil'
+    param (any, optional): The parameter for the operation, if required
+    expression (str, optional): Lua expression to evaluate (for 'eval' operation)
+
     Supported operations:
         - 'contains': Checks if a string or list contains a value (param: value to check).
         - 'eval': Evaluate a Lua expression with value as context (expression: Lua code).
@@ -1195,6 +1218,10 @@ def generate(
 ) -> dict:
     """
     Generates sequences or derived data from input using the specified operation.
+
+    text (any): The input list or value
+    operation (str): The operation to perform. One of: 'accumulate', 'cartesian_product', 'combinations', 'cycle', 'permutations', 'powerset', 'range', 'repeat', 'unique_pairs', 'windowed', 'zip_with_index'
+    param (any, optional): Parameter for the operation, if required
 
     Supported operations:
         - 'accumulate': Running totals (or with a binary function if param is provided). param: None or a supported function name (e.g., 'mul')
