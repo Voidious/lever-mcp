@@ -788,11 +788,11 @@ async def test_has_property_new_options(client, obj, property, param, expected):
         ([10, 20, 30], "nth", -1, 30),
         ([{"score": 5}, {"score": 2}, {"score": 8}], "min_by", "score", {"score": 2}),
         ([{"score": 5}, {"score": 2}, {"score": 8}], "max_by", "score", {"score": 8}),
-        ([{"id": 1}, {"id": 2}, {"id": 3}], "index_of", {"key": "id", "value": 2}, 1),
+        ([{"id": 1}, {"id": 2}, {"id": 3}], "index_of", "id == 2", 1),
         (
             [{"status": "active"}, {"status": "inactive"}, {"status": "active"}],
             "random_except",
-            {"key": "status", "value": "inactive"},
+            "status == 'inactive'",
             {"status": "active"},
         ),
     ],
@@ -800,7 +800,11 @@ async def test_has_property_new_options(client, obj, property, param, expected):
 async def test_select_from_list_new_options(client, items, operation, param, expected):
     params = {"items": items, "operation": operation}
     if param is not None:
-        params["param"] = param
+        # For expression-based operations, use expression parameter
+        if operation in ["index_of", "random_except"]:
+            params["expression"] = param
+        else:
+            params["param"] = param
     value, error = await make_tool_call(client, "lists", params)
     if operation == "random_except":
         assert value is not None

@@ -284,13 +284,13 @@ def lists(
         - 'flatten': Flatten one level
         - 'flatten_deep': Flatten completely
         - 'head': First element
-        - 'index_of': Find index of item (param: dict with 'key' and 'value')
+        - 'index_of': Find index of item (expression: Lua expression)
         - 'initial': All but last element
         - 'is_empty': Check if list is empty
         - 'is_equal': Check if lists are equal (param: list)
         - 'last': Last element
         - 'nth': Get nth element (param: int, supports negative indexing)
-        - 'random_except': Random item excluding condition (param: dict with 'key' and 'value')
+        - 'random_except': Random item excluding condition (expression: Lua expression)
         - 'sample': Get one random item
         - 'sample_size': Get n random items (param: int)
         - 'shuffle': Randomize order
@@ -710,27 +710,20 @@ def lists(
             return {"value": result}
         # Selection
         elif operation == "find_by":
-            # Use expression if provided, otherwise check for param with key/value structure
-            if expression:
-                for item in items:
-                    result = evaluate_expression_optimized(expression, item)
-                    # For find_by, treat result as boolean (truthy/falsy)
-                    if result:
-                        return {"value": item}
-                return {"value": None}
-            elif param and isinstance(param, dict) and "key" in param and "value" in param:
-                # Legacy param mode with key/value structure
-                key_ = param["key"]
-                value_ = param["value"]
-                for item in items:
-                    if isinstance(item, dict) and item.get(key_) == value_:
-                        return {"value": item}
-                return {"value": None}
-            else:
+            # Use expression if provided, otherwise use param as expression
+            find_expr = expression or (param if isinstance(param, str) else None)
+            if not find_expr:
                 return {
                     "value": None,
-                    "error": "Missing required expression parameter or param with key/value for operation 'find_by'.",
+                    "error": "Missing required expression or param parameter for operation 'find_by'.",
                 }
+            
+            # Find first item where expression is truthy
+            for item in items:
+                result = evaluate_expression_optimized(find_expr, item)
+                if result:
+                    return {"value": item}
+            return {"value": None}
         elif operation == "head":
             if not isinstance(items, list):
                 return {"value": None, "error": "head operation requires a list"}
@@ -783,29 +776,34 @@ def lists(
 
             return {"value": max(items, key=max_key)}
         elif operation == "index_of":
-            key_ = param["key"]
-            value_ = param["value"]
+            # Use expression if provided, otherwise use param as expression
+            index_expr = expression or (param if isinstance(param, str) else None)
+            if not index_expr:
+                return {
+                    "value": None,
+                    "error": "Missing required expression or param parameter for operation 'index_of'.",
+                }
+            
+            # Find first item where expression is truthy
             for idx, item in enumerate(items):
-                v = (
-                    item.get(key_)
-                    if isinstance(item, dict)
-                    else getattr(item, key_, None)
-                )
-                if v == value_:
+                result = evaluate_expression_optimized(index_expr, item)
+                if result:
                     return {"value": idx}
             return {"value": -1}
         elif operation == "random_except":
-            key_ = param["key"]
-            value_ = param["value"]
+            # Use expression if provided, otherwise use param as expression
+            except_expr = expression or (param if isinstance(param, str) else None)
+            if not except_expr:
+                return {
+                    "value": None,
+                    "error": "Missing required expression or param parameter for operation 'random_except'.",
+                }
+            
+            # Exclude items where expression is truthy
             filtered = [
                 item
                 for item in items
-                if (
-                    item.get(key_)
-                    if isinstance(item, dict)
-                    else getattr(item, key_, None)
-                )
-                != value_
+                if not evaluate_expression_optimized(except_expr, item)
             ]
             if not filtered:
                 return {"value": None}

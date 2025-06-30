@@ -513,12 +513,12 @@ class TestLuaListsOperations:
         assert result[0]["id"] == 1  # First occurrence kept
     
     def test_lists_index_of(self):
-        # Find index of item by key-value
-        result = evaluate_expression('lists.index_of({{id=1}, {id=2}, {id=3}}, nil, {key="id", value=2})', {})
+        # Find index of item by expression
+        result = evaluate_expression('lists.index_of({{id=1}, {id=2}, {id=3}}, "id == 2")', {})
         assert result == 1  # 0-indexed, working correctly
         
         # Table syntax - test that works with objects  
-        result = evaluate_expression('lists.index_of({items={{val=10}, {val=20}, {val=30}}, param={key="val", value=20}})', {})
+        result = evaluate_expression('lists.index_of({items={{val=10}, {val=20}, {val=30}}, expression="val == 20"})', {})
         assert result == 1  # Should find the value at index 1
     
     def test_lists_difference_by(self):
@@ -536,7 +536,7 @@ class TestLuaListsOperations:
     
     def test_lists_random_except(self):
         # Random item excluding condition
-        result = evaluate_expression('lists.random_except({{id=1}, {id=2}, {id=3}}, nil, {key="id", value=2})', {})
+        result = evaluate_expression('lists.random_except({{id=1}, {id=2}, {id=3}}, "id == 2")', {})
         assert result["id"] in [1, 3]  # Should not be 2
     
     def test_lists_every_alias(self):
