@@ -7,6 +7,70 @@ import lupa
 # Global configuration for Lua safety mode
 SAFE_MODE = True  # Default to safe mode, can be overridden by command line
 
+# --- MCP Parameter Description Monkey Patch ---
+PARAM_DESCRIPTIONS = {
+    "strings": {
+        "text": "(str) The input string to operate on",
+        "operation": "(str) The operation to perform. One of: 'camel_case', 'capitalize', 'contains', 'deburr', 'ends_with', 'is_alpha', 'is_digit', 'is_empty', 'is_equal', 'is_lower', 'is_upper', 'kebab_case', 'lower_case', 'replace', 'reverse', 'sample_size', 'shuffle', 'snake_case', 'starts_with', 'template', 'trim', 'upper_case', 'xor'",
+        "param": "(any, optional) Parameter for operations that require one (e.g., substring for 'contains', int for 'sample_size')",
+        "data": "(dict, optional) Data for 'template' and 'replace' operations (e.g., {'old': 'x', 'new': 'y'} for 'replace')",
+    },
+    "lists": {
+        "items": "(list) The input list to operate on",
+        "operation": "(str) The operation to perform. One of: chunk, compact, contains, drop, drop_right, flatten, flatten_deep, head, index_of, initial, is_empty, is_equal, last, nth, random_except, sample, sample_size, shuffle, tail, take, take_right, union, difference, intersection, xor, uniq_by, difference_by, intersection_by, group_by, sort_by, filter_by, find_by, map, reduce, partition, pluck, count_by, flat_map, key_by, zip_with, zip_lists, unzip_list",
+        "param": "(any, optional) Parameter for operations that require one",
+        "others": "(list, optional) Second list for set operations",
+        "expression": "(str, optional) Lua expression for advanced filtering, grouping, sorting, or extraction",
+    },
+    "dicts": {
+        "obj": "(dict or list) The source dictionary, or a list of dicts for 'merge'. Must be a dict for all operations except 'merge'",
+        "operation": "(str) The operation to perform. One of: get_value, has_key, invert, is_empty, is_equal, merge, omit, pick, set_value",
+        "param": "(any, optional) Used for 'pick', 'omit', 'has_key', 'is_equal'",
+        "path": "(str or list, optional) Used for 'set_value' and 'get_value'",
+        "value": "(any, optional) Used for 'set_value'",
+        "default": "(any, optional) Used for 'get_value'",
+    },
+    "any_tool": {
+        "value": "(any) The value to check or use as context for expression evaluation",
+        "operation": "(str) The operation to perform. One of: contains, eval, is_empty, is_equal, is_nil",
+        "param": "(any, optional) The parameter for the operation, if required",
+        "expression": "(str, optional) Lua expression to evaluate (for 'eval' operation)",
+    },
+    "generate": {
+        "text": "(any) The input list or value",
+        "operation": "(str) The operation to perform. One of: accumulate, cartesian_product, combinations, cycle, permutations, powerset, range, repeat, unique_pairs, windowed, zip_with_index",
+        "param": "(any, optional) Parameter for the operation, if required",
+    },
+    "chain": {
+        "input": "(any) The initial input to the chain",
+        "tool_calls": "(list) Each dict must have: 'tool': the tool name (str), 'params': dict of additional parameters (optional, default empty)",
+    },
+}
+# --- End MCP Parameter Description Monkey Patch ---
+
+try:
+    from fastmcp.tools.tool import ParsedFunction
+    import types
+
+    original_from_function = ParsedFunction.from_function
+
+    def patched_from_function(fn, exclude_args=None, validate=True):
+        parsed = original_from_function(fn, exclude_args=exclude_args, validate=validate)
+        tool_name = getattr(fn, "__name__", None)
+        if tool_name in PARAM_DESCRIPTIONS:
+            param_descs = PARAM_DESCRIPTIONS[tool_name]
+            props = parsed.parameters.get('properties')
+            if props:
+                for param, desc in param_descs.items():
+                    if param in props:
+                        props[param]["description"] = desc
+        return parsed
+
+    ParsedFunction.from_function = staticmethod(patched_from_function)
+except ImportError:
+    pass
+# --- End MCP Parameter Description Monkey Patch ---
+
 
 # --- MCP Server Setup ---
 
@@ -24,46 +88,37 @@ def strings(
     operation: Optional[str] = None,
     param: Any = None,
     data: Optional[dict] = None,
-    items: Any = None,
 ) -> dict:
     """
     Performs string operations and mutations.
 
-    Parameters:
-        text (str): The input string to operate on.
-        operation (str): The operation to perform. One of:
-            - 'camel_case': Converts to camelCase (e.g., 'foo bar' → 'fooBar').
-            - 'capitalize': Capitalizes the first character (e.g.,
-              'foo bar' → 'Foo bar').
-            - 'contains': Checks if string contains a substring (param: str to find).
-            - 'deburr': Removes accents/diacritics (e.g., 'Café' → 'Cafe').
-            - 'ends_with': Checks if string ends with substring (param: str).
-            - 'is_alpha': Checks if string contains only alphabetic characters.
-            - 'is_digit': Checks if string contains only digits.
-            - 'is_empty': Checks if string is empty.
-            - 'is_equal': Checks if strings are equal (param: str to compare).
-            - 'is_lower': Checks if string is all lowercase.
-            - 'is_upper': Checks if string is all uppercase.
-            - 'kebab_case': Converts to kebab-case (e.g., 'foo bar' → 'foo-bar').
-            - 'lower_case': Converts to lowercase (e.g., 'Hello' → 'hello').
-            - 'replace': Replaces all occurrences of a substring (requires
-              data={'old': 'x', 'new': 'y'}).
-            - 'reverse': Reverses the string (e.g., 'hello' → 'olleh').
-            - 'sample_size': Returns n random characters (param: int).
-            - 'shuffle': Randomly shuffles string characters.
-            - 'snake_case': Converts to snake_case (e.g., 'foo bar' → 'foo_bar').
-            - 'starts_with': Checks if string starts with substring (param: str).
-            - 'template': Interpolates variables using {var} syntax (requires data
-              dict).
-            - 'trim': Removes leading and trailing whitespace.
-            - 'upper_case': Converts to uppercase (e.g., 'Hello' → 'HELLO').
-            - 'xor': String-specific XOR operation (param: str).
-        param (Any, optional): Parameter for operations that require one.
-        data (dict, optional): Data for 'template' and 'replace' operations.
+    Supported operations:
+        - 'camel_case': Converts to camelCase (e.g., 'foo bar' → 'fooBar').
+        - 'capitalize': Capitalizes the first character (e.g., 'foo bar' → 'Foo bar').
+        - 'contains': Checks if string contains a substring (param: str to find).
+        - 'deburr': Removes accents/diacritics (e.g., 'Café' → 'Cafe').
+        - 'ends_with': Checks if string ends with substring (param: str).
+        - 'is_alpha': Checks if string contains only alphabetic characters.
+        - 'is_digit': Checks if string contains only digits.
+        - 'is_empty': Checks if string is empty.
+        - 'is_equal': Checks if strings are equal (param: str to compare).
+        - 'is_lower': Checks if string is all lowercase.
+        - 'is_upper': Checks if string is all uppercase.
+        - 'kebab_case': Converts to kebab-case (e.g., 'foo bar' → 'foo-bar').
+        - 'lower_case': Converts to lowercase (e.g., 'Hello' → 'hello').
+        - 'replace': Replaces all occurrences of a substring (requires data={'old': 'x', 'new': 'y'}).
+        - 'reverse': Reverses the string (e.g., 'hello' → 'olleh').
+        - 'sample_size': Returns n random characters (param: int).
+        - 'shuffle': Randomly shuffles string characters.
+        - 'snake_case': Converts to snake_case (e.g., 'foo bar' → 'foo_bar').
+        - 'starts_with': Checks if string starts with substring (param: str).
+        - 'template': Interpolates variables using {var} syntax (requires data dict).
+        - 'trim': Removes leading and trailing whitespace.
+        - 'upper_case': Converts to uppercase (e.g., 'Hello' → 'HELLO').
+        - 'xor': String-specific XOR operation (param: str).
 
     Returns:
-        dict: The result, always wrapped in a dictionary with a 'value' key. If an error
-            occurs, an 'error' key is also present.
+        dict: The result, always wrapped in a dictionary with a 'value' key. If an error occurs, an 'error' key is also present.
 
     MCP Usage Examples:
         strings('foo bar', 'camel_case')  # => {'value': 'fooBar'}
@@ -77,13 +132,6 @@ def strings(
         strings.replace({text="hello world", data={old="world", new="Lua"}})  # => "hello Lua"
         strings.template({text="Hello {name}!", data={name="World"}})  # => "Hello World!"
     """
-    # Accept 'items' as an alias for text for compatibility with test_extended.py
-    if text is None and items is not None:
-        text = items
-    if text is None:
-        text = ""
-    if data is None:
-        data = {}
     if text is None:
         text = ""
     if data is None:
@@ -214,86 +262,49 @@ def lists(
     """
     Performs list operations and mutations with support for Lua expressions.
 
-    Parameters:
-        items (list): The input list to operate on.
-        operation (str): The operation to perform. Available operations:
-            EXPRESSION OPERATIONS (use expression parameter):
-            - 'all_by'/'every': Return True if all items satisfy the expression
-            - 'any_by'/'some': Return True if any item satisfies the expression
-            - 'count_by': Count occurrences by expression result
-            - 'difference_by': Items in first list not matching expression in second
-            - 'filter_by': Return all items matching the expression (predicate)
-            - 'find_by': Find first item matching expression
-            - 'flat_map': Like map, but flattens one level if the mapping returns lists
-            - 'group_by': Group items by expression result
-            - 'intersection_by': Items in first list matching expression in second
-            - 'key_by': Create dict keyed by expression result
-            - 'map': Apply a Lua expression to each item and return the transformed list
-            - 'max_by': Find max by expression result
-            - 'min_by': Find min by expression result
-            - 'partition': Split by expression result/boolean
-            - 'pluck': Extract values by expression (expression: any value)
-            - 'reduce': Aggregate the list using a binary Lua expression (uses 'acc' and
-              'item') and optional initializer (param)
-            - 'remove_by': Remove items matching expression
-            - 'sort_by': Sort by expression result (expression: any comparable value)
-            - 'uniq_by': Remove duplicates by expression result
-            - 'zip_with': Combine two lists element-wise using a binary Lua expression
-              (uses 'item1' and 'item2')
-
-            BASIC OPERATIONS:
-            - 'chunk': Split into chunks (param: int)
-            - 'compact': Remove falsy values
-            - 'contains': Check if item exists (param: value)
-            - 'drop': Drop n elements from start (param: int)
-            - 'drop_right': Drop n elements from end (param: int)
-            - 'flatten': Flatten one level
-            - 'flatten_deep': Flatten completely
-            - 'head': First element
-            - 'index_of': Find index of item (param: dict with 'key' and 'value')
-            - 'initial': All but last element
-            - 'is_empty': Check if list is empty
-            - 'is_equal': Check if lists are equal (param: list)
-            - 'last': Last element
-            - 'nth': Get nth element (param: int, supports negative indexing)
-            - 'random_except': Random item excluding condition
-              (param: dict with 'key' and 'value')
-            - 'sample': Get one random item
-            - 'sample_size': Get n random items (param: int)
-            - 'shuffle': Randomize order
-            - 'tail': All but first element
-            - 'take': Take n elements from start (param: int)
-            - 'take_right': Take n elements from end (param: int)
-
-            SET OPERATIONS (use others parameter):
-            - 'difference': Items in first not in second
-            - 'intersection': Items in both lists
-            - 'union': Unique values from all lists
-            - 'xor': Symmetric difference
-
-            UTILITIES:
-            - 'unzip_list': Unzip list of tuples
-            - 'zip_lists': Zip multiple lists
-
-        param (Any, optional): Parameter for operations requiring one
-        others (list, optional): Second list for set operations
-        expression (str, optional): Lua expression for advanced
-            filtering/grouping/sorting/extraction
-
-    Expression Examples:
-        - Filtering: "age > 25", "score >= 80", "name == 'Alice'"
-        - Complex conditions: "age > 25 and score >= 80", "status == 'active' or
-          priority == 'high'"
-        - Grouping: "age >= 30 and 'senior' or 'junior'"
-        - Sorting: "age * -1" (reverse age), "string.lower(name)" (case-insensitive)
-        - Extraction: "string.upper(name)", "age > 18 and name or 'minor'"
-        - Math: "math.abs(score - 50)", "x*x + y*y" (distance squared)
-
-    In Lua expressions, item refers to the current object. Available in expressions:
-    math.*, string.*, os.time/date/clock, type(), tonumber(), tostring(). Dictionary
-    keys accessible directly (age, name, etc.) or via item.key. You may pass a single
-    Lua expression or a block of Lua code. For multi-line code, use return to specify
-    the result.
+    Supported operations:
+        - 'chunk': Split into chunks (param: int)
+        - 'compact': Remove falsy values
+        - 'contains': Check if item exists (param: value)
+        - 'drop': Drop n elements from start (param: int)
+        - 'drop_right': Drop n elements from end (param: int)
+        - 'flatten': Flatten one level
+        - 'flatten_deep': Flatten completely
+        - 'head': First element
+        - 'index_of': Find index of item (param: dict with 'key' and 'value')
+        - 'initial': All but last element
+        - 'is_empty': Check if list is empty
+        - 'is_equal': Check if lists are equal (param: list)
+        - 'last': Last element
+        - 'nth': Get nth element (param: int, supports negative indexing)
+        - 'random_except': Random item excluding condition (param: dict with 'key' and 'value')
+        - 'sample': Get one random item
+        - 'sample_size': Get n random items (param: int)
+        - 'shuffle': Randomize order
+        - 'tail': All but first element
+        - 'take': Take n elements from start (param: int)
+        - 'take_right': Take n elements from end (param: int)
+        - 'union': Unique values from all lists
+        - 'difference': Items in first not in second
+        - 'intersection': Items in both lists
+        - 'xor': Symmetric difference
+        - 'uniq_by': Remove duplicates by expression result
+        - 'difference_by': Items in first list not matching expression in second
+        - 'intersection_by': Items in first list matching expression in second
+        - 'group_by': Group items by expression result
+        - 'sort_by': Sort by expression result
+        - 'filter_by': Return all items matching the expression (predicate)
+        - 'find_by': Find first item matching expression
+        - 'map': Apply a Lua expression to each item and return the transformed list
+        - 'reduce': Aggregate the list using a binary Lua expression
+        - 'partition': Split by expression result/boolean
+        - 'pluck': Extract values by expression
+        - 'count_by': Count occurrences by expression result
+        - 'flat_map': Like map, but flattens one level if the mapping returns lists
+        - 'key_by': Create dict keyed by expression result
+        - 'zip_with': Combine two lists element-wise using a binary Lua expression
+        - 'zip_lists': Zip multiple lists
+        - 'unzip_list': Unzip list of tuples
 
     Returns:
         dict: Result with 'value' key. On error, includes 'error' key.
@@ -310,6 +321,17 @@ def lists(
         )  # => {'value': {'adult': [{'age': 30}], 'young': [{'age': 20}]}}
         lists([1, 2, 3], 'chunk', param=2)  # => {'value': [[1, 2], [3]]}
         lists([1, 2, 3], 'difference', others=[2, 3])  # => {'value': [1]}
+
+    Expression Examples:
+        - Filtering: "age > 25", "score >= 80", "name == 'Alice'"
+        - Complex conditions: "age > 25 and score >= 80", "status == 'active' or priority == 'high'"
+        - Grouping: "age >= 30 and 'senior' or 'junior'"
+        - Sorting: "age * -1" (reverse age), "string.lower(name)" (case-insensitive)
+        - Extraction: "string.upper(name)", "age > 18 and name or 'minor'"
+        - Math: "math.abs(score - 50)", "x*x + y*y" (distance squared)
+
+    In Lua expressions, item refers to the current object. Available in expressions:
+    math.*, string.*, os.time/date/clock, type(), tonumber(), tostring(). Dictionary keys accessible directly (age, name, etc.) or via item.key. You may pass a single Lua expression or a block of Lua code. For multi-line code, use return to specify the result.
 
     Lua Function Call Examples:
         lists.head({1, 2, 3})  # => 1
@@ -938,24 +960,16 @@ def dicts(
     """
     Performs dictionary operations, including merge, set/get value, and property checks.
 
-    Parameters:
-        obj (dict or list): The source dictionary, or a list of dicts for 'merge'. Must
-            be a dict for all operations except 'merge'.
-        operation (str): The operation to perform. One of:
-            - 'get_value': Gets a deep property by path (path: str or list,
-              default: any).
-            - 'has_key': Checks if a dict has a given key (param: str).
-            - 'invert': Swaps keys and values.
-            - 'is_empty': Checks if the dict is empty.
-            - 'is_equal': Checks if two dicts are deeply equal (param: dict to compare).
-            - 'merge': Deep merges a list of dictionaries (obj must be a list of dicts).
-            - 'omit': Omits specified keys (param: list of keys).
-            - 'pick': Picks specified keys (param: list of keys).
-            - 'set_value': Sets a deep property by path (path: str or list, value: any).
-        param (any, optional): Used for 'pick', 'omit', 'has_key', 'is_equal'.
-        path (str or list, optional): Used for 'set_value' and 'get_value'.
-        value (any, optional): Used for 'set_value'.
-        default (any, optional): Used for 'get_value'.
+    Supported operations:
+        - 'get_value': Gets a deep property by path (path: str or list, default: any).
+        - 'has_key': Checks if a dict has a given key (param: str).
+        - 'invert': Swaps keys and values.
+        - 'is_empty': Checks if the dict is empty.
+        - 'is_equal': Checks if two dicts are deeply equal (param: dict to compare).
+        - 'merge': Deep merges a list of dictionaries (obj must be a list of dicts).
+        - 'omit': Omits specified keys (param: list of keys).
+        - 'pick': Picks specified keys (param: list of keys).
+        - 'set_value': Sets a deep property by path (path: str or list, value: any).
 
     Returns:
         dict: The result, always wrapped in a dictionary with a 'value' key. If an error
@@ -1104,19 +1118,22 @@ def any_tool(
     """
     Performs type-agnostic property checks, comparisons, and expression evaluation.
 
-    Parameters:
-        value (Any): The value to check or use as context for expression evaluation.
-        operation (str): The operation to perform. One of:
-            - 'contains': Checks if a string or list contains a value
-              (param: value to check).
-            - 'eval': Evaluate a Lua expression with value as context
-              (expression: Lua code).
-            - 'is_empty': Checks if the value is empty.
-            - 'is_equal': Checks if two values are deeply equal
-              (param: value to compare).
-            - 'is_nil': Checks if the value is None.
-        param (Any, optional): The parameter for the operation, if required.
-        expression (str, optional): Lua expression to evaluate (for 'eval' operation).
+    Supported operations:
+        - 'contains': Checks if a string or list contains a value (param: value to check).
+        - 'eval': Evaluate a Lua expression with value as context (expression: Lua code).
+        - 'is_empty': Checks if the value is empty.
+        - 'is_equal': Checks if two values are deeply equal (param: value to compare).
+        - 'is_nil': Checks if the value is None.
+
+    Returns:
+        dict: The result, always wrapped in a dictionary with a 'value' key. If an error occurs, an 'error' key is also present.
+
+    MCP Usage Examples:
+        any('abc', 'contains', 'b')  # => {'value': True}
+        any([1, 2, 3], 'contains', 2)  # => {'value': True}
+        any([], 'is_empty')  # => {'value': True}
+        any(None, 'is_nil')  # => {'value': True}
+        any(42, 'is_equal', 42)  # => {'value': True}
 
     Expression Examples:
         - Boolean check: "age > 25", "score >= 80", "name == 'Alice'"
@@ -1126,21 +1143,7 @@ def any_tool(
         - Type check: "type(item) == 'table'", "type(item) == 'string'"
 
     In Lua expressions, item refers to the current object. Available in expressions:
-    math.*, string.*, os.time/date/clock, type(), tonumber(), tostring(). Dictionary
-    keys accessible directly (age, name, etc.) or via item.key. You may pass a single
-    Lua expression or a block of Lua code. For multi-line code, use return to specify
-    the result.
-
-    Returns:
-        dict: The result, always wrapped in a dictionary with a 'value' key. If an error
-            occurs, an 'error' key is also present.
-
-    MCP Usage Examples:
-        any('abc', 'contains', 'b')  # => {'value': True}
-        any([1, 2, 3], 'contains', 2)  # => {'value': True}
-        any([], 'is_empty')  # => {'value': True}
-        any(None, 'is_nil')  # => {'value': True}
-        any(42, 'is_equal', 42)  # => {'value': True}
+    math.*, string.*, os.time/date/clock, type(), tonumber(), tostring(). Dictionary keys accessible directly (age, name, etc.) or via item.key. You may pass a single Lua expression or a block of Lua code. For multi-line code, use return to specify the result.
 
     Lua Function Call Examples:
         any.is_equal(42, 42)  # => true
@@ -1191,27 +1194,18 @@ def generate(
     """
     Generates sequences or derived data from input using the specified operation.
 
-    Parameters:
-        text (Any): The input list or value.
-        operation (str): The operation to perform. One of:
-            - 'accumulate': Running totals (or with a binary function if param is
-              provided). param: None or a supported function name (e.g., 'mul')
-            - 'cartesian_product': Cartesian product of multiple input lists.
-              param: None
-            - 'combinations': All combinations of a given length (param: int, required)
-            - 'cycle': Repeat the sequence up to param times.
-              param: int (max length, optional)
-            - 'permutations': All permutations of a given length
-              (param: int, optional, default=len(input))
-            - 'powerset': All possible subsets of a list. param: None
-            - 'range': Generate a list of numbers from start to end (optionally step).
-              param: [start, end, step?]
-            - 'repeat': Repeat a value or sequence a specified number of times.
-              param: int (number of times)
-            - 'unique_pairs': All unique pairs from a list. param: None
-            - 'windowed': Sliding windows of a given size. param: int (window size)
-            - 'zip_with_index': Tuples of (index, value). param: None
-        param (Any, optional): Parameter for the operation, if required.
+    Supported operations:
+        - 'accumulate': Running totals (or with a binary function if param is provided). param: None or a supported function name (e.g., 'mul')
+        - 'cartesian_product': Cartesian product of multiple input lists. param: None
+        - 'combinations': All combinations of a given length (param: int, required)
+        - 'cycle': Repeat the sequence up to param times. param: int (max length, optional)
+        - 'permutations': All permutations of a given length (param: int, optional, default=len(input))
+        - 'powerset': All possible subsets of a list. param: None
+        - 'range': Generate a list of numbers from start to end (optionally step). param: [start, end, step?]
+        - 'repeat': Repeat a value or sequence a specified number of times. param: int (number of times)
+        - 'unique_pairs': All unique pairs from a list. param: None
+        - 'windowed': Sliding windows of a given size. param: int (window size)
+        - 'zip_with_index': Tuples of (index, value). param: None
 
     Returns:
         dict: The result, always wrapped in a dictionary with a 'value' key. If an error
@@ -1320,20 +1314,8 @@ async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> dict:
     """
     Chains multiple tool calls, piping the output of one as the input to the next.
 
-    Parameters:
-        input (Any): The initial input to the chain.
-        tool_calls (List[Dict[str, Any]]): Each dict must have:
-            - 'tool': the tool name (str)
-            - 'params': dict of additional parameters (optional, default empty)
-
     Returns:
-        dict: The result of the last tool in the chain, always wrapped in a dictionary
-            with a 'value' key. If an error occurs, an 'error' key is also present.
-
-    Chaining Rule:
-        The output from one tool is always used as the input to the next tool's primary
-        parameter. You must not specify the primary parameter in params for any tool in
-        the chain.
+        dict: The result of the last tool in the chain, always wrapped in a dictionary with a 'value' key. If an error occurs, an 'error' key is also present.
 
     MCP Usage Examples:
         chain(
@@ -1345,6 +1327,10 @@ async def chain(input: Any, tool_calls: List[Dict[str, Any]]) -> dict:
             ]
         )
         # => {'value': [1, 2, 3, 4, 5]}
+
+    Chaining Rule:
+        The output from one tool is always used as the input to the next tool's primary parameter.
+        You must not specify the primary parameter in params for any tool in the chain.
 
     Lua Function Call Examples:
         -- Note: chain is not exposed as a Lua function since it operates on tool calls
