@@ -224,8 +224,8 @@ async def test_group_by_boolean(client):
         client, "lists", {"items": items, "operation": "group_by", "expression": "flag"}
     )
     assert value == {
-        "true": [{"flag": True, "name": "a"}, {"flag": True, "name": "c"}],
-        "false": [{"flag": False, "name": "b"}],
+        "True": [{"flag": True, "name": "a"}, {"flag": True, "name": "c"}],
+        "False": [{"flag": False, "name": "b"}],
     }
 
 
@@ -425,14 +425,14 @@ async def test_find_by(client):
     value, error = await make_tool_call(
         client,
         "lists",
-        {"items": items, "operation": "find_by", "param": {"expression": "id", "value": 2}},
+        {"items": items, "operation": "find_by", "expression": "id == 2"},
     )
     assert value == {"id": 2}
     # Test not found
     value, error = await make_tool_call(
         client,
         "lists",
-        {"items": items, "operation": "find_by", "param": {"expression": "id", "value": 99}},
+        {"items": items, "operation": "find_by", "expression": "id == 99"},
     )
     assert value is None
 
@@ -443,7 +443,7 @@ async def test_remove_by(client):
     value, error = await make_tool_call(
         client,
         "lists",
-        {"items": items, "operation": "remove_by", "param": {"expression": "id", "value": 1}},
+        {"items": items, "operation": "remove_by", "expression": "id == 1"},
     )
     assert value == [{"id": 2}]
 
@@ -716,11 +716,12 @@ async def test_process_list_edge_cases(client):
     )
     assert error is not None
 
-    # Non-dict items
+    # Non-dict items - should group under "None" key when property doesn't exist
     value, error = await make_tool_call(
         client, "lists", {"items": [1, 2], "operation": "group_by", "expression": "a"}
     )
-    assert error is not None
+    assert error is None
+    assert value == {"None": [1, 2]}
 
     # Unknown operation returns error
     value, error = await make_tool_call(

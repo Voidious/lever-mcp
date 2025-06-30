@@ -541,101 +541,51 @@ def lists(
             return {"value": result}
         # Set-like operations
         elif operation == "difference_by":
-            if expression:
-                # Use Lua expression to find matching items in others
-                others_matching_expression = [
-                    item for item in others if evaluate_expression(expression, item)
-                ]
-                # Return items from main list that don't match any in others
-                return {
-                    "value": [
-                        item
-                        for item in items
-                        if not any(
-                            evaluate_expression(expression, other)
-                            and evaluate_expression(expression, item)
-                            for other in others_matching_expression
-                        )
-                    ]
-                }
-            elif not key:
+            # Use expression if provided, otherwise use param as expression
+            diff_expr = expression or (param if isinstance(param, str) else None)
+            if not diff_expr:
                 return {
                     "value": None,
-                    "error": (
-                        "Missing required key parameter or expression for operation "
-                        "'difference_by'.",
-                    ),
+                    "error": "Missing required expression or param parameter for operation 'difference_by'.",
                 }
-            else:
-                # Use traditional key-based comparison
-                others_keys = set(
-                    (
-                        item.get(key)
-                        if isinstance(item, dict)
-                        else getattr(item, key, None)
-                    )
-                    for item in others
-                )
-                return {
-                    "value": [
-                        item
-                        for item in items
-                        if (
-                            item.get(key)
-                            if isinstance(item, dict)
-                            else getattr(item, key, None)
-                        )
-                        not in others_keys
-                    ]
-                }
+            
+            # Extract keys from others list using expression
+            others_keys = set()
+            for item in others:
+                key_val = evaluate_expression_optimized(diff_expr, item)
+                others_keys.add(key_val)
+            
+            # Return items from main list whose key is not in others_keys
+            result = []
+            for item in items:
+                key_val = evaluate_expression_optimized(diff_expr, item)
+                if key_val not in others_keys:
+                    result.append(item)
+            
+            return {"value": result}
         elif operation == "intersection_by":
-            if expression:
-                # Use Lua expression to find matching items in others
-                others_matching_expression = [
-                    item for item in others if evaluate_expression(expression, item)
-                ]
-                # Return items from main list that match any in others
-                return {
-                    "value": [
-                        item
-                        for item in items
-                        if any(
-                            evaluate_expression(expression, other)
-                            and evaluate_expression(expression, item)
-                            for other in others_matching_expression
-                        )
-                    ]
-                }
-            elif not key:
+            # Use expression if provided, otherwise use param as expression
+            inter_expr = expression or (param if isinstance(param, str) else None)
+            if not inter_expr:
                 return {
                     "value": None,
-                    "error": (
-                        "Missing required key parameter or expression for operation "
-                        "'intersection_by'.",
-                    ),
+                    "error": "Missing required expression or param parameter for operation 'intersection_by'.",
                 }
-            else:
-                # Use traditional key-based comparison
-                others_keys = set(
-                    (
-                        item.get(key)
-                        if isinstance(item, dict)
-                        else getattr(item, key, None)
-                    )
-                    for item in others
-                )
-                return {
-                    "value": [
-                        item
-                        for item in items
-                        if (
-                            item.get(key)
-                            if isinstance(item, dict)
-                            else getattr(item, key, None)
-                        )
-                        in others_keys
-                    ]
-                }
+            
+            # Extract keys from others list using expression
+            others_keys = set()
+            for item in others:
+                key_val = evaluate_expression_optimized(inter_expr, item)
+                others_keys.add(key_val)
+            
+            # Return items from main list whose key is in others_keys
+            result = []
+            for item in items:
+                key_val = evaluate_expression_optimized(inter_expr, item)
+                if key_val in others_keys:
+                    result.append(item)
+            
+            return {"value": result}
         elif operation == "intersection":
             # Support intersection for multiple lists (not just two)
             if isinstance(items, list) and all(isinstance(x, list) for x in items):
@@ -1600,13 +1550,23 @@ def _register_mcp_tools_in_lua(lua_runtime: lupa.LuaRuntime):
                                       param=py_args[1] if len(py_args) > 1 else None,
                                       data=py_args[2] if len(py_args) > 2 else None)
                 elif tool_name == 'lists':
-                    # For lists, the second argument is usually expression, third is param
+                    # Handle different argument patterns for lists operations
                     items_arg = py_args[0] if py_args else None
-                    expression_arg = py_args[1] if len(py_args) > 1 else None
-                    result = lists.fn(items=items_arg, operation=operation_name,
-                                    expression=expression_arg,
-                                    param=py_args[2] if len(py_args) > 2 else None,
-                                    others=py_args[3] if len(py_args) > 3 else None)
+                    
+                    # Operations that use 'others' as second argument
+                    if operation_name in ['difference_by', 'intersection_by', 'difference', 'intersection', 'union', 'xor', 'zip_with']:
+                        others_arg = py_args[1] if len(py_args) > 1 else None
+                        expression_arg = py_args[2] if len(py_args) > 2 else None
+                        param_arg = py_args[3] if len(py_args) > 3 else None
+                        result = lists.fn(items=items_arg, operation=operation_name,
+                                        others=others_arg, expression=expression_arg, param=param_arg)
+                    else:
+                        # Standard operations: items, expression, param, others
+                        expression_arg = py_args[1] if len(py_args) > 1 else None
+                        param_arg = py_args[2] if len(py_args) > 2 else None
+                        others_arg = py_args[3] if len(py_args) > 3 else None
+                        result = lists.fn(items=items_arg, operation=operation_name,
+                                        expression=expression_arg, param=param_arg, others=others_arg)
                 elif tool_name == 'dicts':
                     result = dicts.fn(obj=py_args[0] if py_args else None, operation=operation_name,
                                     param=py_args[1] if len(py_args) > 1 else None,

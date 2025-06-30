@@ -74,7 +74,7 @@ async def client():
             "lists",
             {"operation": "compact"},
             "lists",
-            {"operation": "count_by", "key": 0},
+            {"operation": "count_by", "expression": 0},
             [[0], [0], [1]],
             dict,
             None,
@@ -224,7 +224,7 @@ async def client():
             "lists",
             {"operation": "compact"},
             "lists",
-            {"operation": "difference_by", "others": [{"id": 2}], "key": "id"},
+            {"operation": "difference_by", "others": [{"id": 2}], "expression": "id"},
             [{"id": 1}, None, {"id": 2}],
             list,
             [{"id": 1}],
@@ -234,7 +234,7 @@ async def client():
             "lists",
             {"operation": "compact"},
             "lists",
-            {"operation": "intersection_by", "others": [{"id": 2}], "key": "id"},
+            {"operation": "intersection_by", "others": [{"id": 2}], "expression": "id"},
             [{"id": 1}, None, {"id": 2}],
             list,
             [{"id": 2}],
@@ -242,7 +242,7 @@ async def client():
         # lists (list -> dict) -> dicts (dict -> dict) (error due to non-string keys)
         (
             "lists",
-            {"operation": "count_by", "key": 0},
+            {"operation": "count_by", "expression": 0},
             "dicts",
             {"operation": "invert"},
             [[0], [0], [1]],
@@ -252,7 +252,7 @@ async def client():
         # lists (list -> dict) -> dicts (dict -> bool) is_empty (error case)
         (
             "lists",
-            {"operation": "count_by", "key": 0},
+            {"operation": "count_by", "expression": 0},
             "any",
             {"operation": "is_empty"},
             [[0], [0], [1]],
@@ -262,7 +262,7 @@ async def client():
         # lists (list -> dict) -> dicts (dict -> bool) is_empty (working case)
         (
             "lists",
-            {"operation": "count_by", "key": "x"},
+            {"operation": "count_by", "expression": "x"},
             "dicts",
             {"operation": "is_empty"},
             [{"x": 1}, {"x": 1}, {"x": 2}],
@@ -272,7 +272,7 @@ async def client():
         # lists (list -> dict) -> dicts (dict -> bool) has_key (error case)
         (
             "lists",
-            {"operation": "count_by", "key": 0},
+            {"operation": "count_by", "expression": 0},
             "dicts",
             {"operation": "has_key", "param": 0},
             [[0], [0], [1]],
@@ -282,7 +282,7 @@ async def client():
         # lists (list -> dict) -> dicts (dict -> bool) has_key (working case)
         (
             "lists",
-            {"operation": "count_by", "key": "x"},
+            {"operation": "count_by", "expression": "x"},
             "dicts",
             {"operation": "has_key", "param": "1"},
             [{"x": 1}, {"x": 1}, {"x": 2}],
@@ -292,7 +292,7 @@ async def client():
         # lists (list -> dict) -> any (any -> bool) is_nil (error case)
         (
             "lists",
-            {"operation": "count_by", "key": 0},
+            {"operation": "count_by", "expression": 0},
             "any",
             {"operation": "is_nil"},
             [[0], [0], [1]],
@@ -302,7 +302,7 @@ async def client():
         # lists (list -> dict) -> any (any -> bool) is_nil (working case)
         (
             "lists",
-            {"operation": "count_by", "key": "x"},
+            {"operation": "count_by", "expression": "x"},
             "any",
             {"operation": "is_nil"},
             [{"x": 1}, {"x": 1}, {"x": 2}],
@@ -312,7 +312,7 @@ async def client():
         # lists (list -> dict) -> any (any -> bool) contains (error case)
         (
             "lists",
-            {"operation": "count_by", "key": 0},
+            {"operation": "count_by", "expression": 0},
             "any",
             {"operation": "contains", "param": 2},
             [[0], [0], [1]],
@@ -322,7 +322,7 @@ async def client():
         # lists (list -> dict) -> any (any -> bool) contains (working case)
         (
             "lists",
-            {"operation": "count_by", "key": "x"},
+            {"operation": "count_by", "expression": "x"},
             "any",
             {"operation": "contains", "param": "2"},
             [{"x": 1}, {"x": 1}, {"x": 2}],
@@ -332,7 +332,7 @@ async def client():
         # lists (list -> dict) -> dicts (dict -> Any) (error case)
         (
             "lists",
-            {"operation": "count_by", "key": 0},
+            {"operation": "count_by", "expression": 0},
             "dicts",
             {"operation": "get_value", "path": 0},
             [[0], [0], [1]],
@@ -342,7 +342,7 @@ async def client():
         # lists (list -> dict) -> dicts (dict -> Any) (working case)
         (
             "lists",
-            {"operation": "count_by", "key": "x"},
+            {"operation": "count_by", "expression": "x"},
             "dicts",
             {"operation": "get_value", "path": "1"},
             [{"x": 1}, {"x": 1}, {"x": 2}],
@@ -554,9 +554,9 @@ async def client():
         # lists -> lists (list of dicts)
         (
             "lists",
-            {"operation": "difference_by", "others": [{"id": 2}], "key": "id"},
+            {"operation": "difference_by", "others": [{"id": 2}], "expression": "id"},
             "lists",
-            {"operation": "count_by", "key": "id"},
+            {"operation": "count_by", "expression": "id"},
             [{"id": 1}, {"id": 2}, {"id": 1}],
             dict,
             {"1": 2},
@@ -574,7 +574,7 @@ async def client():
         # lists -> dicts (difference_by, expect {"x": 1})
         (
             "lists",
-            {"operation": "difference_by", "others": [{"x": 2}], "key": "x"},
+            {"operation": "difference_by", "others": [{"x": 2}], "expression": "x"},
             "dicts",
             {"operation": "merge"},
             [{"x": 1}, {"x": 2}],
@@ -584,7 +584,7 @@ async def client():
         # lists -> dicts
         (
             "lists",
-            {"operation": "key_by", "key": "id"},
+            {"operation": "key_by", "expression": "id"},
             "dicts",
             {"operation": "set_value", "path": "x", "value": 99},
             [{"id": "a", "val": 1}],
@@ -594,7 +594,7 @@ async def client():
         # lists -> dicts
         (
             "lists",
-            {"operation": "key_by", "key": "id"},
+            {"operation": "key_by", "expression": "id"},
             "dicts",
             {"operation": "get_value", "path": "a"},
             [{"id": "a", "val": 1}],
@@ -656,7 +656,7 @@ async def client():
             "generate",
             {"operation": "repeat", "param": 2},
             "lists",
-            {"operation": "count_by", "key": "a"},
+            {"operation": "count_by", "expression": "a"},
             {"a": 1},
             dict,
             {"1": 2},
@@ -1108,7 +1108,7 @@ async def client():
         # lists (list -> dict) -> any.eval (dict -> str)
         (
             "lists",
-            {"operation": "count_by", "key": "type"},
+            {"operation": "count_by", "expression": "type"},
             "any",
             {
                 "operation": "eval",
@@ -1121,7 +1121,7 @@ async def client():
         # lists (list -> dict) -> any.eval (dict -> int)
         (
             "lists",
-            {"operation": "count_by", "key": "category"},
+            {"operation": "count_by", "expression": "category"},
             "any",
             {"operation": "eval", "expression": "item.A or 0"},
             [{"category": "A"}, {"category": "A"}, {"category": "B"}],
@@ -1131,7 +1131,7 @@ async def client():
         # lists (list -> dict) -> any.eval (dict -> bool)
         (
             "lists",
-            {"operation": "count_by", "key": "status"},
+            {"operation": "count_by", "expression": "status"},
             "any",
             {"operation": "eval", "expression": "item.active and item.active > 1"},
             [{"status": "active"}, {"status": "active"}, {"status": "inactive"}],
