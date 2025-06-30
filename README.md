@@ -176,17 +176,17 @@ Performs list operations, including merge, set/get value, and property checks.
     - 'chunk': Split into chunks (param: int)
     - 'compact': Remove falsy values
     - 'contains': Check if item exists (param: value)
-    - 'count_by': Count occurrences by expression result/key
+    - 'count_by': Count occurrences by expression result
     - 'difference': Items in first not in second (others: list)
     - 'difference_by': Items in first list not matching expression in second
     - 'drop': Drop n elements from start (param: int)
     - 'drop_right': Drop n elements from end (param: int)
     - 'filter_by': Return all items matching the expression (predicate)
-    - 'find_by': Find first item matching expression/key-value
+    - 'find_by': Find first item matching expression
     - 'flat_map': Like map, but flattens one level if the mapping returns lists
     - 'flatten': Flatten one level
     - 'flatten_deep': Flatten completely
-    - 'group_by': Group items by expression result/key value
+    - 'group_by': Group items by expression result
     - 'head': First element
     - 'index_of': Find index of item (param: dict with 'key' and 'value')
     - 'initial': All but last element
@@ -194,33 +194,32 @@ Performs list operations, including merge, set/get value, and property checks.
     - 'intersection_by': Items in first list matching expression in second
     - 'is_empty': Check if list is empty
     - 'is_equal': Check if lists are equal (param: list)
-    - 'key_by': Create dict keyed by expression result/field
+    - 'key_by': Create dict keyed by expression result
     - 'last': Last element
     - 'map': Apply a Lua expression to each item and return the transformed list
-    - 'max_by': Find max by expression result/key
-    - 'min_by': Find min by expression result/key
+    - 'max_by': Find max by expression result
+    - 'min_by': Find min by expression result
     - 'nth': Get nth element (param: int, supports negative indexing)
-    - 'partition': Split by expression result/boolean key
-    - 'pluck': Extract values by expression/key (expression: any value)
+    - 'partition': Split by expression result/boolean
+    - 'pluck': Extract values by expression (expression: any value)
     - 'random_except': Random item excluding condition (param: dict with 'key' and 'value')
     - 'reduce': Aggregate the list using a binary Lua expression (uses 'acc' and 'item') and optional initializer (param)
-    - 'remove_by': Remove items matching expression/key-value
+    - 'remove_by': Remove items matching expression
     - 'sample': Get one random item
     - 'sample_size': Get n random items (param: int)
     - 'shuffle': Randomize order
-    - 'sort_by': Sort by expression result/key (expression: any comparable value)
+    - 'sort_by': Sort by expression result (expression: any comparable value)
     - 'tail': All but first element
     - 'take': Take n elements from start (param: int)
     - 'take_right': Take n elements from end (param: int)
     - 'union': Unique values from all lists (others: list)
-    - 'uniq_by': Remove duplicates by expression result/key
+    - 'uniq_by': Remove duplicates by expression result
     - 'unzip_list': Unzip list of tuples
     - 'xor': Symmetric difference (others: list)
     - 'zip_lists': Zip multiple lists
     - 'zip_with': Combine two lists element-wise using a binary Lua expression (uses 'item1' and 'item2')
-- `param` (Any, optional): Parameter for operations (int for take/drop, str for sort_by)
+- `param` (Any, optional): Parameter for operations that require one
 - `others` (list, optional): Second list for set operations like difference/intersection
-- `key` (str, optional): Property name for *_by operations (faster, alternative to expression)
 - `expression` (str, optional): Lua expression for advanced filtering/grouping/sorting/extraction
 
 **Returns:**
