@@ -52,10 +52,12 @@ try:
     from fastmcp.tools.tool import ParsedFunction
     import types
 
-    original_from_function = ParsedFunction.from_function
+    # Only store the original if not already stored
+    if '_original_from_function' not in globals():
+        _original_from_function = ParsedFunction.from_function
 
     def patched_from_function(fn, exclude_args=None, validate=True):
-        parsed = original_from_function(fn, exclude_args=exclude_args, validate=validate)
+        parsed = _original_from_function(fn, exclude_args=exclude_args, validate=validate)
         tool_name = getattr(fn, "__name__", None)
         if tool_name in PARAM_DESCRIPTIONS:
             param_descs = PARAM_DESCRIPTIONS[tool_name]
