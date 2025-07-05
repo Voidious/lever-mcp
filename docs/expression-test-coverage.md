@@ -113,8 +113,8 @@ This document outlines comprehensive test coverage for all expression-based oper
 
 ## Performance Considerations Tested
 
-1. **Key vs Expression**: Tests verify both `key` and `expression` parameters work
-2. **Backward Compatibility**: Existing `key` usage continues to work
+1. **Parameter Consistency**: Tests verify correct parameter naming (`item`/`key`/`value`)
+2. **Expression Flexibility**: Complex Lua expressions handle various data types
 3. **Error Resilience**: Failed expressions return sensible defaults
 4. **Type Safety**: Mixed data types handled gracefully
 

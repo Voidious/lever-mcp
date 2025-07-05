@@ -987,7 +987,7 @@ async def test_zip_with(client):
             "items": items,
             "others": others,
             "operation": "zip_with",
-            "expression": "item1 + item2",
+            "expression": "item + other",
         },
     )
     assert value == [11, 22, 33]
@@ -999,7 +999,7 @@ async def test_zip_with(client):
             "items": [1, 2],
             "others": [10, 20, 30],
             "operation": "zip_with",
-            "expression": "item1 * item2",
+            "expression": "item * other",
         },
     )
     assert value == [10, 40]
@@ -1058,3 +1058,553 @@ async def test_strings_sample_size(client):
     )
     assert error is None
     assert value == ""
+
+
+# Tests for new operations
+
+
+@pytest.mark.asyncio
+async def test_strings_split(client):
+    """Test strings.split operation with various delimiters and edge cases."""
+    # Basic split with comma
+    value, error = await make_tool_call(
+        client, "strings", {"text": "a,b,c", "operation": "split", "param": ","}
+    )
+    assert error is None
+    assert value == ["a", "b", "c"]
+
+    # Split with space (default)
+    value, error = await make_tool_call(
+        client, "strings", {"text": "hello world test", "operation": "split"}
+    )
+    assert error is None
+    assert value == ["hello", "world", "test"]
+
+    # Split with custom delimiter
+    value, error = await make_tool_call(
+        client, "strings", {"text": "one|two|three", "operation": "split", "param": "|"}
+    )
+    assert error is None
+    assert value == ["one", "two", "three"]
+
+    # Split empty string
+    value, error = await make_tool_call(
+        client, "strings", {"text": "", "operation": "split", "param": ","}
+    )
+    assert error is None
+    assert value == [""]
+
+    # Split string without delimiter
+    value, error = await make_tool_call(
+        client, "strings", {"text": "hello", "operation": "split", "param": ","}
+    )
+    assert error is None
+    assert value == ["hello"]
+
+
+@pytest.mark.asyncio
+async def test_lists_join(client):
+    """Test lists.join operation with various delimiters and edge cases."""
+    # Basic join with comma
+    value, error = await make_tool_call(
+        client, "lists", {"items": ["a", "b", "c"], "operation": "join", "param": ","}
+    )
+    assert error is None
+    assert value == "a,b,c"
+
+    # Join with no delimiter (default empty string)
+    value, error = await make_tool_call(
+        client, "lists", {"items": ["a", "b", "c"], "operation": "join"}
+    )
+    assert error is None
+    assert value == "abc"
+
+    # Join with space
+    value, error = await make_tool_call(
+        client,
+        "lists",
+        {"items": ["hello", "world"], "operation": "join", "param": " "},
+    )
+    assert error is None
+    assert value == "hello world"
+
+    # Join empty list
+    value, error = await make_tool_call(
+        client, "lists", {"items": [], "operation": "join", "param": ","}
+    )
+    assert error is None
+    assert value == ""
+
+    # Join with mixed types (should convert to strings)
+    value, error = await make_tool_call(
+        client, "lists", {"items": [1, 2, 3], "operation": "join", "param": "-"}
+    )
+    assert error is None
+    assert value == "1-2-3"
+
+
+@pytest.mark.asyncio
+async def test_strings_slice(client):
+    """Test strings.slice operation with various start/end positions."""
+    # Basic slice
+    value, error = await make_tool_call(
+        client,
+        "strings",
+        {"text": "hello", "operation": "slice", "data": {"from": 1, "to": 4}},
+    )
+    assert error is None
+    assert value == "ell"
+
+    # Slice from start
+    value, error = await make_tool_call(
+        client,
+        "strings",
+        {"text": "hello", "operation": "slice", "data": {"from": 0, "to": 3}},
+    )
+    assert error is None
+    assert value == "hel"
+
+    # Slice to end (no to specified)
+    value, error = await make_tool_call(
+        client, "strings", {"text": "hello", "operation": "slice", "data": {"from": 2}}
+    )
+    assert error is None
+    assert value == "llo"
+
+    # Slice entire string
+    value, error = await make_tool_call(
+        client, "strings", {"text": "hello", "operation": "slice", "data": {"from": 0}}
+    )
+    assert error is None
+    assert value == "hello"
+
+    # Slice with negative indices (should work with Python slicing)
+    value, error = await make_tool_call(
+        client,
+        "strings",
+        {"text": "hello", "operation": "slice", "data": {"from": -3, "to": -1}},
+    )
+    assert error is None
+    assert value == "ll"
+
+    # Missing data should error
+    value, error = await make_tool_call(
+        client, "strings", {"text": "hello", "operation": "slice"}
+    )
+    assert error is not None
+    assert "'data' with 'from' is required" in error
+
+
+@pytest.mark.asyncio
+async def test_lists_min(client):
+    """Test lists.min operation with various data types."""
+    # Basic min with numbers
+    value, error = await make_tool_call(
+        client, "lists", {"items": [3, 1, 4, 1, 5], "operation": "min"}
+    )
+    assert error is None
+    assert value == 1
+
+    # Min with strings
+    value, error = await make_tool_call(
+        client, "lists", {"items": ["apple", "banana", "cherry"], "operation": "min"}
+    )
+    assert error is None
+    assert value == "apple"
+
+    # Min with mixed comparable types
+    value, error = await make_tool_call(
+        client, "lists", {"items": [1, 2.5, 0.5], "operation": "min"}
+    )
+    assert error is None
+    assert value == 0.5
+
+    # Empty list should error
+    value, error = await make_tool_call(
+        client, "lists", {"items": [], "operation": "min"}
+    )
+    assert error is not None
+    assert "Cannot find minimum of empty list" in error
+
+    # Single item
+    value, error = await make_tool_call(
+        client, "lists", {"items": [42], "operation": "min"}
+    )
+    assert error is None
+    assert value == 42
+
+
+@pytest.mark.asyncio
+async def test_lists_max(client):
+    """Test lists.max operation with various data types."""
+    # Basic max with numbers
+    value, error = await make_tool_call(
+        client, "lists", {"items": [3, 1, 4, 1, 5], "operation": "max"}
+    )
+    assert error is None
+    assert value == 5
+
+    # Max with strings
+    value, error = await make_tool_call(
+        client, "lists", {"items": ["apple", "banana", "cherry"], "operation": "max"}
+    )
+    assert error is None
+    assert value == "cherry"
+
+    # Max with mixed comparable types
+    value, error = await make_tool_call(
+        client, "lists", {"items": [1, 2.5, 0.5], "operation": "max"}
+    )
+    assert error is None
+    assert value == 2.5
+
+    # Empty list should error
+    value, error = await make_tool_call(
+        client, "lists", {"items": [], "operation": "max"}
+    )
+    assert error is not None
+    assert "Cannot find maximum of empty list" in error
+
+    # Single item
+    value, error = await make_tool_call(
+        client, "lists", {"items": [42], "operation": "max"}
+    )
+    assert error is None
+    assert value == 42
+
+
+@pytest.mark.asyncio
+async def test_dicts_keys(client):
+    """Test dicts.keys operation."""
+    # Basic keys extraction
+    value, error = await make_tool_call(
+        client, "dicts", {"obj": {"a": 1, "b": 2, "c": 3}, "operation": "keys"}
+    )
+    assert error is None
+    assert set(value) == {"a", "b", "c"}
+
+    # Empty dict
+    value, error = await make_tool_call(
+        client, "dicts", {"obj": {}, "operation": "keys"}
+    )
+    assert error is None
+    assert value == []
+
+    # Non-dict should error
+    value, error = await make_tool_call(
+        client, "dicts", {"obj": "not_a_dict", "operation": "keys"}
+    )
+    assert error is not None
+    assert "Dict operation 'keys' requires a dictionary input" in error
+
+
+@pytest.mark.asyncio
+async def test_dicts_values(client):
+    """Test dicts.values operation."""
+    # Basic values extraction
+    value, error = await make_tool_call(
+        client, "dicts", {"obj": {"a": 1, "b": 2, "c": 3}, "operation": "values"}
+    )
+    assert error is None
+    assert set(value) == {1, 2, 3}
+
+    # Empty dict
+    value, error = await make_tool_call(
+        client, "dicts", {"obj": {}, "operation": "values"}
+    )
+    assert error is None
+    assert value == []
+
+    # Non-dict should error
+    value, error = await make_tool_call(
+        client, "dicts", {"obj": "not_a_dict", "operation": "values"}
+    )
+    assert error is not None
+    assert "Dict operation 'values' requires a dictionary input" in error
+
+
+@pytest.mark.asyncio
+async def test_dicts_items(client):
+    """Test dicts.items operation."""
+    # Basic items extraction
+    value, error = await make_tool_call(
+        client, "dicts", {"obj": {"a": 1, "b": 2}, "operation": "items"}
+    )
+    assert error is None
+    assert sorted(value) == sorted([["a", 1], ["b", 2]])
+
+    # Empty dict
+    value, error = await make_tool_call(
+        client, "dicts", {"obj": {}, "operation": "items"}
+    )
+    assert error is None
+    assert value == []
+
+    # Non-dict should error
+    value, error = await make_tool_call(
+        client, "dicts", {"obj": "not_a_dict", "operation": "items"}
+    )
+    assert error is not None
+    assert "Dict operation 'items' requires a dictionary input" in error
+
+
+@pytest.mark.asyncio
+async def test_dicts_map_keys(client):
+    """Test dicts.map_keys operation with Lua expressions."""
+    # Transform keys to uppercase
+    value, error = await make_tool_call(
+        client,
+        "dicts",
+        {
+            "obj": {"a": 1, "b": 2},
+            "operation": "map_keys",
+            "expression": "string.upper(key)",
+        },
+    )
+    assert error is None
+    assert value == {"A": 1, "B": 2}
+
+    # Add prefix to keys
+    value, error = await make_tool_call(
+        client,
+        "dicts",
+        {
+            "obj": {"name": "John", "age": 30},
+            "operation": "map_keys",
+            "expression": "'user_' .. key",
+        },
+    )
+    assert error is None
+    assert value == {"user_name": "John", "user_age": 30}
+
+    # Missing expression should error
+    value, error = await make_tool_call(
+        client, "dicts", {"obj": {"a": 1}, "operation": "map_keys"}
+    )
+    assert error is not None
+    assert "expression is required for map_keys operation" in error
+
+    # Non-dict should error
+    value, error = await make_tool_call(
+        client,
+        "dicts",
+        {"obj": "not_a_dict", "operation": "map_keys", "expression": "key"},
+    )
+    assert error is not None
+    assert "Dict operation 'map_keys' requires a dictionary input" in error
+
+
+@pytest.mark.asyncio
+async def test_dicts_map_values(client):
+    """Test dicts.map_values operation with Lua expressions."""
+    # Double all values
+    value, error = await make_tool_call(
+        client,
+        "dicts",
+        {
+            "obj": {"a": 1, "b": 2, "c": 3},
+            "operation": "map_values",
+            "expression": "value * 2",
+        },
+    )
+    assert error is None
+    assert value == {"a": 2, "b": 4, "c": 6}
+
+    # Transform strings to uppercase
+    value, error = await make_tool_call(
+        client,
+        "dicts",
+        {
+            "obj": {"name": "john", "city": "tokyo"},
+            "operation": "map_values",
+            "expression": "string.upper(value)",
+        },
+    )
+    assert error is None
+    assert value == {"name": "JOHN", "city": "TOKYO"}
+
+    # Missing expression should error
+    value, error = await make_tool_call(
+        client, "dicts", {"obj": {"a": 1}, "operation": "map_values"}
+    )
+    assert error is not None
+    assert "expression is required for map_values operation" in error
+
+    # Non-dict should error
+    value, error = await make_tool_call(
+        client,
+        "dicts",
+        {"obj": "not_a_dict", "operation": "map_values", "expression": "value"},
+    )
+    assert error is not None
+    assert "Dict operation 'map_values' requires a dictionary input" in error
+
+
+@pytest.mark.asyncio
+async def test_dicts_flatten_keys(client):
+    """Test dicts.flatten_keys operation."""
+    # Basic nested dict flattening
+    value, error = await make_tool_call(
+        client,
+        "dicts",
+        {"obj": {"a": {"b": {"c": 1}}, "d": 2}, "operation": "flatten_keys"},
+    )
+    assert error is None
+    assert value == {"a.b.c": 1, "d": 2}
+
+    # Complex nested structure
+    value, error = await make_tool_call(
+        client,
+        "dicts",
+        {
+            "obj": {
+                "user": {"name": "John", "contact": {"email": "john@email.com"}},
+                "settings": {"theme": "dark"},
+            },
+            "operation": "flatten_keys",
+        },
+    )
+    assert error is None
+    expected = {
+        "user.name": "John",
+        "user.contact.email": "john@email.com",
+        "settings.theme": "dark",
+    }
+    assert value == expected
+
+    # Already flat dict
+    value, error = await make_tool_call(
+        client, "dicts", {"obj": {"a": 1, "b": 2}, "operation": "flatten_keys"}
+    )
+    assert error is None
+    assert value == {"a": 1, "b": 2}
+
+    # Empty dict
+    value, error = await make_tool_call(
+        client, "dicts", {"obj": {}, "operation": "flatten_keys"}
+    )
+    assert error is None
+    assert value == {}
+
+    # Non-dict should error
+    value, error = await make_tool_call(
+        client, "dicts", {"obj": "not_a_dict", "operation": "flatten_keys"}
+    )
+    assert error is not None
+    assert "Dict operation 'flatten_keys' requires a dictionary input" in error
+
+
+@pytest.mark.asyncio
+async def test_dicts_unflatten_keys(client):
+    """Test dicts.unflatten_keys operation."""
+    # Basic unflatten
+    value, error = await make_tool_call(
+        client, "dicts", {"obj": {"a.b.c": 1, "d": 2}, "operation": "unflatten_keys"}
+    )
+    assert error is None
+    assert value == {"a": {"b": {"c": 1}}, "d": 2}
+
+    # Complex unflatten
+    value, error = await make_tool_call(
+        client,
+        "dicts",
+        {
+            "obj": {
+                "user.name": "John",
+                "user.contact.email": "john@email.com",
+                "settings.theme": "dark",
+            },
+            "operation": "unflatten_keys",
+        },
+    )
+    assert error is None
+    expected = {
+        "user": {"name": "John", "contact": {"email": "john@email.com"}},
+        "settings": {"theme": "dark"},
+    }
+    assert value == expected
+
+    # Already nested dict (no dots in keys)
+    value, error = await make_tool_call(
+        client, "dicts", {"obj": {"a": 1, "b": 2}, "operation": "unflatten_keys"}
+    )
+    assert error is None
+    assert value == {"a": 1, "b": 2}
+
+    # Empty dict
+    value, error = await make_tool_call(
+        client, "dicts", {"obj": {}, "operation": "unflatten_keys"}
+    )
+    assert error is None
+    assert value == {}
+
+    # Non-dict should error
+    value, error = await make_tool_call(
+        client, "dicts", {"obj": "not_a_dict", "operation": "unflatten_keys"}
+    )
+    assert error is not None
+    assert "Dict operation 'unflatten_keys' requires a dictionary input" in error
+
+
+@pytest.mark.asyncio
+async def test_any_size(client):
+    """Test any.size operation with various data types."""
+    # String size
+    value, error = await make_tool_call(
+        client, "any", {"value": "hello", "operation": "size"}
+    )
+    assert error is None
+    assert value == 5
+
+    # List size
+    value, error = await make_tool_call(
+        client, "any", {"value": [1, 2, 3, 4], "operation": "size"}
+    )
+    assert error is None
+    assert value == 4
+
+    # Dict size
+    value, error = await make_tool_call(
+        client, "any", {"value": {"a": 1, "b": 2, "c": 3}, "operation": "size"}
+    )
+    assert error is None
+    assert value == 3
+
+    # Empty collections
+    value, error = await make_tool_call(
+        client, "any", {"value": "", "operation": "size"}
+    )
+    assert error is None
+    assert value == 0
+
+    value, error = await make_tool_call(
+        client, "any", {"value": [], "operation": "size"}
+    )
+    assert error is None
+    assert value == 0
+
+    value, error = await make_tool_call(
+        client, "any", {"value": {}, "operation": "size"}
+    )
+    assert error is None
+    assert value == 0
+
+    # Scalar values (should return 1)
+    value, error = await make_tool_call(
+        client, "any", {"value": 42, "operation": "size"}
+    )
+    assert error is None
+    assert value == 1
+
+    value, error = await make_tool_call(
+        client, "any", {"value": True, "operation": "size"}
+    )
+    assert error is None
+    assert value == 1
+
+    # None should return 0
+    value, error = await make_tool_call(
+        client, "any", {"value": None, "operation": "size"}
+    )
+    assert error is None
+    assert value == 0

@@ -427,6 +427,8 @@ async def test_take_right(client, items, n, expected):
         ([[], [1]], [1]),
         ([[]], []),
         ([], []),
+        ([1, [2, 3]], [1, 2, 3]),  # Non-list elements preserved
+        ([1, 2, [3, 4]], [1, 2, 3, 4]),  # Multiple non-list elements
     ],
 )
 async def test_flatten(client, items, expected):

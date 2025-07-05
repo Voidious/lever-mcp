@@ -924,7 +924,7 @@ async def client():
         # any.eval (Any -> str) -> strings (str -> str)
         (
             "any",
-            {"operation": "eval", "expression": "string.upper(item)"},
+            {"operation": "eval", "expression": "string.upper(value)"},
             "strings",
             {"operation": "reverse"},
             "hello",
@@ -934,7 +934,7 @@ async def client():
         # any.eval (Any -> str) -> strings (str -> bool)
         (
             "any",
-            {"operation": "eval", "expression": "string.upper(item)"},
+            {"operation": "eval", "expression": "string.upper(value)"},
             "strings",
             {"operation": "is_upper"},
             "hello",
@@ -944,7 +944,7 @@ async def client():
         # any.eval (Any -> int) -> generate (int -> list)
         (
             "any",
-            {"operation": "eval", "expression": "item * 2"},
+            {"operation": "eval", "expression": "value * 2"},
             "generate",
             {"operation": "repeat", "count": 3},
             5,
@@ -954,7 +954,7 @@ async def client():
         # any.eval (Any -> float) -> generate (float -> list)
         (
             "any",
-            {"operation": "eval", "expression": "math.sqrt(item)"},
+            {"operation": "eval", "expression": "math.sqrt(value)"},
             "generate",
             {"operation": "repeat", "count": 2},
             16,
@@ -964,7 +964,7 @@ async def client():
         # any.eval (Any -> bool) -> generate (bool -> list)
         (
             "any",
-            {"operation": "eval", "expression": "item > 5"},
+            {"operation": "eval", "expression": "value > 5"},
             "generate",
             {"operation": "repeat", "count": 2},
             10,
@@ -974,7 +974,7 @@ async def client():
         # any.eval (Any -> list) -> lists (list -> list)
         (
             "any",
-            {"operation": "eval", "expression": "item"},
+            {"operation": "eval", "expression": "value"},
             "lists",
             {"operation": "compact"},
             [1, None, 2],
@@ -984,7 +984,7 @@ async def client():
         # any.eval (Any -> int) -> generate (int -> list)
         (
             "any",
-            {"operation": "eval", "expression": "item * 3"},
+            {"operation": "eval", "expression": "value * 3"},
             "generate",
             {"operation": "repeat", "count": 2},
             5,
@@ -994,7 +994,7 @@ async def client():
         # any.eval (Any -> str) -> strings (str -> str)
         (
             "any",
-            {"operation": "eval", "expression": "string.upper(tostring(item))"},
+            {"operation": "eval", "expression": "string.upper(tostring(value))"},
             "strings",
             {"operation": "reverse"},
             3,
@@ -1004,7 +1004,7 @@ async def client():
         # any.eval (Any -> bool) -> any (bool -> bool)
         (
             "any",
-            {"operation": "eval", "expression": "item > 20"},
+            {"operation": "eval", "expression": "value > 20"},
             "any",
             {"operation": "is_equal", "param": True},
             25,
@@ -1014,7 +1014,7 @@ async def client():
         # any.eval (Any -> float) -> any (float -> bool)
         (
             "any",
-            {"operation": "eval", "expression": "item / 2.0"},
+            {"operation": "eval", "expression": "value / 2.0"},
             "any",
             {"operation": "is_equal", "param": 2.5},
             5,
@@ -1027,7 +1027,7 @@ async def client():
             "strings",
             {"operation": "upper_case"},
             "any",
-            {"operation": "eval", "expression": "string.reverse(item)"},
+            {"operation": "eval", "expression": "string.reverse(value)"},
             "hello",
             str,
             "OLLEH",
@@ -1037,7 +1037,7 @@ async def client():
             "strings",
             {"operation": "upper_case"},
             "any",
-            {"operation": "eval", "expression": "string.len(item)"},
+            {"operation": "eval", "expression": "string.len(value)"},
             "hello",
             int,
             5,
@@ -1047,7 +1047,7 @@ async def client():
             "strings",
             {"operation": "upper_case"},
             "any",
-            {"operation": "eval", "expression": "string.find(item, 'H') ~= nil"},
+            {"operation": "eval", "expression": "string.find(value, 'H') ~= nil"},
             "hello",
             bool,
             True,
@@ -1059,7 +1059,7 @@ async def client():
             "any",
             {
                 "operation": "eval",
-                "expression": "tonumber(string.match(item, '%d+%.%d+'))",
+                "expression": "tonumber(string.match(value, '%d+%.%d+'))",
             },
             "The number is {num}",
             float,
@@ -1070,7 +1070,7 @@ async def client():
             "lists",
             {"operation": "compact"},
             "any",
-            {"operation": "eval", "expression": "item[1] and 1 or 0"},
+            {"operation": "eval", "expression": "value[1] and 1 or 0"},
             [1, None, 2, 3],
             int,
             1,
@@ -1080,7 +1080,7 @@ async def client():
             "lists",
             {"operation": "compact"},
             "any",
-            {"operation": "eval", "expression": "tostring(item[1])"},
+            {"operation": "eval", "expression": "tostring(value[1])"},
             ["a", None, "b", "c"],
             str,
             "a",
@@ -1090,7 +1090,7 @@ async def client():
             "lists",
             {"operation": "compact"},
             "any",
-            {"operation": "eval", "expression": "item[2] ~= nil"},
+            {"operation": "eval", "expression": "value[2] ~= nil"},
             [1, None, 2, 3],
             bool,
             True,
@@ -1100,7 +1100,7 @@ async def client():
             "lists",
             {"operation": "compact"},
             "any",
-            {"operation": "eval", "expression": "(item[1] + item[2]) / 2.0"},
+            {"operation": "eval", "expression": "(value[1] + value[2]) / 2.0"},
             [10, None, 20],
             float,
             15.0,
@@ -1112,7 +1112,7 @@ async def client():
             "any",
             {
                 "operation": "eval",
-                "expression": "item.fruit and 'has fruit' or 'no fruit'",
+                "expression": "value.fruit and 'has fruit' or 'no fruit'",
             },
             [{"type": "fruit"}, {"type": "fruit"}, {"type": "vegetable"}],
             str,
@@ -1123,7 +1123,7 @@ async def client():
             "lists",
             {"operation": "count_by", "expression": "category"},
             "any",
-            {"operation": "eval", "expression": "item.A or 0"},
+            {"operation": "eval", "expression": "value.A or 0"},
             [{"category": "A"}, {"category": "A"}, {"category": "B"}],
             int,
             2,
@@ -1133,7 +1133,7 @@ async def client():
             "lists",
             {"operation": "count_by", "expression": "status"},
             "any",
-            {"operation": "eval", "expression": "item.active and item.active > 1"},
+            {"operation": "eval", "expression": "value.active and value.active > 1"},
             [{"status": "active"}, {"status": "active"}, {"status": "inactive"}],
             bool,
             True,
@@ -1146,7 +1146,7 @@ async def client():
             {
                 "operation": "eval",
                 "expression": (
-                    "type(item) == 'string' and string.upper(item) or tostring(item)"
+                    "type(value) == 'string' and string.upper(value) or tostring(value)"
                 ),
             },
             ["hello", "world"],
@@ -1161,7 +1161,8 @@ async def client():
             {
                 "operation": "eval",
                 "expression": (
-                    "type(item) == 'number' and item * 2 or string.len(tostring(item))"
+                    "type(value) == 'number' and value * 2 or "
+                    "string.len(tostring(value))"
                 ),
             },
             [42, "test"],
@@ -1173,7 +1174,7 @@ async def client():
             "dicts",
             {"operation": "invert"},
             "any",
-            {"operation": "eval", "expression": "item['2'] or 'not found'"},
+            {"operation": "eval", "expression": "value['2'] or 'not found'"},
             {"a": 1, "b": 2},
             str,
             "b",
@@ -1185,7 +1186,7 @@ async def client():
             "any",
             {
                 "operation": "eval",
-                "expression": "item['1'] and string.len(item['1']) or 0",
+                "expression": "value['1'] and string.len(value['1']) or 0",
             },
             {"a": 1, "b": 2},
             int,
@@ -1196,7 +1197,7 @@ async def client():
             "dicts",
             {"operation": "invert"},
             "any",
-            {"operation": "eval", "expression": "item['1'] ~= nil"},
+            {"operation": "eval", "expression": "value['1'] ~= nil"},
             {"a": 1, "b": 2},
             bool,
             True,
@@ -1206,7 +1207,7 @@ async def client():
             "dicts",
             {"operation": "get_value", "path": "name"},
             "any",
-            {"operation": "eval", "expression": "string.upper(item)"},
+            {"operation": "eval", "expression": "string.upper(value)"},
             {"name": "alice", "age": 30},
             str,
             "ALICE",
@@ -1216,7 +1217,7 @@ async def client():
             "dicts",
             {"operation": "get_value", "path": "age"},
             "any",
-            {"operation": "eval", "expression": "item + 10"},
+            {"operation": "eval", "expression": "value + 10"},
             {"name": "alice", "age": 30},
             int,
             40,
@@ -1226,7 +1227,7 @@ async def client():
             "dicts",
             {"operation": "get_value", "path": "score"},
             "any",
-            {"operation": "eval", "expression": "item >= 80"},
+            {"operation": "eval", "expression": "value >= 80"},
             {"name": "alice", "score": 95},
             bool,
             True,
@@ -1236,7 +1237,7 @@ async def client():
             "generate",
             {"operation": "repeat", "count": 3},
             "any",
-            {"operation": "eval", "expression": "item[2] and 3 or 0"},
+            {"operation": "eval", "expression": "value[2] and 3 or 0"},
             "x",
             int,
             3,
@@ -1249,8 +1250,8 @@ async def client():
             {
                 "operation": "eval",
                 "expression": (
-                    "tostring(item[1]) .. '-' .. tostring(item[2]) .. '-' .. "
-                    "tostring(item[3])"
+                    "tostring(value[1]) .. '-' .. tostring(value[2]) .. '-' .. "
+                    "tostring(value[3])"
                 ),
             },
             None,
@@ -1262,7 +1263,7 @@ async def client():
             "generate",
             {"operation": "repeat", "count": 2},
             "any",
-            {"operation": "eval", "expression": "item[1] == item[2]"},
+            {"operation": "eval", "expression": "value[1] == value[2]"},
             42,
             bool,
             True,
@@ -1272,7 +1273,7 @@ async def client():
             "generate",
             {"operation": "range", "from": 1, "to": 6},
             "any",
-            {"operation": "eval", "expression": "(item[1] + item[5]) / 2.0"},
+            {"operation": "eval", "expression": "(value[1] + value[5]) / 2.0"},
             None,
             float,
             3.0,
@@ -1281,7 +1282,7 @@ async def client():
         # any.eval (nested dict -> extracted value) -> strings
         (
             "any",
-            {"operation": "eval", "expression": "item.user.name"},
+            {"operation": "eval", "expression": "value.user.name"},
             "strings",
             {"operation": "capitalize"},
             {"user": {"name": "alice", "age": 30}},
@@ -1291,7 +1292,7 @@ async def client():
         # any.eval (math calculation) -> generate
         (
             "any",
-            {"operation": "eval", "expression": "math.floor(item / 2)"},
+            {"operation": "eval", "expression": "math.floor(value / 2)"},
             "generate",
             {"operation": "repeat", "count": 2},
             7,
@@ -1301,7 +1302,7 @@ async def client():
         # any.eval (math calculation) -> lists (single item list)
         (
             "any",
-            {"operation": "eval", "expression": "item * 3"},
+            {"operation": "eval", "expression": "value * 3"},
             "generate",
             {"operation": "repeat", "count": 1},
             10,
@@ -1311,7 +1312,7 @@ async def client():
         # any.eval (simple calculation) -> generate
         (
             "any",
-            {"operation": "eval", "expression": "item * 2"},
+            {"operation": "eval", "expression": "value * 2"},
             "generate",
             {"operation": "repeat", "count": 1},
             5,
@@ -1385,7 +1386,7 @@ async def client():
             {
                 "operation": "zip_with",
                 "others": [10, 20, 30],
-                "expression": "item1 + item2",
+                "expression": "item + other",
             },
             "lists",
             {"operation": "map", "expression": "item * 2"},
