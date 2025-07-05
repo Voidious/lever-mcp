@@ -6,7 +6,7 @@ Tests both positional and table-based argument syntax for all MCP tools.
 
 import sys
 import os
-from main import evaluate_expression
+from lib.lua import evaluate_expression
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
