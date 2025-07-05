@@ -9,105 +9,6 @@ from typing import Any, Dict, List
 import inspect
 
 
-def unwrap_result(result):
-    """
-    Unwraps the result from a tool call. The result from the client is typically a
-    list containing a single Content object. This function extracts the text from
-    that object and decodes it from JSON.
-    """
-    import json
-
-    def _convert_lua_table(lua_table):
-        try:
-            keys = list(lua_table.keys())
-
-            # Check if this is the null sentinel (empty table)
-            if len(keys) == 0:
-                return None
-
-            # If all keys are positive integers, treat as a list
-            if keys and all(isinstance(k, int) and k > 0 for k in keys):
-                max_index = max(keys)
-                result = [None] * max_index
-                for k in keys:
-                    val = lua_table[k]
-                    # Check if this value is an empty LuaTable (null
-                    # sentinel)
-                    if "LuaTable" in type(val).__name__:
-                        try:
-                            if len(list(val.keys())) == 0:
-                                result[k - 1] = None
-                            else:
-                                result[k - 1] = _convert_lua_table(val)
-                        except Exception:
-                            result[k - 1] = val
-                    else:
-                        result[k - 1] = val
-                return result
-            else:
-                result = {}
-                for k in keys:
-                    val = lua_table[k]
-                    # Check if this value is an empty LuaTable (null
-                    # sentinel)
-                    if "LuaTable" in type(val).__name__:
-                        try:
-                            if len(list(val.keys())) == 0:
-                                result[k] = None
-                            else:
-                                result[k] = _convert_lua_table(val)
-                        except Exception:
-                            result[k] = val
-                    else:
-                        result[k] = val
-                return result
-        except Exception:
-            return None
-
-    # The result from client.call_tool is a list of Content objects.
-    # For our tools, it's typically a single object in the list.
-    if (
-        isinstance(result, list)
-        and result
-        and hasattr(result[0], "text")
-        and isinstance(result[0], object)
-    ):
-        try:
-            # The text attribute contains the JSON string of the actual return
-            # value.
-            unwrapped = json.loads(result[0].text)  # type: ignore[attr-defined]
-        except (json.JSONDecodeError, TypeError):
-            # If it's not valid JSON, return the text as is.
-            unwrapped = getattr(result[0], "text", result[0])
-    # Fallback for single Content object or other types passed from tests
-    elif (
-        not isinstance(result, list)
-        and hasattr(result, "text")
-        and result.text is not None
-    ):
-        try:
-            unwrapped = json.loads(result.text)  # type: ignore[attr-defined]
-        except (json.JSONDecodeError, TypeError):
-            unwrapped = result.text  # type: ignore[attr-defined]
-    else:
-        unwrapped = result
-
-    # Recursively convert LuaTable objects
-    if "LuaTable" in type(unwrapped).__name__:
-        return _convert_lua_table(unwrapped)
-    elif isinstance(unwrapped, list):
-        return [
-            _convert_lua_table(item) if type(item).__name__ == "LuaTable" else item
-            for item in unwrapped
-        ]
-    elif isinstance(unwrapped, dict):
-        return {
-            k: (_convert_lua_table(v) if type(v).__name__ == "LuaTable" else v)
-            for k, v in unwrapped.items()
-        }
-    return unwrapped
-
-
 async def chain_tool(input: Any, tool_calls: List[Dict[str, Any]], mcp) -> dict:
     """
     Chains multiple tool calls, piping the output of one as the input to the next.
@@ -363,3 +264,102 @@ async def chain_tool(input: Any, tool_calls: List[Dict[str, Any]], mcp) -> dict:
         elif isinstance(value, dict) and "value" in value:
             value = value["value"]
     return {"value": value}
+
+
+def unwrap_result(result):
+    """
+    Unwraps the result from a tool call. The result from the client is typically a
+    list containing a single Content object. This function extracts the text from
+    that object and decodes it from JSON.
+    """
+    import json
+
+    def _convert_lua_table(lua_table):
+        try:
+            keys = list(lua_table.keys())
+
+            # Check if this is the null sentinel (empty table)
+            if len(keys) == 0:
+                return None
+
+            # If all keys are positive integers, treat as a list
+            if keys and all(isinstance(k, int) and k > 0 for k in keys):
+                max_index = max(keys)
+                result = [None] * max_index
+                for k in keys:
+                    val = lua_table[k]
+                    # Check if this value is an empty LuaTable (null
+                    # sentinel)
+                    if "LuaTable" in type(val).__name__:
+                        try:
+                            if len(list(val.keys())) == 0:
+                                result[k - 1] = None
+                            else:
+                                result[k - 1] = _convert_lua_table(val)
+                        except Exception:
+                            result[k - 1] = val
+                    else:
+                        result[k - 1] = val
+                return result
+            else:
+                result = {}
+                for k in keys:
+                    val = lua_table[k]
+                    # Check if this value is an empty LuaTable (null
+                    # sentinel)
+                    if "LuaTable" in type(val).__name__:
+                        try:
+                            if len(list(val.keys())) == 0:
+                                result[k] = None
+                            else:
+                                result[k] = _convert_lua_table(val)
+                        except Exception:
+                            result[k] = val
+                    else:
+                        result[k] = val
+                return result
+        except Exception:
+            return None
+
+    # The result from client.call_tool is a list of Content objects.
+    # For our tools, it's typically a single object in the list.
+    if (
+        isinstance(result, list)
+        and result
+        and hasattr(result[0], "text")
+        and isinstance(result[0], object)
+    ):
+        try:
+            # The text attribute contains the JSON string of the actual return
+            # value.
+            unwrapped = json.loads(result[0].text)  # type: ignore[attr-defined]
+        except (json.JSONDecodeError, TypeError):
+            # If it's not valid JSON, return the text as is.
+            unwrapped = getattr(result[0], "text", result[0])
+    # Fallback for single Content object or other types passed from tests
+    elif (
+        not isinstance(result, list)
+        and hasattr(result, "text")
+        and result.text is not None
+    ):
+        try:
+            unwrapped = json.loads(result.text)  # type: ignore[attr-defined]
+        except (json.JSONDecodeError, TypeError):
+            unwrapped = result.text  # type: ignore[attr-defined]
+    else:
+        unwrapped = result
+
+    # Recursively convert LuaTable objects
+    if "LuaTable" in type(unwrapped).__name__:
+        return _convert_lua_table(unwrapped)
+    elif isinstance(unwrapped, list):
+        return [
+            _convert_lua_table(item) if type(item).__name__ == "LuaTable" else item
+            for item in unwrapped
+        ]
+    elif isinstance(unwrapped, dict):
+        return {
+            k: (_convert_lua_table(v) if type(v).__name__ == "LuaTable" else v)
+            for k, v in unwrapped.items()
+        }
+    return unwrapped
