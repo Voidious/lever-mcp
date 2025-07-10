@@ -1,20 +1,38 @@
 import importlib
-import json
 import main
 import pytest
 from fastmcp import Client
 from main import LeverMCP
-from . import make_tool_call
+from tests import make_tool_call
 
 
-@pytest.fixture
-async def client():
+@pytest.fixture(params=["lua", "javascript"])
+async def client(request):
     """
     Provides an isolated FastMCP client for each test by reloading the main
-    module and explicitly resetting the application state for the session.
+    module and configuring it for the specified engine (Lua or JavaScript).
     """
+    engine = request.param
+
+    # Reload main module to get fresh instance
     importlib.reload(main)
-    mcp_instance: LeverMCP = main.mcp
+
+    # Set the global configuration before importing tools
+    main.USE_JAVASCRIPT = engine == "javascript"
+
+    # Create fresh MCP instance
+    mcp_instance = LeverMCP("Lever MCP")
+
+    # Register appropriate tools based on engine
+    if engine == "javascript":
+        from tools.js import register_js_tools
+
+        register_js_tools(mcp_instance)
+    else:
+        from tools.lua import register_lua_tools
+
+        register_lua_tools(mcp_instance)
+
     async with Client(mcp_instance) as c:
         yield c
 
@@ -928,25 +946,21 @@ async def test_generate(client, input, operation, param, expected):
 
 # --- Direct function call tests for generate ---
 @pytest.mark.asyncio
-async def test_generate_powerset_direct():
-    import main
-
-    result = await main.generate.run(
-        {"options": {"items": []}, "operation": "powerset"}
+async def test_generate_powerset_direct(client):
+    value, error = await make_tool_call(
+        client, "generate", {"options": {"items": []}, "operation": "powerset"}
     )
-    actual = json.loads(result[0].text)  # type: ignore
-    assert actual["value"] == [[]]
+    assert error is None
+    assert value == [[]]
 
 
 @pytest.mark.asyncio
-async def test_generate_permutations_direct():
-    import main
-
-    result = await main.generate.run(
-        {"options": {"items": []}, "operation": "permutations"}
+async def test_generate_permutations_direct(client):
+    value, error = await make_tool_call(
+        client, "generate", {"options": {"items": []}, "operation": "permutations"}
     )
-    actual = json.loads(result[0].text)  # type: ignore
-    assert actual["value"] == [[]]
+    assert error is None
+    assert value == [[]]
 
 
 @pytest.mark.asyncio

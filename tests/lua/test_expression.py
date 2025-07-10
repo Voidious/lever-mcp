@@ -3,17 +3,24 @@ import pytest
 import main
 from main import LeverMCP
 from fastmcp import Client
-from . import make_tool_call
+from tests import make_tool_call
 
 
 @pytest.fixture
 async def client():
     """
     Provides an isolated FastMCP client for each test by reloading the main
-    module and explicitly resetting the application state for the session.
+    module and explicitly configuring it for Lua expressions.
     """
     importlib.reload(main)
-    mcp_instance: LeverMCP = main.mcp
+    main.USE_JAVASCRIPT = False
+
+    # Create fresh MCP instance with Lua tools
+    mcp_instance = LeverMCP("Lever MCP")
+    from tools.lua import register_lua_tools
+
+    register_lua_tools(mcp_instance)
+
     async with Client(mcp_instance) as c:
         yield c
 
@@ -897,3 +904,98 @@ async def test_complex_null_handling(
         )
     assert error is None
     assert result == expected_result, f"Failed: {description}"
+
+
+# --- Dicts Map Operations with Lua Expressions ---
+
+
+@pytest.mark.asyncio
+async def test_dicts_map_keys(client):
+    """Test dicts.map_keys operation with Lua expressions."""
+    # Transform keys to uppercase
+    value, error = await make_tool_call(
+        client,
+        "dicts",
+        {
+            "obj": {"a": 1, "b": 2},
+            "operation": "map_keys",
+            "expression": "string.upper(key)",
+        },
+    )
+    assert error is None
+    assert value == {"A": 1, "B": 2}
+
+    # Add prefix to keys
+    value, error = await make_tool_call(
+        client,
+        "dicts",
+        {
+            "obj": {"name": "John", "age": 30},
+            "operation": "map_keys",
+            "expression": "'user_' .. key",
+        },
+    )
+    assert error is None
+    assert value == {"user_name": "John", "user_age": 30}
+
+    # Missing expression should error
+    value, error = await make_tool_call(
+        client, "dicts", {"obj": {"a": 1}, "operation": "map_keys"}
+    )
+    assert error is not None
+    assert "expression is required for map_keys operation" in error
+
+    # Non-dict should error
+    value, error = await make_tool_call(
+        client,
+        "dicts",
+        {"obj": "not_a_dict", "operation": "map_keys", "expression": "key"},
+    )
+    assert error is not None
+    assert "Dict operation 'map_keys' requires a dictionary input" in error
+
+
+@pytest.mark.asyncio
+async def test_dicts_map_values(client):
+    """Test dicts.map_values operation with Lua expressions."""
+    # Double all values
+    value, error = await make_tool_call(
+        client,
+        "dicts",
+        {
+            "obj": {"a": 1, "b": 2, "c": 3},
+            "operation": "map_values",
+            "expression": "value * 2",
+        },
+    )
+    assert error is None
+    assert value == {"a": 2, "b": 4, "c": 6}
+
+    # Transform strings to uppercase
+    value, error = await make_tool_call(
+        client,
+        "dicts",
+        {
+            "obj": {"name": "john", "city": "tokyo"},
+            "operation": "map_values",
+            "expression": "string.upper(value)",
+        },
+    )
+    assert error is None
+    assert value == {"name": "JOHN", "city": "TOKYO"}
+
+    # Missing expression should error
+    value, error = await make_tool_call(
+        client, "dicts", {"obj": {"a": 1}, "operation": "map_values"}
+    )
+    assert error is not None
+    assert "expression is required for map_values operation" in error
+
+    # Non-dict should error
+    value, error = await make_tool_call(
+        client,
+        "dicts",
+        {"obj": "not_a_dict", "operation": "map_values", "expression": "value"},
+    )
+    assert error is not None
+    assert "Dict operation 'map_values' requires a dictionary input" in error

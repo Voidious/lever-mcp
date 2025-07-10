@@ -2168,7 +2168,7 @@ class TestPositionalVsTableWrapParameter:
         result = evaluate_expression(
             'lists.filter_by({1, 2, 3, 4}, "item > 2", nil, nil, true)', {}
         )
-        assert result == [3, 4]
+        assert result == {"__type": "list", "data": [3, 4]}
 
     def test_lists_wrap_table_syntax(self):
         """Test lists operations with wrap parameter using table syntax."""
@@ -2187,7 +2187,7 @@ class TestPositionalVsTableWrapParameter:
         result = evaluate_expression(
             'lists.filter_by{items={1, 2, 3, 4}, expression="item > 2", wrap=true}', {}
         )
-        assert result == [3, 4]
+        assert result == {"__type": "list", "data": [3, 4]}
 
     def test_strings_wrap_positional_syntax(self):
         """Test strings operations with wrap parameter using positional syntax."""

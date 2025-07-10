@@ -84,11 +84,11 @@ def _register_mcp_tools_in_lua(lua_runtime: lupa.LuaRuntime, mcp_tools=None):
             circular imports)
     """
     # Import the tool implementation functions here to avoid circular imports
-    from tools.strings import _strings_impl
-    from tools.lists import _lists_impl
-    from tools.dicts import _dicts_impl
-    from tools.any import _any_impl
-    from tools.generate import _generate_impl
+    from tools.lua.strings import _strings_impl
+    from tools.lua.lists import _lists_impl
+    from tools.lua.dicts import _dicts_impl
+    from tools.lua.any import _any_impl
+    from tools.lua.generate import _generate_impl
 
     def create_tool_wrapper(tool_name, operation_name):
         """Create a wrapper function for a specific tool operation."""

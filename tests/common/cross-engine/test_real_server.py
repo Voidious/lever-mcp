@@ -19,14 +19,22 @@ def normalize_json(obj):
     return json.dumps(obj, sort_keys=True, separators=(",", ":"))
 
 
-@pytest.fixture(scope="session")
-def server_url():
+@pytest.fixture(scope="session", params=["lua", "javascript"])
+def server_url(request):
+    engine = request.param
     port = random.randint(12001, 12999)
     host = "127.0.0.1"
     url = f"http://{host}:{port}/mcp/"
+
+    # Build command with engine-specific argument
+    cmd = [sys.executable, "main.py", "--http", "--host", host, "--port", str(port)]
+    if engine == "lua":
+        cmd.append("--lua")
+    # JavaScript is now the default, so no parameter needed
+
     # Redirect stdout/stderr to avoid pipe blocking
     proc = subprocess.Popen(
-        [sys.executable, "main.py", "--http", "--host", host, "--port", str(port)],
+        cmd,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )

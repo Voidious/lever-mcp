@@ -16,6 +16,12 @@ result = [x['id'] for x in items]
 result = lists(items, 'pluck', key='id')['value']
 ```
 
+*JavaScript Function Example:*
+```javascript
+// In JavaScript expressions, use direct function calls:
+const result = lists.pluck(items, "id");
+```
+
 *Lua Function Example:*
 ```lua
 -- In Lua expressions, use direct function calls:
@@ -37,6 +43,16 @@ grouped = lists(users, 'group_by', key='role')['value']
 sorted_items = lists(items, 'sort_by', expression='score * -1')['value']
 # Extract names with transformation:
 names = lists(users, 'pluck', expression='string.upper(name)')['value']
+```
+
+*JavaScript Function Examples:*
+```javascript
+// Group users by role:
+const grouped = lists.groupBy(users, "role");
+// Sort by score (descending):
+const sorted_items = lists.sortBy(users, "score * -1");
+// Extract and transform names:
+const names = lists.pluck(users, "strings.upperCase(name)");
 ```
 
 *Lua Function Examples:*
@@ -66,6 +82,16 @@ active, inactive = result[True], result[False]
 first_five = lists(items, 'take', param=5)['value']
 ```
 
+*JavaScript Function Examples:*
+```javascript
+// Chunk a list into groups of 3:
+const chunks = lists.chunk(items, 3);
+// Partition by active status:
+const partitioned = lists.partition(users, "is_active");
+// Take first 5 items:
+const first_five = lists.take(items, 5);
+```
+
 *Lua Function Examples:*
 ```lua
 -- Chunk a list into groups of 3:
@@ -89,6 +115,16 @@ unique_users = lists(users, 'uniq_by', key='id')['value']
 diff = lists(all_items, 'difference', others=excluded_items)['value']
 # Find new users not in old list:
 new_users = lists(all_users, 'difference_by', others=old_users, key='id')['value']
+```
+
+*JavaScript Function Examples:*
+```javascript
+// Remove duplicate users by id:
+const unique_users = lists.uniqBy(users, "id");
+// Find set difference:
+const diff = lists.difference(all_items, excluded_items);
+// Find new users:
+const new_users = lists.differenceBy(all_users, old_users, "id");
 ```
 
 *Lua Function Examples:*
@@ -118,6 +154,16 @@ host = dicts(config, 'get_value', path='db.host', default='127.0.0.1')['value']
 subset = dicts(user, 'pick', param=['name', 'email'])['value']
 ```
 
+*JavaScript Function Examples:*
+```javascript
+// Set a nested value:
+const config = dicts.setValue(config, ["db", "host"], "localhost");
+// Get a nested value with default:
+const host = dicts.getValue(config, "db.host", "127.0.0.1");
+// Pick specific keys:
+const subset = dicts.pick(user, ["name", "email"]);
+```
+
 *Lua Function Examples:*
 ```lua
 -- Set a nested value:
@@ -143,6 +189,16 @@ greeting = strings('Hello, {name}!', 'template', data={'name': 'Alice'})['value'
 result = strings('hello world', 'replace', data={'old': 'world', 'new': 'universe'})['value']
 ```
 
+*JavaScript Function Examples:*
+```javascript
+// Convert to snake_case:
+const snake = strings.snakeCase("Hello World!");
+// Interpolate variables:
+const greeting = strings.template("Hello, {name}!", {name: "Alice"});
+// Replace text:
+const result = strings.replace("hello world", {old: "world", new: "universe"});
+```
+
 *Lua Function Examples:*
 ```lua
 -- Convert to snake_case:
@@ -154,7 +210,7 @@ local result = strings.replace("hello world", {old="world", new="universe"})
 ```
 
 ## 7. Functional Operations with Expressions
-- Use Lua expressions for complex filtering, mapping, and transformations.
+- Use JavaScript or Lua expressions for complex filtering, mapping, and transformations.
 - Use `filter_by`, `map`, `reduce` with expressions for powerful data processing.
 - Use `all_by`, `any_by` to test conditions across lists.
 
@@ -166,6 +222,16 @@ adults = lists(users, 'filter_by', expression='age >= 18')['value']
 processed = lists(items, 'map', expression='score > 80 and "pass" or "fail"')['value']
 # Check if all items meet condition:
 all_valid = lists(items, 'all_by', expression='price > 0 and quantity > 0')['value']
+```
+
+*JavaScript Function Examples:*
+```javascript
+// Filter users over 18:
+const adults = lists.filterBy(users, "age >= 18");
+// Transform with complex logic:
+const processed = lists.map(items, "score > 80 ? 'pass' : 'fail'");
+// Check if all items meet condition:
+const all_valid = lists.allBy(items, "price > 0 && quantity > 0");
 ```
 
 *Lua Function Examples:*
@@ -192,6 +258,15 @@ result = any({'score': 85, 'passed': True}, 'eval',
 equal = any(value1, 'is_equal', param=value2)['value']
 ```
 
+*JavaScript Function Examples:*
+```javascript
+// Evaluate complex expression:
+const result = any.eval({score: 85, passed: true},
+                       'score >= 80 && passed ? "excellent" : "needs work"');
+// Type-safe equality:
+const equal = any.isEqual(value1, value2);
+```
+
 *Lua Function Examples:*
 ```lua
 -- Evaluate complex expression:
@@ -204,7 +279,7 @@ local equal = any.is_equal(value1, value2)
 ## 9. Chaining Operations
 - Use `chain` tool to compose multiple operations in sequence for complex transformations.
 - Ensure output types are compatible between chained operations.
-- Consider using Lua function chaining for simpler cases.
+- Consider using JavaScript or Lua function chaining for simpler cases.
 
 *MCP Tool Example:*
 ```python
@@ -214,6 +289,12 @@ result = chain(users, [
     {'tool': 'lists', 'params': {'operation': 'pluck', 'key': 'email'}},
     {'tool': 'lists', 'params': {'operation': 'compact'}}
 ])['value']
+```
+
+*JavaScript Function Example:*
+```javascript
+// Chain functions directly:
+const result = lists.compact(lists.pluck(lists.filterBy(users, "age >= 18"), "email"));
 ```
 
 *Lua Function Example:*
@@ -238,7 +319,16 @@ else:
     filtered_items = result['value']
 ```
 
-## 11. Lua Expression Best Practices
+## 11. Expression Best Practices
+
+### JavaScript Expressions
+- Use `item` to refer to the current object in expressions.
+- Use `null` for null checks: `item === null`.
+- Access nested properties: `item.user.name` or `user.name` (when item has user property).
+- Use built-in functions: `Math.abs(score)`, `name.toUpperCase()`.
+- Combine conditions: `age >= 18 && score > 80`.
+
+### Lua Expressions
 - Use `item` to refer to the current object in expressions.
 - Use `null` (not `nil`) for null checks: `item == null`.
 - Access nested properties: `item.user.name` or `user.name` (when item has user property).
@@ -258,6 +348,18 @@ result = lists(items, 'partition', expression='strings.is_digit')['value']
 filtered = lists(items, 'filter_by', expression='strings.is_alpha')['value']
 # Transform using function reference
 transformed = lists(items, 'map', expression='strings.upper_case')['value']
+```
+
+*JavaScript Function Examples:*
+```javascript
+// Partition by digit check
+const partitioned = lists.partition(items, "strings.isDigit");
+// Filter alphabetic only
+const filtered = lists.filterBy(items, "strings.isAlpha");
+// Transform to uppercase
+const transformed = lists.map(items, "strings.upperCase");
+// Complex nested function calls
+const cleaned = lists.map(items, "strings.toLowerCase(strings.trim(item))");
 ```
 
 *Lua Function Examples:*
