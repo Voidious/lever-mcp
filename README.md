@@ -52,6 +52,50 @@ To configure the server, add a new server configuration block in your editor's M
 
 Once configured, your AI coding assistant will be able to use the Lever MCP tools.
 
+### Usage in AI Coding Editors
+
+If you are integrating Lever MCP with an AI-assisted coding editor (such as Cursor or Windsurf), be sure to load the [lever-rules.md](./docs/lever-rules.md) file into your editor's rules for the coding agent/AI assistant. This file provides best practices and guidance for the agent, ensuring it uses Lever MCP tools efficiently and according to recommended patterns:
+- Prefer built-in Lever MCP tools for data operations
+- Apply best practices for data transformation, list/set operations, and more
+- Use efficient, maintainable patterns for code generation
+- Handle errors and edge cases appropriately
+
+While human users and contributors may also find the document informative, its primary audience is the coding agent. Loading these rules is recommended for anyone developing or configuring an AI coding assistant to ensure high-quality, consistent use of Lever MCP's capabilities.
+
+### Expression Engine Configuration
+
+Lever MCP supports two expression engines: **JavaScript (default)** and **Lua**. Both run in **safe mode** by default, which blocks potentially dangerous operations:
+
+**JavaScript (Default Engine):**
+- **Blocked**: Python bridge, eval(), Function(), WebAssembly, file I/O, network access
+- **Allowed**: Modern JavaScript syntax, JSON operations, math functions, string methods, array methods
+
+**Lua Engine:**
+- **Blocked**: File I/O (`io.*`), system commands (`os.execute`), module loading (`require`)
+- **Allowed**: Math operations, string functions, time/date functions, comparisons
+
+**Switching Expression Engines:**
+```bash
+# Use JavaScript expressions (default)
+python main.py
+
+# Use Lua expressions instead
+python main.py --lua
+./run.sh --lua
+```
+
+**Disabling Safety Rails:**
+```bash
+# Disable safety for trusted environments (both JavaScript and Lua)
+python main.py --unsafe
+./run.sh --unsafe
+
+# Combine with engine selection
+python main.py --lua --unsafe
+```
+
+This enables full access to dangerous operations in both engines.
+
 ### Starting the Server with Streamable HTTP
 
 By default, the server runs using stdio transport (suitable for local tools and editor integration). To run the server as a Streamable HTTP service (recommended for web-based deployments or remote access), use the `--http` flag:
@@ -89,50 +133,6 @@ If you omit `--http`, the server will use stdio transport (default behavior):
 ```bash
 python main.py
 ```
-
-### Expression Engine Configuration
-
-Lever MCP supports two expression engines: **JavaScript (default)** and **Lua**. Both run in **safe mode** by default, which blocks potentially dangerous operations:
-
-**JavaScript (Default Engine):**
-- **Blocked**: Python bridge, eval(), Function(), WebAssembly, file I/O, network access
-- **Allowed**: Modern JavaScript syntax, JSON operations, math functions, string methods, array methods
-
-**Lua Engine:**
-- **Blocked**: File I/O (`io.*`), system commands (`os.execute`), module loading (`require`)
-- **Allowed**: Math operations, string functions, time/date functions, comparisons
-
-**Switching Expression Engines:**
-```bash
-# Use JavaScript expressions (default)
-python main.py
-
-# Use Lua expressions instead
-python main.py --lua
-./run.sh --lua
-```
-
-**Disabling Safety Rails:**
-```bash
-# Disable safety for trusted environments (both JavaScript and Lua)
-python main.py --unsafe
-./run.sh --unsafe
-
-# Combine with engine selection
-python main.py --lua --unsafe
-```
-
-This enables full access to dangerous operations in both engines.
-
-### Usage in AI Coding Editors
-
-If you are integrating Lever MCP with an AI-assisted coding editor (such as Cursor or Windsurf), be sure to load the [lever-rules.md](./docs/lever-rules.md) file into your editor's rules for the coding agent/AI assistant. This file provides best practices and guidance for the agent, ensuring it uses Lever MCP tools efficiently and according to recommended patterns:
-- Prefer built-in Lever MCP tools for data operations
-- Apply best practices for data transformation, list/set operations, and more
-- Use efficient, maintainable patterns for code generation
-- Handle errors and edge cases appropriately
-
-While human users and contributors may also find the document informative, its primary audience is the coding agent. Loading these rules is recommended for anyone developing or configuring an AI coding assistant to ensure high-quality, consistent use of Lever MCP's capabilities.
 
 ## Data Utility Tools
 
@@ -534,6 +534,128 @@ if (age >= 18) {
 
 **Available APIs**: `Math.*`, `String.prototype.*`, `Array.prototype.*`, `Object.*`, `JSON.*`, `Date.*`, standard JavaScript operators and control flow.
 
+### Tool Function References in Expressions
+
+You can use tool functions directly as expressions, enabling powerful functional programming patterns:
+
+**Basic function references:**
+```javascript
+// Partition strings by whether they're all digits
+lists.partition(["123", "abc", "456", "def"], "strings.is_digit")
+// => [["123", "456"], ["abc", "def"]]
+
+// Filter to keep only alphabetic strings
+lists.filter_by(["hello", "world123", "test"], "strings.is_alpha")
+// => ["hello", "test"]
+
+// Transform all strings to uppercase
+lists.map(["hello", "world"], "strings.upper_case")
+// => ["HELLO", "WORLD"]
+```
+
+**Advanced function reference patterns:**
+```javascript
+// Group by result of function call
+lists.group_by(["123", "abc", "456"], "strings.is_digit")
+// => {true: ["123", "456"], false: ["abc"]}
+
+// Check if all items satisfy a condition
+lists.all_by(["hello", "world", "test"], "strings.is_alpha")
+// => true
+
+// Check if any items satisfy a condition
+lists.any_by(["hello", "123", "world"], "strings.is_digit")
+// => true
+
+// Sort using function transformation
+lists.sort_by(["  hello  ", "  world  "], "strings.trim")
+// => ["  hello  ", "  world  "] (sorted by trimmed values)
+```
+
+**Nested function calls in expressions:**
+```javascript
+// Chain multiple functions within expressions
+lists.map(["  HELLO  ", "  WORLD  "], "strings.lower_case(strings.trim(item))")
+// => ["hello", "world"]
+
+// Use tool functions in complex expressions
+lists.filter_by(users, "strings.contains(email, '@gmail.com')")
+// Filter users with Gmail addresses
+```
+
+---
+
+## JavaScript Function Calls
+
+Lever MCP tools are exposed as JavaScript functions, enabling powerful expression-based data transformations. You can call tools directly from JavaScript expressions using either positional or object syntax.
+
+### Function Call Syntax
+
+**Positional syntax:**
+```javascript
+strings.upper_case("hello")  // => "HELLO"
+lists.head([1, 2, 3])       // => 1
+dicts.has_key({a: 1}, "a")   // => true
+any.is_equal(42, 42)         // => true
+```
+
+**Object syntax (recommended for complex parameters):**
+```javascript
+strings.replace({text: "hello world", data: {old: "world", new: "JavaScript"}})  // => "hello JavaScript"
+lists.filter_by({items: [{age: 25}, {age: 30}], expression: "age > 25"})  // => [{age: 30}]
+dicts.get_value({obj: {a: {b: 1}}, path: "a.b"})  // => 1
+```
+
+### Function Returns
+
+Functions return their direct values when called (not wrapped in `{value: ...}`):
+```javascript
+// In JavaScript expressions, functions return the value directly
+const name = strings.upper_case("alice")  // name = "ALICE"
+const first = lists.head(["a", "b", "c"]) // first = "a"
+const empty = any.is_empty("")           // empty = true
+
+// You can chain function calls
+const result = strings.upper_case(lists.head(["hello", "world"]))  // => "HELLO"
+```
+
+### Advanced Examples
+
+**Nested tool calls in expressions:**
+```javascript
+// Use lists functions in expressions
+lists.map({items: [{name: "alice"}, {name: "bob"}], expression: "strings.upper_case(name)"})
+// => ["ALICE", "BOB"]
+
+// Complex data transformations
+lists.filter_by({
+  items: [{name: "Alice", age: 25}, {name: "Bob", age: 17}],
+  expression: "age >= 18"
+})
+// => [{name: "Alice", age: 25}]
+
+// String processing in list operations
+lists.sort_by({
+  items: [{name: "charlie"}, {name: "alice"}, {name: "bob"}],
+  expression: "strings.lower_case(name)"
+})
+// => [{name: "alice"}, {name: "bob"}, {name: "charlie"}]
+```
+
+**Using any.eval for complex logic:**
+```javascript
+any.eval({score: 85, passed: true}, `
+  if (passed && score >= 80) {
+    return "excellent";
+  } else if (passed) {
+    return "good";
+  } else {
+    return "needs improvement";
+  }
+`)
+// => "excellent"
+```
+
 ---
 
 ## Lua Expressions
@@ -566,148 +688,6 @@ In Lua expressions, the parameter name varies by tool:
 - **any.eval**: `value` refers to the input value being evaluated
 
 **Null Handling**: JSON null values become `null` table (not Lua `nil`). This is because Lua does not support `nil` as a list value—using `nil` would remove the element from the list. Important: `null` is truthy, use `== null` for null checks, `type(null)` returns "table". This preserves array indices and enables consistent null checking.
-
-## JavaScript Function Calls
-
-Lever MCP tools are exposed as JavaScript functions, enabling powerful expression-based data transformations. You can call tools directly from JavaScript expressions using either positional or object syntax.
-
-### Function Call Syntax
-
-**Positional syntax:**
-```javascript
-strings.upperCase("hello")  // => "HELLO"
-lists.head([1, 2, 3])       // => 1
-dicts.hasKey({a: 1}, "a")   // => true
-any.isEqual(42, 42)         // => true
-```
-
-**Object syntax (recommended for complex parameters):**
-```javascript
-strings.replace({text: "hello world", data: {old: "world", new: "JavaScript"}})  // => "hello JavaScript"
-lists.filterBy({items: [{age: 25}, {age: 30}], expression: "age > 25"})  // => [{age: 30}]
-dicts.getValue({obj: {a: {b: 1}}, path: "a.b"})  // => 1
-```
-
-### Tool Function References in Expressions
-
-You can use tool functions directly as expressions, enabling powerful functional programming patterns:
-
-**Basic function references:**
-```javascript
-// Partition strings by whether they're all digits
-lists.partition(["123", "abc", "456", "def"], "strings.isDigit")
-// => [["123", "456"], ["abc", "def"]]
-
-// Filter to keep only alphabetic strings
-lists.filterBy(["hello", "world123", "test"], "strings.isAlpha")
-// => ["hello", "test"]
-
-// Transform all strings to uppercase
-lists.map(["hello", "world"], "strings.upperCase")
-// => ["HELLO", "WORLD"]
-```
-
-**Advanced function reference patterns:**
-```javascript
-// Group by result of function call
-lists.groupBy(["123", "abc", "456"], "strings.isDigit")
-// => {true: ["123", "456"], false: ["abc"]}
-
-// Check if all items satisfy a condition
-lists.allBy(["hello", "world", "test"], "strings.isAlpha")
-// => true
-
-// Check if any items satisfy a condition
-lists.anyBy(["hello", "123", "world"], "strings.isDigit")
-// => true
-
-// Sort using function transformation
-lists.sortBy(["  hello  ", "  world  "], "strings.trim")
-// => ["  hello  ", "  world  "] (sorted by trimmed values)
-```
-
-**Nested function calls in expressions:**
-```javascript
-// Chain multiple functions within expressions
-lists.map(["  HELLO  ", "  WORLD  "], "strings.toLowerCase(strings.trim(item))")
-// => ["hello", "world"]
-
-// Use tool functions in complex expressions
-lists.filterBy(users, "strings.contains(email, '@gmail.com')")
-// Filter users with Gmail addresses
-```
-
-### Function Returns
-
-Functions return their direct values when called (not wrapped in `{value: ...}`):
-```javascript
-// In JavaScript expressions, functions return the value directly
-const name = strings.upperCase("alice")  // name = "ALICE"
-const first = lists.head(["a", "b", "c"]) // first = "a"
-const empty = any.isEmpty("")           // empty = true
-
-// You can chain function calls
-const result = strings.upperCase(lists.head(["hello", "world"]))  // => "HELLO"
-```
-
-### Advanced Examples
-
-**Nested tool calls in expressions:**
-```javascript
-// Use lists functions in expressions
-lists.map({items: [{name: "alice"}, {name: "bob"}], expression: "strings.upperCase(name)"})
-// => ["ALICE", "BOB"]
-
-// Complex data transformations
-lists.filterBy({
-  items: [{name: "Alice", age: 25}, {name: "Bob", age: 17}],
-  expression: "age >= 18"
-})
-// => [{name: "Alice", age: 25}]
-
-// String processing in list operations
-lists.sortBy({
-  items: [{name: "charlie"}, {name: "alice"}, {name: "bob"}],
-  expression: "strings.toLowerCase(name)"
-})
-// => [{name: "alice"}, {name: "bob"}, {name: "charlie"}]
-```
-
-**Using any.eval for complex logic:**
-```javascript
-any.eval({score: 85, passed: true}, `
-  if (passed && score >= 80) {
-    return "excellent";
-  } else if (passed) {
-    return "good";
-  } else {
-    return "needs improvement";
-  }
-`)
-// => "excellent"
-```
-
-
-## Lua Function Calls
-
-Lever MCP tools are exposed as Lua functions, enabling powerful expression-based data transformations. You can call tools directly from Lua expressions using either positional or table syntax.
-
-### Function Call Syntax
-
-**Positional syntax:**
-```lua
-strings.upper_case("hello")  -- => "HELLO"
-lists.head({1, 2, 3})       -- => 1
-dicts.has_key({a=1}, "a")   -- => true
-any.is_equal(42, 42)        -- => true
-```
-
-**Table syntax (recommended for complex parameters):**
-```lua
-strings.replace({text="hello world", data={old="world", new="Lua"}})  -- => "hello Lua"
-lists.filter_by({items={{age=25}, {age=30}}, expression="age > 25"})  -- => [{"age": 30}]
-dicts.get_value({obj={a={b=1}}, path="a.b"})  -- => 1
-```
 
 ### Tool Function References in Expressions
 
@@ -758,6 +738,29 @@ lists.filter_by(users, "strings.contains(email, '@gmail.com')")
 -- Filter users with Gmail addresses
 ```
 
+---
+
+## Lua Function Calls
+
+Lever MCP tools are exposed as Lua functions, enabling powerful expression-based data transformations. You can call tools directly from Lua expressions using either positional or table syntax.
+
+### Function Call Syntax
+
+**Positional syntax:**
+```lua
+strings.upper_case("hello")  -- => "HELLO"
+lists.head({1, 2, 3})       -- => 1
+dicts.has_key({a=1}, "a")   -- => true
+any.is_equal(42, 42)        -- => true
+```
+
+**Table syntax (recommended for complex parameters):**
+```lua
+strings.replace({text="hello world", data={old="world", new="Lua"}})  -- => "hello Lua"
+lists.filter_by({items={{age=25}, {age=30}}, expression="age > 25"})  -- => [{"age": 30}]
+dicts.get_value({obj={a={b=1}}, path="a.b"})  -- => 1
+```
+
 ### Type Disambiguation and Wrapping
 
 In Lua, empty tables `{}` are ambiguous—they could represent empty lists or empty dictionaries. For proper JSON serialization, Lever MCP provides wrapper functions and a `wrap` parameter:
@@ -784,7 +787,7 @@ lists.map({items={1, 2}, expression="{}"})
 -- => [{}, {}]
 ```
 
-The `wrap` parameter is available for all tools that support table-based syntax (`lists`, `dicts`, `any`, `generate`). When `wrap=true`, all lists and dictionaries in the result are recursively wrapped with type information.
+The `wrap` parameter is available for all tools (`strings`, `lists`, `dicts`, `any`, `generate`) in the Lua implementation. When `wrap=true`, all lists and dictionaries in the result are recursively wrapped with type information.
 
 ### Function Returns
 
