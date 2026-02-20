@@ -1,3 +1,128 @@
+from typing import Any
+from dataclasses import dataclass
+@dataclass
+class TestFindByExpressionResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+@dataclass
+class TestFilterByExpressionResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+@dataclass
+class TestMapExpressionResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+@dataclass
+class TestGroupByExpressionResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+@dataclass
+class TestSortByExpressionResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+@dataclass
+class TestPluckExpressionResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+@dataclass
+class TestMinMaxByExpressionResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+    field_3: Any
+@dataclass
+class TestDifferenceIntersectionByExpressionResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+    field_3: Any
+    field_4: Any
+@dataclass
+class TestRemoveByExpressionResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+@dataclass
+class TestNullHandlingExpressionResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+@dataclass
+class TestNullSentinelBehaviorResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+    field_3: Any
+@dataclass
+class TestMultilineExpressionResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+@dataclass
+class TestComplexExpressionsResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+    field_3: Any
+@dataclass
+class TestNewStringOperationsExpressionsResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+    field_3: Any
+    field_4: Any
+@dataclass
+class TestNewListOperationsExpressionsResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+    field_3: Any
+@dataclass
+class TestNewListByOperationsExpressionsResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+    field_3: Any
+@dataclass
+class TestNewDictOperationsExpressionsResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+@dataclass
+class TestNewDictTransformationExpressionsResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+    field_3: Any
+@dataclass
+class TestNewDictStructureExpressionsResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+@dataclass
+class TestComplexExpressionsWithNewOperationsResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+    field_3: Any
+@dataclass
+class TestComplexNullHandlingResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+    field_3: Any
+def assert_result_count(result, error, expected_count):
+    assert error is None
+    assert result is not None
+    assert len(result) == expected_count
+
+
 import importlib
 import pytest
 import main
@@ -32,32 +157,16 @@ async def client():
 @pytest.mark.parametrize(
     "items, expression, expected_name",
     [
-        (
-            [{"name": "Alice", "age": 30}, {"name": "Bob", "age": 25}],
-            "item.age > 27",
-            "Alice",
-        ),
-        (
-            [{"name": "Alice", "score": 85}, {"name": "Bob", "score": 92}],
-            "item.score > 90",
-            "Bob",
-        ),
-        (
-            [
+        TestFindByExpressionResult(field_0 = [{"name": "Alice", "age": 30}, {"name": "Bob", "age": 25}], field_1 = "item.age > 27", field_2 = "Alice"),
+        TestFindByExpressionResult(field_0 = [{"name": "Alice", "score": 85}, {"name": "Bob", "score": 92}], field_1 = "item.score > 90", field_2 = "Bob"),
+        TestFindByExpressionResult(field_0 = [
                 {"name": "Alice", "age": 30, "score": 85},
                 {"name": "Bob", "age": 25, "score": 92},
-            ],
-            "item.age > 25 && item.score > 80",
-            "Alice",
-        ),
-        (
-            [
+            ], field_1 = "item.age > 25 && item.score > 80", field_2 = "Alice"),
+        TestFindByExpressionResult(field_0 = [
                 {"name": "Alice", "status": "active"},
                 {"name": "Bob", "status": "inactive"},
-            ],
-            "item.status === 'active'",
-            "Alice",
-        ),
+            ], field_1 = "item.status === 'active'", field_2 = "Alice"),
     ],
 )
 async def test_find_by_expression(client, items, expression, expected_name):
@@ -78,21 +187,9 @@ async def test_find_by_expression(client, items, expression, expected_name):
 @pytest.mark.parametrize(
     "items, expression, expected_count",
     [
-        (
-            [{"score": 85}, {"score": 70}, {"score": 90}],
-            "item.score >= 80",
-            2,
-        ),  # Keep items with score >= 80
-        (
-            [{"age": 25}, {"age": 35}, {"age": 20}],
-            "item.age > 30",
-            1,
-        ),  # Keep items with age > 30
-        (
-            [{"active": True}, {"active": False}, {"active": True}],
-            "item.active",
-            2,
-        ),  # Keep active items
+        TestFilterByExpressionResult(field_0 = [{"score": 85}, {"score": 70}, {"score": 90}], field_1 = "item.score >= 80", field_2 = 2),  # Keep items with score >= 80
+        TestFilterByExpressionResult(field_0 = [{"age": 25}, {"age": 35}, {"age": 20}], field_1 = "item.age > 30", field_2 = 1),  # Keep items with age > 30
+        TestFilterByExpressionResult(field_0 = [{"active": True}, {"active": False}, {"active": True}], field_1 = "item.active", field_2 = 2),  # Keep active items
     ],
 )
 async def test_filter_by_expression(client, items, expression, expected_count):
@@ -112,21 +209,9 @@ async def test_filter_by_expression(client, items, expression, expected_count):
 @pytest.mark.parametrize(
     "items, expression, expected_result",
     [
-        (
-            [{"name": "alice"}, {"name": "bob"}],
-            "item.name.toUpperCase()",
-            ["ALICE", "BOB"],
-        ),
-        (
-            [{"value": 1}, {"value": 2}, {"value": 3}],
-            "item.value * 2",
-            [2, 4, 6],
-        ),
-        (
-            [{"first": "John", "last": "Doe"}, {"first": "Jane", "last": "Smith"}],
-            "item.first + ' ' + item.last",
-            ["John Doe", "Jane Smith"],
-        ),
+        TestMapExpressionResult(field_0 = [{"name": "alice"}, {"name": "bob"}], field_1 = "item.name.toUpperCase()", field_2 = ["ALICE", "BOB"]),
+        TestMapExpressionResult(field_0 = [{"value": 1}, {"value": 2}, {"value": 3}], field_1 = "item.value * 2", field_2 = [2, 4, 6]),
+        TestMapExpressionResult(field_0 = [{"first": "John", "last": "Doe"}, {"first": "Jane", "last": "Smith"}], field_1 = "item.first + ' ' + item.last", field_2 = ["John Doe", "Jane Smith"]),
     ],
 )
 async def test_map_expression(client, items, expression, expected_result):
@@ -146,20 +231,12 @@ async def test_map_expression(client, items, expression, expected_result):
 @pytest.mark.parametrize(
     "items, expression, expected_keys",
     [
-        (
-            [
+        TestGroupByExpressionResult(field_0 = [
                 {"name": "Alice", "department": "Engineering"},
                 {"name": "Bob", "department": "Sales"},
                 {"name": "Charlie", "department": "Engineering"},
-            ],
-            "item.department",
-            ["Engineering", "Sales"],
-        ),
-        (
-            [{"age": 25}, {"age": 35}, {"age": 20}, {"age": 40}],
-            "item.age >= 30 ? 'senior' : 'junior'",
-            ["junior", "senior"],
-        ),
+            ], field_1 = "item.department", field_2 = ["Engineering", "Sales"]),
+        TestGroupByExpressionResult(field_0 = [{"age": 25}, {"age": 35}, {"age": 20}, {"age": 40}], field_1 = "item.age >= 30 ? 'senior' : 'junior'", field_2 = ["junior", "senior"]),
     ],
 )
 async def test_group_by_expression(client, items, expression, expected_keys):
@@ -180,21 +257,9 @@ async def test_group_by_expression(client, items, expression, expected_keys):
 @pytest.mark.parametrize(
     "items, expression, expected_order",
     [
-        (
-            [{"name": "Charlie"}, {"name": "Alice"}, {"name": "Bob"}],
-            "item.name",
-            [{"name": "Alice"}, {"name": "Bob"}, {"name": "Charlie"}],
-        ),
-        (
-            [{"age": 30}, {"age": 20}, {"age": 25}],
-            "item.age",
-            [{"age": 20}, {"age": 25}, {"age": 30}],
-        ),
-        (
-            [{"score": 85}, {"score": 95}, {"score": 75}],
-            "-item.score",  # Reverse sort
-            [{"score": 95}, {"score": 85}, {"score": 75}],
-        ),
+        TestSortByExpressionResult(field_0 = [{"name": "Charlie"}, {"name": "Alice"}, {"name": "Bob"}], field_1 = "item.name", field_2 = [{"name": "Alice"}, {"name": "Bob"}, {"name": "Charlie"}]),
+        TestSortByExpressionResult(field_0 = [{"age": 30}, {"age": 20}, {"age": 25}], field_1 = "item.age", field_2 = [{"age": 20}, {"age": 25}, {"age": 30}]),
+        TestSortByExpressionResult(field_0 = [{"score": 85}, {"score": 95}, {"score": 75}], field_1 = "-item.score", field_2 = [{"score": 95}, {"score": 85}, {"score": 75}]),
     ],
 )
 async def test_sort_by_expression(client, items, expression, expected_order):
@@ -467,23 +532,11 @@ async def test_dicts_map_values_js(client):
 @pytest.mark.parametrize(
     "items, expression, expected_values",
     [
-        ([{"x": 1, "y": 2}, {"x": 3, "y": 4}], "item.x + item.y", [3, 7]),
-        (
-            [{"name": "alice"}, {"name": "bob"}],
-            "item.name.toUpperCase()",
-            ["ALICE", "BOB"],
-        ),
-        (
-            [{"age": 25}, {"age": 30}],
-            "item.age >= 30 ? 'adult' : 'young'",
-            ["young", "adult"],
-        ),
+        TestPluckExpressionResult(field_0 = [{"x": 1, "y": 2}, {"x": 3, "y": 4}], field_1 = "item.x + item.y", field_2 = [3, 7]),
+        TestPluckExpressionResult(field_0 = [{"name": "alice"}, {"name": "bob"}], field_1 = "item.name.toUpperCase()", field_2 = ["ALICE", "BOB"]),
+        TestPluckExpressionResult(field_0 = [{"age": 25}, {"age": 30}], field_1 = "item.age >= 30 ? 'adult' : 'young'", field_2 = ["young", "adult"]),
         # Conditional expression
-        (
-            [{"score": 95}, {"score": 85}, {"score": 75}, {"score": 92}],
-            "item.score >= 90 ? 'high' : 'normal'",
-            ["high", "normal", "normal", "high"],
-        ),
+        TestPluckExpressionResult(field_0 = [{"score": 95}, {"score": 85}, {"score": 75}, {"score": 92}], field_1 = "item.score >= 90 ? 'high' : 'normal'", field_2 = ["high", "normal", "normal", "high"]),
     ],
 )
 async def test_pluck_expression(client, items, expression, expected_values):
@@ -503,46 +556,21 @@ async def test_pluck_expression(client, items, expression, expected_values):
 @pytest.mark.parametrize(
     "items, expression, operation, expected_value",
     [
-        (
-            [{"x": 1, "y": 2}, {"x": 3, "y": 4}, {"x": 0, "y": 1}],
-            "item.x*item.x + item.y*item.y",
-            "min_by",
-            {"x": 0, "y": 1},
-        ),  # Closest to origin
-        (
-            [{"age": 25}, {"age": 30}, {"age": 35}],
-            "item.age * -1",
-            "max_by",
-            {"age": 25},
-        ),  # Max of negative age = youngest
-        (
-            [{"score": 85}, {"score": 92}, {"score": 78}],
-            "item.score",
-            "max_by",
-            {"score": 92},
-        ),
-        (
-            [{"score": 85}, {"score": 92}, {"score": 78}],
-            "item.score",
-            "min_by",
-            {"score": 78},
-        ),
+        TestMinMaxByExpressionResult(field_0 = [{"x": 1, "y": 2}, {"x": 3, "y": 4}, {"x": 0, "y": 1}], field_1 = "item.x*item.x + item.y*item.y", field_2 = "min_by", field_3 = {"x": 0, "y": 1}),  # Closest to origin
+        TestMinMaxByExpressionResult(field_0 = [{"age": 25}, {"age": 30}, {"age": 35}], field_1 = "item.age * -1", field_2 = "max_by", field_3 = {"age": 25}),  # Max of negative age = youngest
+        TestMinMaxByExpressionResult(field_0 = [{"score": 85}, {"score": 92}, {"score": 78}], field_1 = "item.score", field_2 = "max_by", field_3 = {"score": 92}),
+        TestMinMaxByExpressionResult(field_0 = [{"score": 85}, {"score": 92}, {"score": 78}], field_1 = "item.score", field_2 = "min_by", field_3 = {"score": 78}),
         # Best score/age ratio
-        (
-            [
+        TestMinMaxByExpressionResult(field_0 = [
                 {"name": "Alice", "age": 25, "score": 95},
                 {"name": "Bob", "age": 30, "score": 85},
                 {"name": "Charlie", "age": 35, "score": 75},
                 {"name": "Diana", "age": 28, "score": 92},
-            ],
-            "item.score / item.age",
-            "max_by",
-            {
+            ], field_1 = "item.score / item.age", field_2 = "max_by", field_3 = {
                 "name": "Alice",
                 "age": 25,
                 "score": 95,
-            },  # Highest score/age ratio: 95/25=3.8
-        ),
+            }),
     ],
 )
 async def test_min_max_by_expression(
@@ -564,20 +592,8 @@ async def test_min_max_by_expression(
 @pytest.mark.parametrize(
     "items, others, expression, operation, expected_count",
     [
-        (
-            [{"id": 1, "category": "fruit"}, {"id": 2, "category": "vegetable"}],
-            [{"id": 3, "category": "vegetable"}],
-            "item.category === 'fruit'",
-            "difference_by",
-            1,  # Only the fruit item (True) since vegetable item matches others (False)
-        ),
-        (
-            [{"id": 1, "category": "fruit"}, {"id": 2, "category": "vegetable"}],
-            [{"id": 3, "category": "vegetable"}],
-            "item.category === 'vegetable'",
-            "intersection_by",
-            1,  # Only vegetables that match
-        ),
+        TestDifferenceIntersectionByExpressionResult(field_0 = [{"id": 1, "category": "fruit"}, {"id": 2, "category": "vegetable"}], field_1 = [{"id": 3, "category": "vegetable"}], field_2 = "item.category === 'fruit'", field_3 = "difference_by", field_4 = 1),
+        TestDifferenceIntersectionByExpressionResult(field_0 = [{"id": 1, "category": "fruit"}, {"id": 2, "category": "vegetable"}], field_1 = [{"id": 3, "category": "vegetable"}], field_2 = "item.category === 'vegetable'", field_3 = "intersection_by", field_4 = 1),
     ],
 )
 async def test_difference_intersection_by_expression(
@@ -593,9 +609,7 @@ async def test_difference_intersection_by_expression(
             "expression": expression,
         },
     )
-    assert error is None
-    assert result is not None
-    assert len(result) == expected_count
+    assert_result_count(result, error, expected_count)
 
 
 # --- Remove By Expression Tests ---
@@ -605,21 +619,9 @@ async def test_difference_intersection_by_expression(
 @pytest.mark.parametrize(
     "items, expression, expected_count",
     [
-        (
-            [{"score": 85}, {"score": 70}, {"score": 90}],
-            "item.score < 80",
-            2,
-        ),  # Remove score < 80, keep 2
-        (
-            [{"age": 25}, {"age": 35}, {"age": 20}],
-            "item.age < 30",
-            1,
-        ),  # Remove age < 30, keep 1
-        (
-            [{"status": "active"}, {"status": "inactive"}, {"status": "active"}],
-            "item.status === 'inactive'",
-            2,
-        ),  # Remove inactive, keep 2
+        TestRemoveByExpressionResult(field_0 = [{"score": 85}, {"score": 70}, {"score": 90}], field_1 = "item.score < 80", field_2 = 2),  # Remove score < 80, keep 2
+        TestRemoveByExpressionResult(field_0 = [{"age": 25}, {"age": 35}, {"age": 20}], field_1 = "item.age < 30", field_2 = 1),  # Remove age < 30, keep 1
+        TestRemoveByExpressionResult(field_0 = [{"status": "active"}, {"status": "inactive"}, {"status": "active"}], field_1 = "item.status === 'inactive'", field_2 = 2),  # Remove inactive, keep 2
     ],
 )
 async def test_remove_by_expression(client, items, expression, expected_count):
@@ -628,9 +630,7 @@ async def test_remove_by_expression(client, items, expression, expected_count):
         "lists",
         {"items": items, "operation": "remove_by", "expression": expression},
     )
-    assert error is None
-    assert result is not None
-    assert len(result) == expected_count
+    assert_result_count(result, error, expected_count)
 
 
 # --- Null Handling Expression Tests ---
@@ -640,28 +640,12 @@ async def test_remove_by_expression(client, items, expression, expected_count):
 @pytest.mark.parametrize(
     "value, expression, expected_result",
     [
-        (None, "value === null", True),  # Python None becomes JS null
-        ([1, None, 3], "value[1] === null", True),  # Array element None becomes null
-        (
-            {"name": "Alice", "age": None},
-            "value.age === null",
-            True,
-        ),  # Object property None becomes null
-        (
-            {"user": {"metadata": None}},
-            "value.user.metadata === null",
-            True,
-        ),  # Nested property None becomes null
-        (
-            [None, 2, None],
-            "value[0] === null && value[2] === null",
-            True,
-        ),  # Multiple null checks
-        (
-            {"score": None},
-            "value.score !== null ? 'has score' : 'no score'",
-            "no score",
-        ),  # Ternary with null
+        TestNullHandlingExpressionResult(field_0 = None, field_1 = "value === null", field_2 = True),  # Python None becomes JS null
+        TestNullHandlingExpressionResult(field_0 = [1, None, 3], field_1 = "value[1] === null", field_2 = True),  # Array element None becomes null
+        TestNullHandlingExpressionResult(field_0 = {"name": "Alice", "age": None}, field_1 = "value.age === null", field_2 = True),  # Object property None becomes null
+        TestNullHandlingExpressionResult(field_0 = {"user": {"metadata": None}}, field_1 = "value.user.metadata === null", field_2 = True),  # Nested property None becomes null
+        TestNullHandlingExpressionResult(field_0 = [None, 2, None], field_1 = "value[0] === null && value[2] === null", field_2 = True),  # Multiple null checks
+        TestNullHandlingExpressionResult(field_0 = {"score": None}, field_1 = "value.score !== null ? 'has score' : 'no score'", field_2 = "no score"),  # Ternary with null
     ],
 )
 async def test_null_handling_expression(client, value, expression, expected_result):
@@ -679,16 +663,11 @@ async def test_null_handling_expression(client, value, expression, expected_resu
 @pytest.mark.parametrize(
     "value, expression, expected_result, description",
     [
-        (None, 'value ? "truthy" : "falsy"', "falsy", "null is falsy in JS"),
-        (None, "typeof value", "object", "None type is object (null) in JS"),
-        ([None, None], "value[0] === value[1]", True, "null equality works"),
-        ([1, None, 3], "value.length", 3, "arrays with null preserve length"),
-        (
-            [1, None, 3],
-            "value.length",
-            3,
-            "array length works with null",
-        ),
+        TestNullSentinelBehaviorResult(field_0 = None, field_1 = 'value ? "truthy" : "falsy"', field_2 = "falsy", field_3 = "null is falsy in JS"),
+        TestNullSentinelBehaviorResult(field_0 = None, field_1 = "typeof value", field_2 = "object", field_3 = "None type is object (null) in JS"),
+        TestNullSentinelBehaviorResult(field_0 = [None, None], field_1 = "value[0] === value[1]", field_2 = True, field_3 = "null equality works"),
+        TestNullSentinelBehaviorResult(field_0 = [1, None, 3], field_1 = "value.length", field_2 = 3, field_3 = "arrays with null preserve length"),
+        TestNullSentinelBehaviorResult(field_0 = [1, None, 3], field_1 = "value.length", field_2 = 3, field_3 = "array length works with null"),
     ],
 )
 async def test_null_sentinel_behavior(
@@ -708,30 +687,15 @@ async def test_null_sentinel_behavior(
 @pytest.mark.parametrize(
     "value, expression, expected_result",
     [
-        (
-            {"score": 85},
-            # Multiline with let and return
-            "let newScore = value.score + 5; return newScore;",
-            90,
-        ),
-        (
-            {"name": "Alice", "age": 30},
-            # Proper if/else statement
-            (
+        TestMultilineExpressionResult(field_0 = {"score": 85}, field_1 = "let newScore = value.score + 5; return newScore;", field_2 = 90),
+        TestMultilineExpressionResult(field_0 = {"name": "Alice", "age": 30}, field_1 = (
                 "if (value.age > 25) { return value.name + ' is a senior'; } "
                 "else { return value.name + ' is a junior'; }"
-            ),
-            "Alice is a senior",
-        ),
-        (
-            {"data": [10, 20, 30]},
-            # Proper for loop
-            (
+            ), field_2 = "Alice is a senior"),
+        TestMultilineExpressionResult(field_0 = {"data": [10, 20, 30]}, field_1 = (
                 "let total = 0; for (let item of value.data) { total += item; } "
                 "return total;"
-            ),
-            60,
-        ),
+            ), field_2 = 60),
     ],
 )
 async def test_multiline_expression(client, value, expression, expected_result):
@@ -785,46 +749,26 @@ async def test_safe_mode_allows_safe_operations(client):
     "items, operation, expression, expected_result",
     [
         # Complex conditional expressions
-        (
-            [
+        TestComplexExpressionsResult(field_0 = [
                 {"name": "Alice", "age": 30, "score": 85},
                 {"name": "Bob", "age": 25, "score": 92},
                 {"name": "Charlie", "age": 35, "score": 78},
-            ],
-            "find_by",
-            "item.age > 30",
-            "Charlie",
-        ),
-        (
-            [
+            ], field_1 = "find_by", field_2 = "item.age > 30", field_3 = "Charlie"),
+        TestComplexExpressionsResult(field_0 = [
                 {"name": "Alice", "age": 30, "score": 85},
                 {"name": "Bob", "age": 25, "score": 92},
                 {"name": "Charlie", "age": 35, "score": 78},
-            ],
-            "find_by",
-            "item.score > 90",
-            "Bob",
-        ),
-        (
-            [
+            ], field_1 = "find_by", field_2 = "item.score > 90", field_3 = "Bob"),
+        TestComplexExpressionsResult(field_0 = [
                 {"name": "Alice", "age": 30, "score": 85},
                 {"name": "Bob", "age": 25, "score": 92},
                 {"name": "Charlie", "age": 35, "score": 78},
-            ],
-            "find_by",
-            "item.age > 25 && item.score > 80",
-            "Alice",
-        ),
+            ], field_1 = "find_by", field_2 = "item.age > 25 && item.score > 80", field_3 = "Alice"),
         # Engineering department filtering
-        (
-            [
+        TestComplexExpressionsResult(field_0 = [
                 {"name": "Alice", "department": "engineering"},
                 {"name": "Bob", "department": "marketing"},
-            ],
-            "find_by",
-            "item.department === 'engineering'",
-            "Alice",
-        ),
+            ], field_1 = "find_by", field_2 = "item.department === 'engineering'", field_3 = "Alice"),
     ],
 )
 async def test_complex_expressions(
@@ -851,16 +795,16 @@ async def test_complex_expressions(
     "text, operation, param, data, expected_result",
     [
         # strings.split operation
-        ("a,b,c", "split", ",", None, ["a", "b", "c"]),
-        ("hello world test", "split", " ", None, ["hello", "world", "test"]),
-        ("one|two|three", "split", "|", None, ["one", "two", "three"]),
-        ("no_delimiter", "split", ",", None, ["no_delimiter"]),
-        ("", "split", ",", None, [""]),
+        TestNewStringOperationsExpressionsResult(field_0 = "a,b,c", field_1 = "split", field_2 = ",", field_3 = None, field_4 = ["a", "b", "c"]),
+        TestNewStringOperationsExpressionsResult(field_0 = "hello world test", field_1 = "split", field_2 = " ", field_3 = None, field_4 = ["hello", "world", "test"]),
+        TestNewStringOperationsExpressionsResult(field_0 = "one|two|three", field_1 = "split", field_2 = "|", field_3 = None, field_4 = ["one", "two", "three"]),
+        TestNewStringOperationsExpressionsResult(field_0 = "no_delimiter", field_1 = "split", field_2 = ",", field_3 = None, field_4 = ["no_delimiter"]),
+        TestNewStringOperationsExpressionsResult(field_0 = "", field_1 = "split", field_2 = ",", field_3 = None, field_4 = [""]),
         # strings.slice operation
-        ("hello world", "slice", None, {"from": 0, "to": 5}, "hello"),
-        ("testing", "slice", None, {"from": 1, "to": 4}, "est"),
-        ("python", "slice", None, {"from": 2}, "thon"),  # from to end
-        ("slice", "slice", None, {"from": 0, "to": 3}, "sli"),  # from start to index 3
+        TestNewStringOperationsExpressionsResult(field_0 = "hello world", field_1 = "slice", field_2 = None, field_3 = {"from": 0, "to": 5}, field_4 = "hello"),
+        TestNewStringOperationsExpressionsResult(field_0 = "testing", field_1 = "slice", field_2 = None, field_3 = {"from": 1, "to": 4}, field_4 = "est"),
+        TestNewStringOperationsExpressionsResult(field_0 = "python", field_1 = "slice", field_2 = None, field_3 = {"from": 2}, field_4 = "thon"),  # from to end
+        TestNewStringOperationsExpressionsResult(field_0 = "slice", field_1 = "slice", field_2 = None, field_3 = {"from": 0, "to": 3}, field_4 = "sli"),  # from start to index 3
     ],
 )
 async def test_new_string_operations_expressions(
@@ -885,19 +829,19 @@ async def test_new_string_operations_expressions(
     "items, operation, param, expected_result",
     [
         # lists.min operation
-        ([1, 3, 2, 5, 4], "min", None, 1),
-        ([10, 5, 15, 3], "min", None, 3),
-        (["apple", "banana", "cherry"], "min", None, "apple"),  # alphabetical
+        TestNewListOperationsExpressionsResult(field_0 = [1, 3, 2, 5, 4], field_1 = "min", field_2 = None, field_3 = 1),
+        TestNewListOperationsExpressionsResult(field_0 = [10, 5, 15, 3], field_1 = "min", field_2 = None, field_3 = 3),
+        TestNewListOperationsExpressionsResult(field_0 = ["apple", "banana", "cherry"], field_1 = "min", field_2 = None, field_3 = "apple"),  # alphabetical
         # lists.max operation
-        ([1, 3, 2, 5, 4], "max", None, 5),
-        ([10, 5, 15, 3], "max", None, 15),
-        (["apple", "banana", "cherry"], "max", None, "cherry"),  # alphabetical
+        TestNewListOperationsExpressionsResult(field_0 = [1, 3, 2, 5, 4], field_1 = "max", field_2 = None, field_3 = 5),
+        TestNewListOperationsExpressionsResult(field_0 = [10, 5, 15, 3], field_1 = "max", field_2 = None, field_3 = 15),
+        TestNewListOperationsExpressionsResult(field_0 = ["apple", "banana", "cherry"], field_1 = "max", field_2 = None, field_3 = "cherry"),  # alphabetical
         # lists.join operation
-        (["a", "b", "c"], "join", ",", "a,b,c"),
-        (["hello", "world"], "join", " ", "hello world"),
-        (["one", "two", "three"], "join", "|", "one|two|three"),
-        (["single"], "join", ",", "single"),
-        ([], "join", ",", ""),
+        TestNewListOperationsExpressionsResult(field_0 = ["a", "b", "c"], field_1 = "join", field_2 = ",", field_3 = "a,b,c"),
+        TestNewListOperationsExpressionsResult(field_0 = ["hello", "world"], field_1 = "join", field_2 = " ", field_3 = "hello world"),
+        TestNewListOperationsExpressionsResult(field_0 = ["one", "two", "three"], field_1 = "join", field_2 = "|", field_3 = "one|two|three"),
+        TestNewListOperationsExpressionsResult(field_0 = ["single"], field_1 = "join", field_2 = ",", field_3 = "single"),
+        TestNewListOperationsExpressionsResult(field_0 = [], field_1 = "join", field_2 = ",", field_3 = ""),
     ],
 )
 async def test_new_list_operations_expressions(
@@ -917,56 +861,26 @@ async def test_new_list_operations_expressions(
     "items, operation, expression, expected_result",
     [
         # lists.min_by operation
-        (
-            [{"score": 85}, {"score": 92}, {"score": 78}],
-            "min_by",
-            "item.score",
-            {"score": 78},
-        ),
-        (
-            [
+        TestNewListByOperationsExpressionsResult(field_0 = [{"score": 85}, {"score": 92}, {"score": 78}], field_1 = "min_by", field_2 = "item.score", field_3 = {"score": 78}),
+        TestNewListByOperationsExpressionsResult(field_0 = [
                 {"age": 25, "name": "Alice"},
                 {"age": 30, "name": "Bob"},
                 {"age": 20, "name": "Charlie"},
-            ],
-            "min_by",
-            "item.age",
-            {"age": 20, "name": "Charlie"},
-        ),
+            ], field_1 = "min_by", field_2 = "item.age", field_3 = {"age": 20, "name": "Charlie"}),
         # lists.max_by operation
-        (
-            [{"score": 85}, {"score": 92}, {"score": 78}],
-            "max_by",
-            "item.score",
-            {"score": 92},
-        ),
-        (
-            [
+        TestNewListByOperationsExpressionsResult(field_0 = [{"score": 85}, {"score": 92}, {"score": 78}], field_1 = "max_by", field_2 = "item.score", field_3 = {"score": 92}),
+        TestNewListByOperationsExpressionsResult(field_0 = [
                 {"age": 25, "name": "Alice"},
                 {"age": 30, "name": "Bob"},
                 {"age": 20, "name": "Charlie"},
-            ],
-            "max_by",
-            "item.age",
-            {"age": 30, "name": "Bob"},
-        ),
+            ], field_1 = "max_by", field_2 = "item.age", field_3 = {"age": 30, "name": "Bob"}),
         # Complex expressions for min_by/max_by
-        (
-            [{"x": 1, "y": 2}, {"x": 3, "y": 4}, {"x": 0, "y": 1}],
-            "min_by",
-            "item.x*item.x + item.y*item.y",  # Distance from origin
-            {"x": 0, "y": 1},
-        ),
-        (
-            [
+        TestNewListByOperationsExpressionsResult(field_0 = [{"x": 1, "y": 2}, {"x": 3, "y": 4}, {"x": 0, "y": 1}], field_1 = "min_by", field_2 = "item.x*item.x + item.y*item.y", field_3 = {"x": 0, "y": 1}),
+        TestNewListByOperationsExpressionsResult(field_0 = [
                 {"score": 90, "age": 25},
                 {"score": 85, "age": 30},
                 {"score": 95, "age": 28},
-            ],
-            "max_by",
-            "item.score / item.age",  # Best score-to-age ratio
-            {"score": 90, "age": 25},
-        ),
+            ], field_1 = "max_by", field_2 = "item.score / item.age", field_3 = {"score": 90, "age": 25}),
     ],
 )
 async def test_new_list_by_operations_expressions(
@@ -989,17 +903,17 @@ async def test_new_list_by_operations_expressions(
     "obj, operation, expected_result",
     [
         # dicts.keys operation
-        ({"a": 1, "b": 2, "c": 3}, "keys", ["a", "b", "c"]),
-        ({"name": "Alice", "age": 30}, "keys", ["name", "age"]),
-        ({}, "keys", []),
+        TestNewDictOperationsExpressionsResult(field_0 = {"a": 1, "b": 2, "c": 3}, field_1 = "keys", field_2 = ["a", "b", "c"]),
+        TestNewDictOperationsExpressionsResult(field_0 = {"name": "Alice", "age": 30}, field_1 = "keys", field_2 = ["name", "age"]),
+        TestNewDictOperationsExpressionsResult(field_0 = {}, field_1 = "keys", field_2 = []),
         # dicts.values operation
-        ({"a": 1, "b": 2, "c": 3}, "values", [1, 2, 3]),
-        ({"name": "Alice", "age": 30}, "values", [30, "Alice"]),
-        ({}, "values", []),
+        TestNewDictOperationsExpressionsResult(field_0 = {"a": 1, "b": 2, "c": 3}, field_1 = "values", field_2 = [1, 2, 3]),
+        TestNewDictOperationsExpressionsResult(field_0 = {"name": "Alice", "age": 30}, field_1 = "values", field_2 = [30, "Alice"]),
+        TestNewDictOperationsExpressionsResult(field_0 = {}, field_1 = "values", field_2 = []),
         # dicts.items operation
-        ({"a": 1, "b": 2}, "items", [["a", 1], ["b", 2]]),
-        ({"name": "Alice", "age": 30}, "items", [["name", "Alice"], ["age", 30]]),
-        ({}, "items", []),
+        TestNewDictOperationsExpressionsResult(field_0 = {"a": 1, "b": 2}, field_1 = "items", field_2 = [["a", 1], ["b", 2]]),
+        TestNewDictOperationsExpressionsResult(field_0 = {"name": "Alice", "age": 30}, field_1 = "items", field_2 = [["name", "Alice"], ["age", 30]]),
+        TestNewDictOperationsExpressionsResult(field_0 = {}, field_1 = "items", field_2 = []),
     ],
 )
 async def test_new_dict_operations_expressions(client, obj, operation, expected_result):
@@ -1020,31 +934,11 @@ async def test_new_dict_operations_expressions(client, obj, operation, expected_
     "obj, operation, expression, expected_result",
     [
         # dicts.map_keys operation
-        (
-            {"name": "Alice", "age": 30},
-            "map_keys",
-            "key.toUpperCase()",
-            {"NAME": "Alice", "AGE": 30},
-        ),
-        (
-            {"first": "John", "last": "Doe"},
-            "map_keys",
-            "key + '_field'",
-            {"first_field": "John", "last_field": "Doe"},
-        ),
+        TestNewDictTransformationExpressionsResult(field_0 = {"name": "Alice", "age": 30}, field_1 = "map_keys", field_2 = "key.toUpperCase()", field_3 = {"NAME": "Alice", "AGE": 30}),
+        TestNewDictTransformationExpressionsResult(field_0 = {"first": "John", "last": "Doe"}, field_1 = "map_keys", field_2 = "key + '_field'", field_3 = {"first_field": "John", "last_field": "Doe"}),
         # dicts.map_values operation
-        (
-            {"a": 1, "b": 2, "c": 3},
-            "map_values",
-            "value * 2",
-            {"a": 2, "b": 4, "c": 6},
-        ),
-        (
-            {"greeting": "hello", "name": "world"},
-            "map_values",
-            "value.toUpperCase()",
-            {"greeting": "HELLO", "name": "WORLD"},
-        ),
+        TestNewDictTransformationExpressionsResult(field_0 = {"a": 1, "b": 2, "c": 3}, field_1 = "map_values", field_2 = "value * 2", field_3 = {"a": 2, "b": 4, "c": 6}),
+        TestNewDictTransformationExpressionsResult(field_0 = {"greeting": "hello", "name": "world"}, field_1 = "map_values", field_2 = "value.toUpperCase()", field_3 = {"greeting": "HELLO", "name": "WORLD"}),
     ],
 )
 async def test_new_dict_transformation_expressions(
@@ -1064,27 +958,11 @@ async def test_new_dict_transformation_expressions(
     "obj, operation, expected_result",
     [
         # dicts.flatten_keys operation
-        (
-            {"a": {"b": {"c": 1}}, "d": 2},
-            "flatten_keys",
-            {"a.b.c": 1, "d": 2},
-        ),
-        (
-            {"user": {"name": "Alice", "profile": {"age": 30}}},
-            "flatten_keys",
-            {"user.name": "Alice", "user.profile.age": 30},
-        ),
+        TestNewDictStructureExpressionsResult(field_0 = {"a": {"b": {"c": 1}}, "d": 2}, field_1 = "flatten_keys", field_2 = {"a.b.c": 1, "d": 2}),
+        TestNewDictStructureExpressionsResult(field_0 = {"user": {"name": "Alice", "profile": {"age": 30}}}, field_1 = "flatten_keys", field_2 = {"user.name": "Alice", "user.profile.age": 30}),
         # dicts.unflatten_keys operation
-        (
-            {"a.b.c": 1, "a.b.d": 2, "e": 3},
-            "unflatten_keys",
-            {"a": {"b": {"c": 1, "d": 2}}, "e": 3},
-        ),
-        (
-            {"user.name": "Alice", "user.age": 30, "status": "active"},
-            "unflatten_keys",
-            {"user": {"name": "Alice", "age": 30}, "status": "active"},
-        ),
+        TestNewDictStructureExpressionsResult(field_0 = {"a.b.c": 1, "a.b.d": 2, "e": 3}, field_1 = "unflatten_keys", field_2 = {"a": {"b": {"c": 1, "d": 2}}, "e": 3}),
+        TestNewDictStructureExpressionsResult(field_0 = {"user.name": "Alice", "user.age": 30, "status": "active"}, field_1 = "unflatten_keys", field_2 = {"user": {"name": "Alice", "age": 30}, "status": "active"}),
     ],
 )
 async def test_new_dict_structure_expressions(client, obj, operation, expected_result):
@@ -1130,19 +1008,9 @@ async def test_new_any_size_expressions(client, value, expected_result):
     "items, operation, expression, expected_count",
     [
         # Test lists.min_by with new items
-        (
-            [{"score": 85}, {"score": 92}, {"score": 78}],
-            "min_by",
-            "item.score",
-            1,  # One result: the minimum item
-        ),
+        TestComplexExpressionsWithNewOperationsResult(field_0 = [{"score": 85}, {"score": 92}, {"score": 78}], field_1 = "min_by", field_2 = "item.score", field_3 = 1),
         # Test lists.max_by with new items
-        (
-            [{"age": 25}, {"age": 30}, {"age": 20}],
-            "max_by",
-            "item.age",
-            1,  # One result: the maximum item
-        ),
+        TestComplexExpressionsWithNewOperationsResult(field_0 = [{"age": 25}, {"age": 30}, {"age": 20}], field_1 = "max_by", field_2 = "item.age", field_3 = 1),
     ],
 )
 async def test_complex_expressions_with_new_operations(
@@ -1168,24 +1036,14 @@ async def test_complex_expressions_with_new_operations(
     "value, expression, expected_result, description",
     [
         # Complex null filtering (since Python None becomes JS null)
-        (
-            [
+        TestComplexNullHandlingResult(field_0 = [
                 {"name": "Alice", "score": 85, "metadata": None},
                 {"name": "Bob", "score": None, "metadata": {"priority": "high"}},
-            ],
-            "value[1].score === null",  # Find Bob with null score
-            True,
-            "Complex null filtering in nested structures",
-        ),
+            ], field_1 = "value[1].score === null", field_2 = True, field_3 = "Complex null filtering in nested structures"),
         # Return null values from expressions - these should be converted to Python None
-        ({"test": "data"}, "null", None, "Return direct null from expression"),
-        ({"test": "data"}, "[1, null, 3]", [1, None, 3], "Return list with null"),
-        (
-            {"test": "data"},
-            "({a: 1, b: null, c: 3})",
-            {"a": 1, "b": None, "c": 3},
-            "Return dict with null",
-        ),
+        TestComplexNullHandlingResult(field_0 = {"test": "data"}, field_1 = "null", field_2 = None, field_3 = "Return direct null from expression"),
+        TestComplexNullHandlingResult(field_0 = {"test": "data"}, field_1 = "[1, null, 3]", field_2 = [1, None, 3], field_3 = "Return list with null"),
+        TestComplexNullHandlingResult(field_0 = {"test": "data"}, field_1 = "({a: 1, b: null, c: 3})", field_2 = {"a": 1, "b": None, "c": 3}, field_3 = "Return dict with null"),
     ],
 )
 async def test_complex_null_handling(

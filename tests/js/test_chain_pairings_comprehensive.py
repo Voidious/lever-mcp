@@ -1,9 +1,20 @@
+from typing import Any
+from dataclasses import dataclass
 import pytest
 import importlib
 import main
 from main import LeverMCP
 from fastmcp import Client
 from tests import make_tool_call
+@dataclass
+class TestChainAllToolPairsResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+    field_3: Any
+    field_4: Any
+    field_5: Any
+    field_6: Any
 
 
 def get_engine_expression(lua_expr, js_expr):
@@ -39,1475 +50,331 @@ async def client():
     "expected_value",
     [
         # strings (str -> str) -> strings (str -> str)
-        (
-            "strings",
-            {"operation": "upper_case"},
-            "strings",
-            {"operation": "reverse"},
-            "abc",
-            str,
-            "CBA",
-        ),
+        TestChainAllToolPairsResult(field_0 = "strings", field_1 = {"operation": "upper_case"}, field_2 = "strings", field_3 = {"operation": "reverse"}, field_4 = "abc", field_5 = str, field_6 = "CBA"),
         # strings (str -> str) -> strings (str -> bool)
-        (
-            "strings",
-            {"operation": "upper_case"},
-            "strings",
-            {"operation": "is_upper"},
-            "abc",
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "strings", field_1 = {"operation": "upper_case"}, field_2 = "strings", field_3 = {"operation": "is_upper"}, field_4 = "abc", field_5 = bool, field_6 = True),
         # strings (str -> str) -> generate (str -> list) (repeat)
-        (
-            "strings",
-            {"operation": "capitalize"},
-            "generate",
-            {"operation": "repeat", "count": 2},
-            "foo",
-            list,
-            ["Foo", "Foo"],
-        ),
+        TestChainAllToolPairsResult(field_0 = "strings", field_1 = {"operation": "capitalize"}, field_2 = "generate", field_3 = {"operation": "repeat", "count": 2}, field_4 = "foo", field_5 = list, field_6 = ["Foo", "Foo"]),
         # lists (list -> list) -> lists (list -> list)
-        (
-            "lists",
-            {"operation": "flatten_deep"},
-            "lists",
-            {"operation": "compact"},
-            [1, [0, 2, None]],
-            list,
-            [1, 2],
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "flatten_deep"}, field_2 = "lists", field_3 = {"operation": "compact"}, field_4 = [1, [0, 2, None]], field_5 = list, field_6 = [1, 2]),
         # lists (list -> list) -> lists (list -> Any)
-        (
-            "lists",
-            {"operation": "compact"},
-            "lists",
-            {"operation": "head"},
-            [None, "foo", "bar"],
-            str,
-            "foo",
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "lists", field_3 = {"operation": "head"}, field_4 = [None, "foo", "bar"], field_5 = str, field_6 = "foo"),
         # lists (list -> list) -> lists (list -> dict) (error due to non-string keys)
-        (
-            "lists",
-            {"operation": "compact"},
-            "lists",
-            {"operation": "count_by", "expression": 0},
-            [[0], [0], [1]],
-            dict,
-            None,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "lists", field_3 = {"operation": "count_by", "expression": 0}, field_4 = [[0], [0], [1]], field_5 = dict, field_6 = None),
         # lists (list -> list) -> lists (list -> bool) is_empty
-        (
-            "lists",
-            {"operation": "compact"},
-            "lists",
-            {"operation": "is_empty"},
-            [None, None],
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "lists", field_3 = {"operation": "is_empty"}, field_4 = [None, None], field_5 = bool, field_6 = True),
         # lists (list -> list) -> lists (list -> bool) is_equal
-        (
-            "lists",
-            {"operation": "compact"},
-            "lists",
-            {"operation": "is_equal", "param": [1, 2]},
-            [1, 2],
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "lists", field_3 = {"operation": "is_equal", "param": [1, 2]}, field_4 = [1, 2], field_5 = bool, field_6 = True),
         # lists (list -> list) -> lists (list -> bool) contains
-        (
-            "lists",
-            {"operation": "compact"},
-            "lists",
-            {"operation": "contains", "param": 2},
-            [1, 2, 3],
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "lists", field_3 = {"operation": "contains", "param": 2}, field_4 = [1, 2, 3], field_5 = bool, field_6 = True),
         # lists (list -> list) -> generate (powerset)
-        (
-            "lists",
-            {"operation": "compact"},
-            "generate",
-            {"operation": "powerset"},
-            [1, 2],
-            list,
-            [[], [1], [2], [1, 2]],
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "generate", field_3 = {"operation": "powerset"}, field_4 = [1, 2], field_5 = list, field_6 = [[], [1], [2], [1, 2]]),
         # lists (list -> list) -> generate (permutations)
-        (
-            "lists",
-            {"operation": "compact"},
-            "generate",
-            {"operation": "permutations"},
-            [1, 2],
-            list,
-            [[1, 2], [2, 1]],
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "generate", field_3 = {"operation": "permutations"}, field_4 = [1, 2], field_5 = list, field_6 = [[1, 2], [2, 1]]),
         # lists (list -> list) -> generate (windowed)
-        (
-            "lists",
-            {"operation": "compact"},
-            "generate",
-            {"operation": "windowed", "size": 2},
-            [1, 2, 3],
-            list,
-            [[1, 2], [2, 3]],
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "generate", field_3 = {"operation": "windowed", "size": 2}, field_4 = [1, 2, 3], field_5 = list, field_6 = [[1, 2], [2, 3]]),
         # lists (list -> list) -> generate (cycle)
-        (
-            "lists",
-            {"operation": "compact"},
-            "generate",
-            {"operation": "cycle", "count": 3},
-            [1, 2],
-            list,
-            [1, 2, 1],
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "generate", field_3 = {"operation": "cycle", "count": 3}, field_4 = [1, 2], field_5 = list, field_6 = [1, 2, 1]),
         # lists (list -> list) -> generate (accumulate)
-        (
-            "lists",
-            {"operation": "compact"},
-            "generate",
-            {"operation": "accumulate"},
-            [1, 2, 3],
-            list,
-            [1, 3, 6],
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "generate", field_3 = {"operation": "accumulate"}, field_4 = [1, 2, 3], field_5 = list, field_6 = [1, 3, 6]),
         # lists (list -> list) -> generate (zip_with_index)
-        (
-            "lists",
-            {"operation": "compact"},
-            "generate",
-            {"operation": "zip_with_index"},
-            ["a", "b"],
-            list,
-            [[0, "a"], [1, "b"]],
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "generate", field_3 = {"operation": "zip_with_index"}, field_4 = ["a", "b"], field_5 = list, field_6 = [[0, "a"], [1, "b"]]),
         # lists (list -> list) -> generate (unique_pairs)
-        (
-            "lists",
-            {"operation": "compact"},
-            "generate",
-            {"operation": "unique_pairs"},
-            [1, 2, 3],
-            list,
-            [[1, 2], [1, 3], [2, 3]],
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "generate", field_3 = {"operation": "unique_pairs"}, field_4 = [1, 2, 3], field_5 = list, field_6 = [[1, 2], [1, 3], [2, 3]]),
         # lists (list -> list) -> generate (combinations)
-        (
-            "lists",
-            {"operation": "compact"},
-            "generate",
-            {"operation": "combinations", "length": 2},
-            [1, 2, 3],
-            list,
-            [[1, 2], [1, 3], [2, 3]],
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "generate", field_3 = {"operation": "combinations", "length": 2}, field_4 = [1, 2, 3], field_5 = list, field_6 = [[1, 2], [1, 3], [2, 3]]),
         # lists (list -> list) -> generate (repeat)
-        (
-            "lists",
-            {"operation": "compact"},
-            "generate",
-            {"operation": "repeat", "count": 2},
-            [1],
-            list,
-            [[1], [1]],
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "generate", field_3 = {"operation": "repeat", "count": 2}, field_4 = [1], field_5 = list, field_6 = [[1], [1]]),
         # lists (list -> list) -> lists (difference)
-        (
-            "lists",
-            {"operation": "compact"},
-            "lists",
-            {"operation": "difference", "others": [2, 3]},
-            [1, 2, None, 3],
-            list,
-            [1],
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "lists", field_3 = {"operation": "difference", "others": [2, 3]}, field_4 = [1, 2, None, 3], field_5 = list, field_6 = [1]),
         # lists (list -> list) -> lists (intersection)
-        (
-            "lists",
-            {"operation": "compact"},
-            "lists",
-            {"operation": "intersection", "others": [2, 3]},
-            [1, 2, None, 3],
-            list,
-            [2, 3],
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "lists", field_3 = {"operation": "intersection", "others": [2, 3]}, field_4 = [1, 2, None, 3], field_5 = list, field_6 = [2, 3]),
         # lists (list -> list) -> lists (difference_by)
-        (
-            "lists",
-            {"operation": "compact"},
-            "lists",
-            {
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "lists", field_3 = {
                 "operation": "difference_by",
                 "others": [{"id": 2}],
                 "expression": "item.id",
-            },
-            [{"id": 1}, None, {"id": 2}],
-            list,
-            [{"id": 1}],
-        ),
+            }, field_4 = [{"id": 1}, None, {"id": 2}], field_5 = list, field_6 = [{"id": 1}]),
         # lists (list -> list) -> lists (intersection_by)
-        (
-            "lists",
-            {"operation": "compact"},
-            "lists",
-            {
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "lists", field_3 = {
                 "operation": "intersection_by",
                 "others": [{"id": 2}],
                 "expression": "item.id",
-            },
-            [{"id": 1}, None, {"id": 2}],
-            list,
-            [{"id": 2}],
-        ),
+            }, field_4 = [{"id": 1}, None, {"id": 2}], field_5 = list, field_6 = [{"id": 2}]),
         # lists (list -> dict) -> dicts (dict -> dict) (error due to non-string keys)
-        (
-            "lists",
-            {"operation": "count_by", "expression": 0},
-            "dicts",
-            {"operation": "invert"},
-            [[0], [0], [1]],
-            dict,
-            None,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "count_by", "expression": 0}, field_2 = "dicts", field_3 = {"operation": "invert"}, field_4 = [[0], [0], [1]], field_5 = dict, field_6 = None),
         # lists (list -> dict) -> dicts (dict -> bool) is_empty (error case)
-        (
-            "lists",
-            {"operation": "count_by", "expression": 0},
-            "any",
-            {"operation": "is_empty"},
-            [[0], [0], [1]],
-            bool,
-            None,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "count_by", "expression": 0}, field_2 = "any", field_3 = {"operation": "is_empty"}, field_4 = [[0], [0], [1]], field_5 = bool, field_6 = None),
         # lists (list -> dict) -> dicts (dict -> bool) is_empty (working case)
-        (
-            "lists",
-            {"operation": "count_by", "expression": "item.x"},
-            "dicts",
-            {"operation": "is_empty"},
-            [{"x": 1}, {"x": 1}, {"x": 2}],
-            bool,
-            False,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "count_by", "expression": "item.x"}, field_2 = "dicts", field_3 = {"operation": "is_empty"}, field_4 = [{"x": 1}, {"x": 1}, {"x": 2}], field_5 = bool, field_6 = False),
         # lists (list -> dict) -> dicts (dict -> bool) has_key (error case)
-        (
-            "lists",
-            {"operation": "count_by", "expression": 0},
-            "dicts",
-            {"operation": "has_key", "param": 0},
-            [[0], [0], [1]],
-            bool,
-            None,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "count_by", "expression": 0}, field_2 = "dicts", field_3 = {"operation": "has_key", "param": 0}, field_4 = [[0], [0], [1]], field_5 = bool, field_6 = None),
         # lists (list -> dict) -> dicts (dict -> bool) has_key (working case)
-        (
-            "lists",
-            {"operation": "count_by", "expression": "item.x"},
-            "dicts",
-            {"operation": "has_key", "param": "1"},
-            [{"x": 1}, {"x": 1}, {"x": 2}],
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "count_by", "expression": "item.x"}, field_2 = "dicts", field_3 = {"operation": "has_key", "param": "1"}, field_4 = [{"x": 1}, {"x": 1}, {"x": 2}], field_5 = bool, field_6 = True),
         # lists (list -> dict) -> any (any -> bool) is_nil (error case)
-        (
-            "lists",
-            {"operation": "count_by", "expression": 0},
-            "any",
-            {"operation": "is_nil"},
-            [[0], [0], [1]],
-            bool,
-            None,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "count_by", "expression": 0}, field_2 = "any", field_3 = {"operation": "is_nil"}, field_4 = [[0], [0], [1]], field_5 = bool, field_6 = None),
         # lists (list -> dict) -> any (any -> bool) is_nil (working case)
-        (
-            "lists",
-            {"operation": "count_by", "expression": "item.x"},
-            "any",
-            {"operation": "is_nil"},
-            [{"x": 1}, {"x": 1}, {"x": 2}],
-            bool,
-            False,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "count_by", "expression": "item.x"}, field_2 = "any", field_3 = {"operation": "is_nil"}, field_4 = [{"x": 1}, {"x": 1}, {"x": 2}], field_5 = bool, field_6 = False),
         # lists (list -> dict) -> any (any -> bool) contains (error case)
-        (
-            "lists",
-            {"operation": "count_by", "expression": 0},
-            "any",
-            {"operation": "contains", "param": 2},
-            [[0], [0], [1]],
-            bool,
-            None,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "count_by", "expression": 0}, field_2 = "any", field_3 = {"operation": "contains", "param": 2}, field_4 = [[0], [0], [1]], field_5 = bool, field_6 = None),
         # lists (list -> dict) -> any (any -> bool) contains (working case)
-        (
-            "lists",
-            {"operation": "count_by", "expression": "item.x"},
-            "any",
-            {"operation": "contains", "param": "2"},
-            [{"x": 1}, {"x": 1}, {"x": 2}],
-            bool,
-            False,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "count_by", "expression": "item.x"}, field_2 = "any", field_3 = {"operation": "contains", "param": "2"}, field_4 = [{"x": 1}, {"x": 1}, {"x": 2}], field_5 = bool, field_6 = False),
         # lists (list -> dict) -> dicts (dict -> Any) (error case)
-        (
-            "lists",
-            {"operation": "count_by", "expression": 0},
-            "dicts",
-            {"operation": "get_value", "path": 0},
-            [[0], [0], [1]],
-            int,
-            None,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "count_by", "expression": 0}, field_2 = "dicts", field_3 = {"operation": "get_value", "path": 0}, field_4 = [[0], [0], [1]], field_5 = int, field_6 = None),
         # lists (list -> dict) -> dicts (dict -> Any) (working case)
-        (
-            "lists",
-            {"operation": "count_by", "expression": "item.x"},
-            "dicts",
-            {"operation": "get_value", "path": "1"},
-            [{"x": 1}, {"x": 1}, {"x": 2}],
-            int,
-            2,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "count_by", "expression": "item.x"}, field_2 = "dicts", field_3 = {"operation": "get_value", "path": "1"}, field_4 = [{"x": 1}, {"x": 1}, {"x": 2}], field_5 = int, field_6 = 2),
         # generate (Any -> Any, repeat str) -> lists (list -> list)
-        (
-            "generate",
-            {"operation": "repeat", "count": 2},
-            "lists",
-            {"operation": "compact"},
-            "foo",
-            list,
-            ["foo", "foo"],
-        ),
+        TestChainAllToolPairsResult(field_0 = "generate", field_1 = {"operation": "repeat", "count": 2}, field_2 = "lists", field_3 = {"operation": "compact"}, field_4 = "foo", field_5 = list, field_6 = ["foo", "foo"]),
         # generate (Any -> Any, range) -> lists (list -> list) (compact removes 0)
-        (
-            "generate",
-            {"operation": "range", "from": 0, "to": 3},
-            "lists",
-            {"operation": "compact"},
-            None,
-            list,
-            [1, 2],
-        ),
+        TestChainAllToolPairsResult(field_0 = "generate", field_1 = {"operation": "range", "from": 0, "to": 3}, field_2 = "lists", field_3 = {"operation": "compact"}, field_4 = None, field_5 = list, field_6 = [1, 2]),
         # generate (Any -> Any, repeat str) -> lists (list -> Any)
-        (
-            "generate",
-            {"operation": "repeat", "count": 2},
-            "lists",
-            {"operation": "head"},
-            "foo",
-            str,
-            "foo",
-        ),
+        TestChainAllToolPairsResult(field_0 = "generate", field_1 = {"operation": "repeat", "count": 2}, field_2 = "lists", field_3 = {"operation": "head"}, field_4 = "foo", field_5 = str, field_6 = "foo"),
         # lists (list -> Any, head str) -> strings (str -> str) (working case)
-        (
-            "lists",
-            {"operation": "head"},
-            "strings",
-            {"operation": "upper_case"},
-            ["foo", "bar", "baz"],
-            str,
-            "FOO",
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "head"}, field_2 = "strings", field_3 = {"operation": "upper_case"}, field_4 = ["foo", "bar", "baz"], field_5 = str, field_6 = "FOO"),
         # dicts (dict -> Any, str) -> strings (str -> str)
-        (
-            "dicts",
-            {"operation": "get_value", "path": "a"},
-            "strings",
-            {"operation": "capitalize"},
-            {"a": "hello"},
-            str,
-            "Hello",
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "get_value", "path": "a"}, field_2 = "strings", field_3 = {"operation": "capitalize"}, field_4 = {"a": "hello"}, field_5 = str, field_6 = "Hello"),
         # dicts (dict -> Any, list) -> lists (list -> list)
-        (
-            "dicts",
-            {"operation": "get_value", "path": "a"},
-            "lists",
-            {"operation": "compact"},
-            {"a": [None, 1, 2]},
-            list,
-            [1, 2],
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "get_value", "path": "a"}, field_2 = "lists", field_3 = {"operation": "compact"}, field_4 = {"a": [None, 1, 2]}, field_5 = list, field_6 = [1, 2]),
         # dicts (dict -> dict) -> dicts (dict -> dict)
         #   (tool response converts keys to JSON)
-        (
-            "dicts",
-            {"operation": "invert"},
-            "dicts",
-            {"operation": "invert"},
-            {"a": 1, "b": 2},
-            dict,
-            {"a": "1", "b": "2"},
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "invert"}, field_2 = "dicts", field_3 = {"operation": "invert"}, field_4 = {"a": 1, "b": 2}, field_5 = dict, field_6 = {"a": "1", "b": "2"}),
         # dicts (list of dicts -> dict) -> dicts (dict -> dict)
         #   (int keys, converted to string)
-        (
-            "dicts",
-            {"operation": "merge"},
-            "dicts",
-            {"operation": "invert"},
-            [{"a": 1}, {"b": 2}],
-            dict,
-            {"1": "a", "2": "b"},
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "merge"}, field_2 = "dicts", field_3 = {"operation": "invert"}, field_4 = [{"a": 1}, {"b": 2}], field_5 = dict, field_6 = {"1": "a", "2": "b"}),
         # dicts (list of dicts -> dict) -> dicts (dict -> dict) (string keys)
-        (
-            "dicts",
-            {"operation": "merge"},
-            "dicts",
-            {"operation": "invert"},
-            [{"a": "x"}, {"b": "y"}],
-            dict,
-            {"x": "a", "y": "b"},
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "merge"}, field_2 = "dicts", field_3 = {"operation": "invert"}, field_4 = [{"a": "x"}, {"b": "y"}], field_5 = dict, field_6 = {"x": "a", "y": "b"}),
         # dicts (dict -> dict) -> dicts (dict -> dict)
-        (
-            "dicts",
-            {"operation": "set_value", "path": "a.b", "value": 42},
-            "dicts",
-            {"operation": "get_value", "path": "a.b"},
-            {"a": {}},
-            int,
-            42,
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "set_value", "path": "a.b", "value": 42}, field_2 = "dicts", field_3 = {"operation": "get_value", "path": "a.b"}, field_4 = {"a": {}}, field_5 = int, field_6 = 42),
         # dicts (dict -> Any, int) -> generate (Any -> Any, repeat)
-        (
-            "dicts",
-            {"operation": "get_value", "path": "a"},
-            "generate",
-            {"operation": "repeat", "count": 2},
-            {"a": 7},
-            list,
-            [7, 7],
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "get_value", "path": "a"}, field_2 = "generate", field_3 = {"operation": "repeat", "count": 2}, field_4 = {"a": 7}, field_5 = list, field_6 = [7, 7]),
         # lists -> dicts (list of dicts)
-        (
-            "lists",
-            {"operation": "compact"},
-            "dicts",
-            {"operation": "merge"},
-            [{"a": 1}, None, {"b": 2}],
-            dict,
-            {"a": 1, "b": 2},
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "dicts", field_3 = {"operation": "merge"}, field_4 = [{"a": 1}, None, {"b": 2}], field_5 = dict, field_6 = {"a": 1, "b": 2}),
         # any -> lists (repeat bool)
-        (
-            "any",
-            {"operation": "is_nil"},
-            "generate",
-            {"operation": "repeat", "count": 2},
-            0,
-            list,
-            [False, False],
-        ),
+        TestChainAllToolPairsResult(field_0 = "any", field_1 = {"operation": "is_nil"}, field_2 = "generate", field_3 = {"operation": "repeat", "count": 2}, field_4 = 0, field_5 = list, field_6 = [False, False]),
         # lists -> dicts (output: dict)
-        (
-            "lists",
-            {"operation": "head"},
-            "dicts",
-            {"operation": "invert"},
-            [{"a": "x", "b": "y"}],
-            dict,
-            {"x": "a", "y": "b"},
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "head"}, field_2 = "dicts", field_3 = {"operation": "invert"}, field_4 = [{"a": "x", "b": "y"}], field_5 = dict, field_6 = {"x": "a", "y": "b"}),
         # lists -> dicts (output: dict)
-        (
-            "lists",
-            {"operation": "head"},
-            "dicts",
-            {"operation": "set_value", "path": "c", "value": 42},
-            [{"a": 1, "b": 2}],
-            dict,
-            {"a": 1, "b": 2, "c": 42},
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "head"}, field_2 = "dicts", field_3 = {"operation": "set_value", "path": "c", "value": 42}, field_4 = [{"a": 1, "b": 2}], field_5 = dict, field_6 = {"a": 1, "b": 2, "c": 42}),
         # lists -> dicts (output: dict)
-        (
-            "lists",
-            {"operation": "head"},
-            "dicts",
-            {"operation": "get_value", "path": "a"},
-            [{"a": 7}, {"b": 8}],
-            int,
-            7,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "head"}, field_2 = "dicts", field_3 = {"operation": "get_value", "path": "a"}, field_4 = [{"a": 7}, {"b": 8}], field_5 = int, field_6 = 7),
         # lists -> dicts (output: list of dicts)
-        (
-            "lists",
-            {"operation": "head"},
-            "dicts",
-            {"operation": "merge"},
-            [[{"a": 1}, {"b": 2}], [{"c": 3}]],
-            dict,
-            {"a": 1, "b": 2},
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "head"}, field_2 = "dicts", field_3 = {"operation": "merge"}, field_4 = [[{"a": 1}, {"b": 2}], [{"c": 3}]], field_5 = dict, field_6 = {"a": 1, "b": 2}),
         # lists -> lists
-        (
-            "lists",
-            {"operation": "difference", "others": [2]},
-            "lists",
-            {"operation": "compact"},
-            [1, 2, None],
-            list,
-            [1],
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "difference", "others": [2]}, field_2 = "lists", field_3 = {"operation": "compact"}, field_4 = [1, 2, None], field_5 = list, field_6 = [1]),
         # lists -> lists
-        (
-            "lists",
-            {"operation": "difference", "others": [2]},
-            "lists",
-            {"operation": "is_empty"},
-            [1, 2],
-            bool,
-            False,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "difference", "others": [2]}, field_2 = "lists", field_3 = {"operation": "is_empty"}, field_4 = [1, 2], field_5 = bool, field_6 = False),
         # lists -> lists
-        (
-            "lists",
-            {"operation": "difference", "others": [2]},
-            "lists",
-            {"operation": "head"},
-            [1, 2],
-            int,
-            1,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "difference", "others": [2]}, field_2 = "lists", field_3 = {"operation": "head"}, field_4 = [1, 2], field_5 = int, field_6 = 1),
         # lists -> lists (list of dicts)
-        (
-            "lists",
-            {
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {
                 "operation": "difference_by",
                 "others": [{"id": 2}],
                 "expression": "item.id",
-            },
-            "lists",
-            {"operation": "count_by", "expression": "item.id"},
-            [{"id": 1}, {"id": 2}, {"id": 1}],
-            dict,
-            {"1": 2},
-        ),
+            }, field_2 = "lists", field_3 = {"operation": "count_by", "expression": "item.id"}, field_4 = [{"id": 1}, {"id": 2}, {"id": 1}], field_5 = dict, field_6 = {"1": 2}),
         # lists -> generate (repeat the result of difference)
-        (
-            "lists",
-            {"operation": "difference", "others": [2]},
-            "generate",
-            {"operation": "repeat", "count": 2},
-            [1, 2],
-            list,
-            [[1], [1]],
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "difference", "others": [2]}, field_2 = "generate", field_3 = {"operation": "repeat", "count": 2}, field_4 = [1, 2], field_5 = list, field_6 = [[1], [1]]),
         # lists -> dicts (difference_by, expect {"x": 1})
-        (
-            "lists",
-            {
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {
                 "operation": "difference_by",
                 "others": [{"x": 2}],
                 "expression": "item.x",
-            },
-            "dicts",
-            {"operation": "merge"},
-            [{"x": 1}, {"x": 2}],
-            dict,
-            {"x": 1},
-        ),
+            }, field_2 = "dicts", field_3 = {"operation": "merge"}, field_4 = [{"x": 1}, {"x": 2}], field_5 = dict, field_6 = {"x": 1}),
         # lists -> dicts
-        (
-            "lists",
-            {"operation": "key_by", "expression": "item.id"},
-            "dicts",
-            {"operation": "set_value", "path": "x", "value": 99},
-            [{"id": "a", "val": 1}],
-            dict,
-            {"a": {"id": "a", "val": 1}, "x": 99},
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "key_by", "expression": "item.id"}, field_2 = "dicts", field_3 = {"operation": "set_value", "path": "x", "value": 99}, field_4 = [{"id": "a", "val": 1}], field_5 = dict, field_6 = {"a": {"id": "a", "val": 1}, "x": 99}),
         # lists -> dicts
-        (
-            "lists",
-            {"operation": "key_by", "expression": "item.id"},
-            "dicts",
-            {"operation": "get_value", "path": "a"},
-            [{"id": "a", "val": 1}],
-            dict,
-            {"id": "a", "val": 1},
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "key_by", "expression": "item.id"}, field_2 = "dicts", field_3 = {"operation": "get_value", "path": "a"}, field_4 = [{"id": "a", "val": 1}], field_5 = dict, field_6 = {"id": "a", "val": 1}),
         # dicts -> dicts
-        (
-            "dicts",
-            {"operation": "invert"},
-            "dicts",
-            {"operation": "has_key", "param": "x"},
-            {"a": "x", "b": "y"},
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "invert"}, field_2 = "dicts", field_3 = {"operation": "has_key", "param": "x"}, field_4 = {"a": "x", "b": "y"}, field_5 = bool, field_6 = True),
         # dicts -> generate (repeat the output of invert)
-        (
-            "dicts",
-            {"operation": "invert"},
-            "generate",
-            {"operation": "repeat", "count": 2},
-            {"a": 1, "b": 2},
-            list,
-            [{"1": "a", "2": "b"}, {"1": "a", "2": "b"}],
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "invert"}, field_2 = "generate", field_3 = {"operation": "repeat", "count": 2}, field_4 = {"a": 1, "b": 2}, field_5 = list, field_6 = [{"1": "a", "2": "b"}, {"1": "a", "2": "b"}]),
         # dicts -> dicts (add a key to the output of invert)
-        (
-            "dicts",
-            {"operation": "invert"},
-            "dicts",
-            {"operation": "set_value", "path": "c", "value": 42},
-            {"a": 1, "b": 2},
-            dict,
-            {"1": "a", "2": "b", "c": 42},
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "invert"}, field_2 = "dicts", field_3 = {"operation": "set_value", "path": "c", "value": 42}, field_4 = {"a": 1, "b": 2}, field_5 = dict, field_6 = {"1": "a", "2": "b", "c": 42}),
         # dicts -> dicts (get a value from the output of invert)
-        (
-            "dicts",
-            {"operation": "invert"},
-            "dicts",
-            {"operation": "get_value", "path": "1"},
-            {"a": 1, "b": 2},
-            str,
-            "a",
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "invert"}, field_2 = "dicts", field_3 = {"operation": "get_value", "path": "1"}, field_4 = {"a": 1, "b": 2}, field_5 = str, field_6 = "a"),
         # generate -> lists
-        (
-            "generate",
-            {"operation": "repeat", "count": 2},
-            "lists",
-            {"operation": "is_empty"},
-            [1, 2],
-            bool,
-            False,
-        ),
+        TestChainAllToolPairsResult(field_0 = "generate", field_1 = {"operation": "repeat", "count": 2}, field_2 = "lists", field_3 = {"operation": "is_empty"}, field_4 = [1, 2], field_5 = bool, field_6 = False),
         # generate -> lists (list of dicts)
-        (
-            "generate",
-            {"operation": "repeat", "count": 2},
-            "lists",
-            {"operation": "count_by", "expression": "item.a"},
-            {"a": 1},
-            dict,
-            {"1": 2},
-        ),
+        TestChainAllToolPairsResult(field_0 = "generate", field_1 = {"operation": "repeat", "count": 2}, field_2 = "lists", field_3 = {"operation": "count_by", "expression": "item.a"}, field_4 = {"a": 1}, field_5 = dict, field_6 = {"1": 2}),
         # generate -> dicts (list of dicts)
-        (
-            "generate",
-            {"operation": "repeat", "count": 2},
-            "dicts",
-            {"operation": "merge"},
-            {"a": 1, "b": 2},
-            dict,
-            {"a": 1, "b": 2},
-        ),
+        TestChainAllToolPairsResult(field_0 = "generate", field_1 = {"operation": "repeat", "count": 2}, field_2 = "dicts", field_3 = {"operation": "merge"}, field_4 = {"a": 1, "b": 2}, field_5 = dict, field_6 = {"a": 1, "b": 2}),
         # dicts -> dicts
-        (
-            "dicts",
-            {"operation": "merge"},
-            "dicts",
-            {"operation": "has_key", "param": "a"},
-            [{"a": 1}, {"b": 2}],
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "merge"}, field_2 = "dicts", field_3 = {"operation": "has_key", "param": "a"}, field_4 = [{"a": 1}, {"b": 2}], field_5 = bool, field_6 = True),
         # dicts -> generate (repeat the output of merge)
-        (
-            "dicts",
-            {"operation": "merge"},
-            "generate",
-            {"operation": "repeat", "count": 2},
-            [{"a": 1, "b": 2}],
-            list,
-            [{"a": 1, "b": 2}, {"a": 1, "b": 2}],
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "merge"}, field_2 = "generate", field_3 = {"operation": "repeat", "count": 2}, field_4 = [{"a": 1, "b": 2}], field_5 = list, field_6 = [{"a": 1, "b": 2}, {"a": 1, "b": 2}]),
         # dicts -> dicts (add a key to the output of merge)
-        (
-            "dicts",
-            {"operation": "merge"},
-            "dicts",
-            {"operation": "set_value", "path": "c", "value": 42},
-            [{"a": 1, "b": 2}],
-            dict,
-            {"a": 1, "b": 2, "c": 42},
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "merge"}, field_2 = "dicts", field_3 = {"operation": "set_value", "path": "c", "value": 42}, field_4 = [{"a": 1, "b": 2}], field_5 = dict, field_6 = {"a": 1, "b": 2, "c": 42}),
         # dicts -> dicts (get a value from the output of merge)
-        (
-            "dicts",
-            {"operation": "merge"},
-            "dicts",
-            {"operation": "get_value", "path": "a"},
-            [{"a": 1, "b": 2}],
-            int,
-            1,
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "merge"}, field_2 = "dicts", field_3 = {"operation": "get_value", "path": "a"}, field_4 = [{"a": 1, "b": 2}], field_5 = int, field_6 = 1),
         # dicts -> dicts (invert the output of set_value)
-        (
-            "dicts",
-            {"operation": "set_value", "path": "a", "value": 1},
-            "dicts",
-            {"operation": "invert"},
-            {"b": 2},
-            dict,
-            {"2": "b", "1": "a"},
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "set_value", "path": "a", "value": 1}, field_2 = "dicts", field_3 = {"operation": "invert"}, field_4 = {"b": 2}, field_5 = dict, field_6 = {"2": "b", "1": "a"}),
         # dicts -> generate (repeat the output dict)
-        (
-            "dicts",
-            {"operation": "set_value", "path": "a", "value": 1},
-            "generate",
-            {"operation": "repeat", "count": 2},
-            {"b": 2},
-            list,
-            [{"b": 2, "a": 1}, {"b": 2, "a": 1}],
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "set_value", "path": "a", "value": 1}, field_2 = "generate", field_3 = {"operation": "repeat", "count": 2}, field_4 = {"b": 2}, field_5 = list, field_6 = [{"b": 2, "a": 1}, {"b": 2, "a": 1}]),
         # dicts -> dicts (check for added key)
-        (
-            "dicts",
-            {"operation": "set_value", "path": "a", "value": 1},
-            "dicts",
-            {"operation": "has_key", "param": "a"},
-            {"b": 2},
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "set_value", "path": "a", "value": 1}, field_2 = "dicts", field_3 = {"operation": "has_key", "param": "a"}, field_4 = {"b": 2}, field_5 = bool, field_6 = True),
         # dicts -> dicts (add another key)
-        (
-            "dicts",
-            {"operation": "set_value", "path": "a", "value": 1},
-            "dicts",
-            {"operation": "set_value", "path": "c", "value": 42},
-            {"b": 2},
-            dict,
-            {"b": 2, "a": 1, "c": 42},
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "set_value", "path": "a", "value": 1}, field_2 = "dicts", field_3 = {"operation": "set_value", "path": "c", "value": 42}, field_4 = {"b": 2}, field_5 = dict, field_6 = {"b": 2, "a": 1, "c": 42}),
         # generate -> lists (is_equal)
         #   (list[str], list[int], list[dict], list[bool], list[list])
-        (
-            "generate",
-            {"operation": "repeat", "count": 2},
-            "any",
-            {"operation": "is_equal", "param": ["a", "a"]},
-            "a",
-            bool,
-            True,
-        ),
-        (
-            "generate",
-            {"operation": "repeat", "count": 2},
-            "any",
-            {"operation": "is_equal", "param": [1, 1]},
-            1,
-            bool,
-            True,
-        ),
-        (
-            "generate",
-            {"operation": "repeat", "count": 2},
-            "any",
-            {"operation": "is_equal", "param": [{"x": 1}, {"x": 1}]},
-            {"x": 1},
-            bool,
-            True,
-        ),
-        (
-            "generate",
-            {"operation": "repeat", "count": 2},
-            "any",
-            {"operation": "is_equal", "param": [True, True]},
-            True,
-            bool,
-            True,
-        ),
-        (
-            "generate",
-            {"operation": "repeat", "count": 2},
-            "any",
-            {"operation": "is_equal", "param": [[1], [1]]},
-            [1],
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "generate", field_1 = {"operation": "repeat", "count": 2}, field_2 = "any", field_3 = {"operation": "is_equal", "param": ["a", "a"]}, field_4 = "a", field_5 = bool, field_6 = True),
+        TestChainAllToolPairsResult(field_0 = "generate", field_1 = {"operation": "repeat", "count": 2}, field_2 = "any", field_3 = {"operation": "is_equal", "param": [1, 1]}, field_4 = 1, field_5 = bool, field_6 = True),
+        TestChainAllToolPairsResult(field_0 = "generate", field_1 = {"operation": "repeat", "count": 2}, field_2 = "any", field_3 = {"operation": "is_equal", "param": [{"x": 1}, {"x": 1}]}, field_4 = {"x": 1}, field_5 = bool, field_6 = True),
+        TestChainAllToolPairsResult(field_0 = "generate", field_1 = {"operation": "repeat", "count": 2}, field_2 = "any", field_3 = {"operation": "is_equal", "param": [True, True]}, field_4 = True, field_5 = bool, field_6 = True),
+        TestChainAllToolPairsResult(field_0 = "generate", field_1 = {"operation": "repeat", "count": 2}, field_2 = "any", field_3 = {"operation": "is_equal", "param": [[1], [1]]}, field_4 = [1], field_5 = bool, field_6 = True),
         # generate -> lists (contains) (list[str])
-        (
-            "generate",
-            {"operation": "repeat", "count": 2},
-            "any",
-            {"operation": "contains", "param": "a"},
-            "a",
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "generate", field_1 = {"operation": "repeat", "count": 2}, field_2 = "any", field_3 = {"operation": "contains", "param": "a"}, field_4 = "a", field_5 = bool, field_6 = True),
         # lists -> lists (is_equal) (str, int, list, dict, bool)
-        (
-            "lists",
-            {"operation": "head"},
-            "any",
-            {"operation": "is_equal", "param": "a"},
-            ["a", "b"],
-            bool,
-            True,
-        ),
-        (
-            "lists",
-            {"operation": "head"},
-            "any",
-            {"operation": "is_equal", "param": 1},
-            [1, 2],
-            bool,
-            True,
-        ),
-        (
-            "lists",
-            {"operation": "head"},
-            "any",
-            {"operation": "is_equal", "param": [1]},
-            [[1], [2]],
-            bool,
-            True,
-        ),
-        (
-            "lists",
-            {"operation": "head"},
-            "any",
-            {"operation": "is_equal", "param": {"x": 1}},
-            [{"x": 1}, {"x": 2}],
-            bool,
-            True,
-        ),
-        (
-            "lists",
-            {"operation": "head"},
-            "any",
-            {"operation": "is_equal", "param": True},
-            [True, False],
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "head"}, field_2 = "any", field_3 = {"operation": "is_equal", "param": "a"}, field_4 = ["a", "b"], field_5 = bool, field_6 = True),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "head"}, field_2 = "any", field_3 = {"operation": "is_equal", "param": 1}, field_4 = [1, 2], field_5 = bool, field_6 = True),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "head"}, field_2 = "any", field_3 = {"operation": "is_equal", "param": [1]}, field_4 = [[1], [2]], field_5 = bool, field_6 = True),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "head"}, field_2 = "any", field_3 = {"operation": "is_equal", "param": {"x": 1}}, field_4 = [{"x": 1}, {"x": 2}], field_5 = bool, field_6 = True),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "head"}, field_2 = "any", field_3 = {"operation": "is_equal", "param": True}, field_4 = [True, False], field_5 = bool, field_6 = True),
         # lists -> lists (contains) (list[str], list[int], str)
-        (
-            "lists",
-            {"operation": "head"},
-            "any",
-            {"operation": "contains", "param": "a"},
-            [["a", "b"], ["c"]],
-            bool,
-            True,
-        ),
-        (
-            "lists",
-            {"operation": "head"},
-            "any",
-            {"operation": "contains", "param": 1},
-            [[1, 2], [3]],
-            bool,
-            True,
-        ),
-        (
-            "lists",
-            {"operation": "head"},
-            "any",
-            {"operation": "contains", "param": "b"},
-            ["ab", "cd"],
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "head"}, field_2 = "any", field_3 = {"operation": "contains", "param": "a"}, field_4 = [["a", "b"], ["c"]], field_5 = bool, field_6 = True),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "head"}, field_2 = "any", field_3 = {"operation": "contains", "param": 1}, field_4 = [[1, 2], [3]], field_5 = bool, field_6 = True),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "head"}, field_2 = "any", field_3 = {"operation": "contains", "param": "b"}, field_4 = ["ab", "cd"], field_5 = bool, field_6 = True),
         # --- Restored: type-agnostic contains/is_equal using any ---
-        (
-            "dicts",
-            {"operation": "invert"},
-            "any",
-            {"operation": "contains", "param": "a"},
-            {"a": 1, "b": 2},
-            bool,
-            False,
-        ),
-        (
-            "lists",
-            {"operation": "head"},
-            "any",
-            {"operation": "contains", "param": 1},
-            [[1]],
-            bool,
-            True,
-        ),
-        (
-            "lists",
-            {"operation": "head"},
-            "any",
-            {"operation": "is_equal", "param": 1},
-            [1],
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "invert"}, field_2 = "any", field_3 = {"operation": "contains", "param": "a"}, field_4 = {"a": 1, "b": 2}, field_5 = bool, field_6 = False),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "head"}, field_2 = "any", field_3 = {"operation": "contains", "param": 1}, field_4 = [[1]], field_5 = bool, field_6 = True),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "head"}, field_2 = "any", field_3 = {"operation": "is_equal", "param": 1}, field_4 = [1], field_5 = bool, field_6 = True),
         # lists -> lists (is_empty) (str)
-        (
-            "lists",
-            {"operation": "head"},
-            "any",
-            {"operation": "is_empty"},
-            [""],
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "head"}, field_2 = "any", field_3 = {"operation": "is_empty"}, field_4 = [""], field_5 = bool, field_6 = True),
         # === any.eval as FIRST tool (outputting different types) ===
         # any.eval (Any -> str) -> strings (str -> str)
-        (
-            "any",
-            {"operation": "eval", "expression": "value"},
-            "strings",
-            {"operation": "upper_case"},
-            "hello",
-            str,
-            "HELLO",
-        ),
+        TestChainAllToolPairsResult(field_0 = "any", field_1 = {"operation": "eval", "expression": "value"}, field_2 = "strings", field_3 = {"operation": "upper_case"}, field_4 = "hello", field_5 = str, field_6 = "HELLO"),
         # any.eval (Any -> str) -> strings (str -> bool)
-        (
-            "any",
-            {"operation": "eval", "expression": "value"},
-            "strings",
-            {"operation": "contains", "param": "ell"},
-            "hello",
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "any", field_1 = {"operation": "eval", "expression": "value"}, field_2 = "strings", field_3 = {"operation": "contains", "param": "ell"}, field_4 = "hello", field_5 = bool, field_6 = True),
         # any.eval (Any -> int) -> generate (int -> list)
-        (
-            "any",
-            {"operation": "eval", "expression": "value * 2"},
-            "generate",
-            {"operation": "repeat", "count": 3},
-            5,
-            list,
-            [10, 10, 10],
-        ),
+        TestChainAllToolPairsResult(field_0 = "any", field_1 = {"operation": "eval", "expression": "value * 2"}, field_2 = "generate", field_3 = {"operation": "repeat", "count": 3}, field_4 = 5, field_5 = list, field_6 = [10, 10, 10]),
         # any.eval (Any -> int) -> generate (int -> list)
-        (
-            "any",
-            {"operation": "eval", "expression": "value * 2"},
-            "generate",
-            {"operation": "repeat", "count": 2},
-            8,
-            list,
-            [16, 16],
-        ),
+        TestChainAllToolPairsResult(field_0 = "any", field_1 = {"operation": "eval", "expression": "value * 2"}, field_2 = "generate", field_3 = {"operation": "repeat", "count": 2}, field_4 = 8, field_5 = list, field_6 = [16, 16]),
         # any.eval (Any -> bool) -> generate (bool -> list)
-        (
-            "any",
-            {"operation": "eval", "expression": "value > 5"},
-            "generate",
-            {"operation": "repeat", "count": 2},
-            10,
-            list,
-            [True, True],
-        ),
+        TestChainAllToolPairsResult(field_0 = "any", field_1 = {"operation": "eval", "expression": "value > 5"}, field_2 = "generate", field_3 = {"operation": "repeat", "count": 2}, field_4 = 10, field_5 = list, field_6 = [True, True]),
         # any.eval (Any -> list) -> lists (list -> list)
-        (
-            "any",
-            {"operation": "eval", "expression": "value"},
-            "lists",
-            {"operation": "compact"},
-            [1, None, 2],
-            list,
-            [1, 2],
-        ),
+        TestChainAllToolPairsResult(field_0 = "any", field_1 = {"operation": "eval", "expression": "value"}, field_2 = "lists", field_3 = {"operation": "compact"}, field_4 = [1, None, 2], field_5 = list, field_6 = [1, 2]),
         # any.eval (Any -> int) -> generate (int -> list)
-        (
-            "any",
-            {"operation": "eval", "expression": "value * 3"},
-            "generate",
-            {"operation": "repeat", "count": 2},
-            5,
-            list,
-            [15, 15],
-        ),
+        TestChainAllToolPairsResult(field_0 = "any", field_1 = {"operation": "eval", "expression": "value * 3"}, field_2 = "generate", field_3 = {"operation": "repeat", "count": 2}, field_4 = 5, field_5 = list, field_6 = [15, 15]),
         # any.eval (Any -> str) -> strings (str -> str)
-        (
-            "any",
-            {"operation": "eval", "expression": "value.toString().toUpperCase()"},
-            "strings",
-            {"operation": "reverse"},
-            3,
-            str,
-            "3",
-        ),
+        TestChainAllToolPairsResult(field_0 = "any", field_1 = {"operation": "eval", "expression": "value.toString().toUpperCase()"}, field_2 = "strings", field_3 = {"operation": "reverse"}, field_4 = 3, field_5 = str, field_6 = "3"),
         # any.eval (Any -> bool) -> any (bool -> bool)
-        (
-            "any",
-            {"operation": "eval", "expression": "value > 20"},
-            "any",
-            {"operation": "is_equal", "param": True},
-            25,
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "any", field_1 = {"operation": "eval", "expression": "value > 20"}, field_2 = "any", field_3 = {"operation": "is_equal", "param": True}, field_4 = 25, field_5 = bool, field_6 = True),
         # any.eval (Any -> float) -> any (float -> bool)
-        (
-            "any",
-            {"operation": "eval", "expression": "value / 2.0"},
-            "any",
-            {"operation": "is_equal", "param": 2.5},
-            5,
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "any", field_1 = {"operation": "eval", "expression": "value / 2.0"}, field_2 = "any", field_3 = {"operation": "is_equal", "param": 2.5}, field_4 = 5, field_5 = bool, field_6 = True),
         # === any.eval as SECOND tool (accepting different input types) ===
         # strings (str -> str) -> any.eval (str -> str)
-        (
-            "strings",
-            {"operation": "upper_case"},
-            "any",
-            {"operation": "eval", "expression": "value.split('').reverse().join('')"},
-            "hello",
-            str,
-            "OLLEH",
-        ),
+        TestChainAllToolPairsResult(field_0 = "strings", field_1 = {"operation": "upper_case"}, field_2 = "any", field_3 = {"operation": "eval", "expression": "value.split('').reverse().join('')"}, field_4 = "hello", field_5 = str, field_6 = "OLLEH"),
         # strings (str -> str) -> any.eval (str -> int)
-        (
-            "strings",
-            {"operation": "upper_case"},
-            "any",
-            {"operation": "eval", "expression": "value.length"},
-            "hello",
-            int,
-            5,
-        ),
+        TestChainAllToolPairsResult(field_0 = "strings", field_1 = {"operation": "upper_case"}, field_2 = "any", field_3 = {"operation": "eval", "expression": "value.length"}, field_4 = "hello", field_5 = int, field_6 = 5),
         # strings (str -> str) -> any.eval (str -> bool)
-        (
-            "strings",
-            {"operation": "upper_case"},
-            "any",
-            {"operation": "eval", "expression": "value.includes('H')"},
-            "hello",
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "strings", field_1 = {"operation": "upper_case"}, field_2 = "any", field_3 = {"operation": "eval", "expression": "value.includes('H')"}, field_4 = "hello", field_5 = bool, field_6 = True),
         # strings (str -> str) -> any.eval (str -> float)
-        (
-            "strings",
-            {"operation": "template", "data": {"num": "3.14"}},
-            "any",
-            {
+        TestChainAllToolPairsResult(field_0 = "strings", field_1 = {"operation": "template", "data": {"num": "3.14"}}, field_2 = "any", field_3 = {
                 "operation": "eval",
                 "expression": "parseFloat(value.match(/\\d+\\.\\d+/)[0])",
-            },
-            "The number is {num}",
-            float,
-            3.14,
-        ),
+            }, field_4 = "The number is {num}", field_5 = float, field_6 = 3.14),
         # lists (list -> list) -> any.eval (list -> int)
-        (
-            "lists",
-            {"operation": "compact"},
-            "any",
-            {"operation": "eval", "expression": "value[0] ? 1 : 0"},
-            [1, None, 2, 3],
-            int,
-            1,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "any", field_3 = {"operation": "eval", "expression": "value[0] ? 1 : 0"}, field_4 = [1, None, 2, 3], field_5 = int, field_6 = 1),
         # lists (list -> list) -> any.eval (list -> str)
-        (
-            "lists",
-            {"operation": "compact"},
-            "any",
-            {"operation": "eval", "expression": "value[0].toString()"},
-            ["a", None, "b", "c"],
-            str,
-            "a",
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "any", field_3 = {"operation": "eval", "expression": "value[0].toString()"}, field_4 = ["a", None, "b", "c"], field_5 = str, field_6 = "a"),
         # lists (list -> list) -> any.eval (list -> bool)
-        (
-            "lists",
-            {"operation": "compact"},
-            "any",
-            {"operation": "eval", "expression": "value[1] !== undefined"},
-            [1, None, 2, 3],
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "any", field_3 = {"operation": "eval", "expression": "value[1] !== undefined"}, field_4 = [1, None, 2, 3], field_5 = bool, field_6 = True),
         # lists (list -> list) -> any.eval (list -> float)
-        (
-            "lists",
-            {"operation": "compact"},
-            "any",
-            {"operation": "eval", "expression": "(value[0] + value[1]) / 2.0"},
-            [10, None, 20],
-            float,
-            15.0,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "any", field_3 = {"operation": "eval", "expression": "(value[0] + value[1]) / 2.0"}, field_4 = [10, None, 20], field_5 = float, field_6 = 15.0),
         # lists (list -> dict) -> any.eval (dict -> str)
-        (
-            "lists",
-            {"operation": "count_by", "expression": "item.type"},
-            "any",
-            {
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "count_by", "expression": "item.type"}, field_2 = "any", field_3 = {
                 "operation": "eval",
                 "expression": "value.fruit ? 'has fruit' : 'no fruit'",
-            },
-            [{"type": "fruit"}, {"type": "fruit"}, {"type": "vegetable"}],
-            str,
-            "has fruit",
-        ),
+            }, field_4 = [{"type": "fruit"}, {"type": "fruit"}, {"type": "vegetable"}], field_5 = str, field_6 = "has fruit"),
         # lists (list -> dict) -> any.eval (dict -> int)
-        (
-            "lists",
-            {"operation": "count_by", "expression": "item.category"},
-            "any",
-            {"operation": "eval", "expression": "value.A || 0"},
-            [{"category": "A"}, {"category": "A"}, {"category": "B"}],
-            int,
-            2,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "count_by", "expression": "item.category"}, field_2 = "any", field_3 = {"operation": "eval", "expression": "value.A || 0"}, field_4 = [{"category": "A"}, {"category": "A"}, {"category": "B"}], field_5 = int, field_6 = 2),
         # lists (list -> dict) -> any.eval (dict -> bool)
-        (
-            "lists",
-            {"operation": "count_by", "expression": "item.status"},
-            "any",
-            {"operation": "eval", "expression": "value.active && value.active > 1"},
-            [{"status": "active"}, {"status": "active"}, {"status": "inactive"}],
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "count_by", "expression": "item.status"}, field_2 = "any", field_3 = {"operation": "eval", "expression": "value.active && value.active > 1"}, field_4 = [{"status": "active"}, {"status": "active"}, {"status": "inactive"}], field_5 = bool, field_6 = True),
         # lists (list -> Any) -> any.eval (Any -> str)
-        (
-            "lists",
-            {"operation": "head"},
-            "any",
-            {
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "head"}, field_2 = "any", field_3 = {
                 "operation": "eval",
                 "expression": (
                     "typeof value === 'string' ? value.toUpperCase() : value.toString()"
                 ),
-            },
-            ["hello", "world"],
-            str,
-            "HELLO",
-        ),
+            }, field_4 = ["hello", "world"], field_5 = str, field_6 = "HELLO"),
         # lists (list -> Any) -> any.eval (Any -> int)
-        (
-            "lists",
-            {"operation": "head"},
-            "any",
-            {
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "head"}, field_2 = "any", field_3 = {
                 "operation": "eval",
                 "expression": (
                     "typeof value === 'number' ? value * 2 : " "value.toString().length"
                 ),
-            },
-            [42, "test"],
-            int,
-            84,
-        ),
+            }, field_4 = [42, "test"], field_5 = int, field_6 = 84),
         # dicts (dict -> dict) -> any.eval (dict -> str)
-        (
-            "dicts",
-            {"operation": "invert"},
-            "any",
-            {"operation": "eval", "expression": "value['2'] || 'not found'"},
-            {"a": 1, "b": 2},
-            str,
-            "b",
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "invert"}, field_2 = "any", field_3 = {"operation": "eval", "expression": "value['2'] || 'not found'"}, field_4 = {"a": 1, "b": 2}, field_5 = str, field_6 = "b"),
         # dicts (dict -> dict) -> any.eval (dict -> int)
-        (
-            "dicts",
-            {"operation": "invert"},
-            "any",
-            {
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "invert"}, field_2 = "any", field_3 = {
                 "operation": "eval",
                 "expression": "value['1'] ? value['1'].length : 0",
-            },
-            {"a": 1, "b": 2},
-            int,
-            1,
-        ),
+            }, field_4 = {"a": 1, "b": 2}, field_5 = int, field_6 = 1),
         # dicts (dict -> dict) -> any.eval (dict -> bool)
-        (
-            "dicts",
-            {"operation": "invert"},
-            "any",
-            {"operation": "eval", "expression": "value['1'] !== undefined"},
-            {"a": 1, "b": 2},
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "invert"}, field_2 = "any", field_3 = {"operation": "eval", "expression": "value['1'] !== undefined"}, field_4 = {"a": 1, "b": 2}, field_5 = bool, field_6 = True),
         # dicts (dict -> Any) -> any.eval (Any -> str)
-        (
-            "dicts",
-            {"operation": "get_value", "path": "name"},
-            "any",
-            {"operation": "eval", "expression": "value.toUpperCase()"},
-            {"name": "alice", "age": 30},
-            str,
-            "ALICE",
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "get_value", "path": "name"}, field_2 = "any", field_3 = {"operation": "eval", "expression": "value.toUpperCase()"}, field_4 = {"name": "alice", "age": 30}, field_5 = str, field_6 = "ALICE"),
         # dicts (dict -> Any) -> any.eval (Any -> int)
-        (
-            "dicts",
-            {"operation": "get_value", "path": "age"},
-            "any",
-            {"operation": "eval", "expression": "value + 10"},
-            {"name": "alice", "age": 30},
-            int,
-            40,
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "get_value", "path": "age"}, field_2 = "any", field_3 = {"operation": "eval", "expression": "value + 10"}, field_4 = {"name": "alice", "age": 30}, field_5 = int, field_6 = 40),
         # dicts (dict -> Any) -> any.eval (Any -> bool)
-        (
-            "dicts",
-            {"operation": "get_value", "path": "score"},
-            "any",
-            {"operation": "eval", "expression": "value >= 80"},
-            {"name": "alice", "score": 95},
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "dicts", field_1 = {"operation": "get_value", "path": "score"}, field_2 = "any", field_3 = {"operation": "eval", "expression": "value >= 80"}, field_4 = {"name": "alice", "score": 95}, field_5 = bool, field_6 = True),
         # generate (Any -> list) -> any.eval (list -> int)
-        (
-            "generate",
-            {"operation": "repeat", "count": 3},
-            "any",
-            {"operation": "eval", "expression": "value[1] ? 3 : 0"},
-            "x",
-            int,
-            3,
-        ),
+        TestChainAllToolPairsResult(field_0 = "generate", field_1 = {"operation": "repeat", "count": 3}, field_2 = "any", field_3 = {"operation": "eval", "expression": "value[1] ? 3 : 0"}, field_4 = "x", field_5 = int, field_6 = 3),
         # generate (Any -> list) -> any.eval (list -> str)
-        (
-            "generate",
-            {"operation": "range", "from": 1, "to": 4},
-            "any",
-            {
+        TestChainAllToolPairsResult(field_0 = "generate", field_1 = {"operation": "range", "from": 1, "to": 4}, field_2 = "any", field_3 = {
                 "operation": "eval",
                 "expression": (
                     "value[0].toString() + '-' + value[1].toString() + '-' + "
                     "value[2].toString()"
                 ),
-            },
-            None,
-            str,
-            "1-2-3",
-        ),
+            }, field_4 = None, field_5 = str, field_6 = "1-2-3"),
         # generate (Any -> list) -> any.eval (list -> bool)
-        (
-            "generate",
-            {"operation": "repeat", "count": 2},
-            "any",
-            {"operation": "eval", "expression": "value[0] === value[1]"},
-            42,
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "generate", field_1 = {"operation": "repeat", "count": 2}, field_2 = "any", field_3 = {"operation": "eval", "expression": "value[0] === value[1]"}, field_4 = 42, field_5 = bool, field_6 = True),
         # generate (Any -> list) -> any.eval (list -> float)
-        (
-            "generate",
-            {"operation": "range", "from": 1, "to": 6},
-            "any",
-            {"operation": "eval", "expression": "(value[0] + value[4]) / 2.0"},
-            None,
-            float,
-            3.0,
-        ),
+        TestChainAllToolPairsResult(field_0 = "generate", field_1 = {"operation": "range", "from": 1, "to": 6}, field_2 = "any", field_3 = {"operation": "eval", "expression": "(value[0] + value[4]) / 2.0"}, field_4 = None, field_5 = float, field_6 = 3.0),
         # === Complex type conversion chains with any.eval ===
         # any.eval (nested dict -> extracted value) -> strings
-        (
-            "any",
-            {"operation": "eval", "expression": "value.user.name"},
-            "strings",
-            {"operation": "capitalize"},
-            {"user": {"name": "alice", "age": 30}},
-            str,
-            "Alice",
-        ),
+        TestChainAllToolPairsResult(field_0 = "any", field_1 = {"operation": "eval", "expression": "value.user.name"}, field_2 = "strings", field_3 = {"operation": "capitalize"}, field_4 = {"user": {"name": "alice", "age": 30}}, field_5 = str, field_6 = "Alice"),
         # any.eval (arithmetic calculation) -> generate
-        (
-            "any",
-            {"operation": "eval", "expression": "value - 2"},
-            "generate",
-            {"operation": "repeat", "count": 2},
-            7,
-            list,
-            [5, 5],
-        ),
+        TestChainAllToolPairsResult(field_0 = "any", field_1 = {"operation": "eval", "expression": "value - 2"}, field_2 = "generate", field_3 = {"operation": "repeat", "count": 2}, field_4 = 7, field_5 = list, field_6 = [5, 5]),
         # any.eval (math calculation) -> lists (single item list)
-        (
-            "any",
-            {"operation": "eval", "expression": "value * 3"},
-            "generate",
-            {"operation": "repeat", "count": 1},
-            10,
-            list,
-            [30],
-        ),
+        TestChainAllToolPairsResult(field_0 = "any", field_1 = {"operation": "eval", "expression": "value * 3"}, field_2 = "generate", field_3 = {"operation": "repeat", "count": 1}, field_4 = 10, field_5 = list, field_6 = [30]),
         # any.eval (simple calculation) -> generate
-        (
-            "any",
-            {"operation": "eval", "expression": "value * 2"},
-            "generate",
-            {"operation": "repeat", "count": 1},
-            5,
-            list,
-            [10],
-        ),
+        TestChainAllToolPairsResult(field_0 = "any", field_1 = {"operation": "eval", "expression": "value * 2"}, field_2 = "generate", field_3 = {"operation": "repeat", "count": 1}, field_4 = 5, field_5 = list, field_6 = [10]),
         # --- New: map, reduce, flat_map, filter_by, zip_with, all_by, any_by ---
         # map -> reduce
-        (
-            "lists",
-            {"operation": "map", "expression": "item * 2"},
-            "lists",
-            {"operation": "reduce", "expression": "acc + item", "param": 0},
-            [1, 2, 3],
-            int,
-            12,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "map", "expression": "item * 2"}, field_2 = "lists", field_3 = {"operation": "reduce", "expression": "acc + item", "param": 0}, field_4 = [1, 2, 3], field_5 = int, field_6 = 12),
         # filter_by -> map
-        (
-            "lists",
-            {"operation": "filter_by", "expression": "item % 2 === 0"},
-            "lists",
-            {"operation": "map", "expression": "item * 10"},
-            [1, 2, 3, 4],
-            list,
-            [20, 40],
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "filter_by", "expression": "item % 2 === 0"}, field_2 = "lists", field_3 = {"operation": "map", "expression": "item * 10"}, field_4 = [1, 2, 3, 4], field_5 = list, field_6 = [20, 40]),
         # map -> filter_by
-        (
-            "lists",
-            {"operation": "map", "expression": "item * 2"},
-            "lists",
-            {"operation": "filter_by", "expression": "item > 2"},
-            [1, 2, 3],
-            list,
-            [4, 6],
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "map", "expression": "item * 2"}, field_2 = "lists", field_3 = {"operation": "filter_by", "expression": "item > 2"}, field_4 = [1, 2, 3], field_5 = list, field_6 = [4, 6]),
         # flat_map -> reduce
-        (
-            "lists",
-            {"operation": "flat_map", "expression": "[item, item * 10]"},
-            "lists",
-            {"operation": "reduce", "expression": "acc + item", "param": 0},
-            [1, 2],
-            int,
-            33,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "flat_map", "expression": "[item, item * 10]"}, field_2 = "lists", field_3 = {"operation": "reduce", "expression": "acc + item", "param": 0}, field_4 = [1, 2], field_5 = int, field_6 = 33),
         # map -> all_by
-        (
-            "lists",
-            {"operation": "map", "expression": "item * 2"},
-            "lists",
-            {"operation": "all_by", "expression": "item % 2 === 0"},
-            [1, 2, 3],
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "map", "expression": "item * 2"}, field_2 = "lists", field_3 = {"operation": "all_by", "expression": "item % 2 === 0"}, field_4 = [1, 2, 3], field_5 = bool, field_6 = True),
         # map -> any_by
-        (
-            "lists",
-            {"operation": "map", "expression": "item * 2"},
-            "lists",
-            {"operation": "any_by", "expression": "item === 4"},
-            [1, 2, 3],
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "map", "expression": "item * 2"}, field_2 = "lists", field_3 = {"operation": "any_by", "expression": "item === 4"}, field_4 = [1, 2, 3], field_5 = bool, field_6 = True),
         # zip_with -> map
-        (
-            "lists",
-            {
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {
                 "operation": "zip_with",
                 "others": [10, 20, 30],
                 "expression": "item + other",
-            },
-            "lists",
-            {"operation": "map", "expression": "item * 2"},
-            [1, 2, 3],
-            list,
-            [22, 44, 66],
-        ),
+            }, field_2 = "lists", field_3 = {"operation": "map", "expression": "item * 2"}, field_4 = [1, 2, 3], field_5 = list, field_6 = [22, 44, 66]),
         # map -> compact
-        (
-            "lists",
-            {"operation": "map", "expression": "item > 1 ? item : null"},
-            "lists",
-            {"operation": "compact"},
-            [0, 1, 2, 3],
-            list,
-            [2, 3],
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "map", "expression": "item > 1 ? item : null"}, field_2 = "lists", field_3 = {"operation": "compact"}, field_4 = [0, 1, 2, 3], field_5 = list, field_6 = [2, 3]),
         # compact -> map
-        (
-            "lists",
-            {"operation": "compact"},
-            "lists",
-            {"operation": "map", "expression": "item * 3"},
-            [None, 1, 2],
-            list,
-            [3, 6],
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "lists", field_3 = {"operation": "map", "expression": "item * 3"}, field_4 = [None, 1, 2], field_5 = list, field_6 = [3, 6]),
         # filter_by -> reduce
-        (
-            "lists",
-            {"operation": "filter_by", "expression": "item > 1"},
-            "lists",
-            {"operation": "reduce", "expression": "acc + item", "param": 0},
-            [0, 1, 2, 3],
-            int,
-            5,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "filter_by", "expression": "item > 1"}, field_2 = "lists", field_3 = {"operation": "reduce", "expression": "acc + item", "param": 0}, field_4 = [0, 1, 2, 3], field_5 = int, field_6 = 5),
         # map -> flat_map
-        (
-            "lists",
-            {"operation": "map", "expression": "item + 1"},
-            "lists",
-            {"operation": "flat_map", "expression": "[item, item * 2]"},
-            [1, 2],
-            list,
-            [2, 4, 3, 6],
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "map", "expression": "item + 1"}, field_2 = "lists", field_3 = {"operation": "flat_map", "expression": "[item, item * 2]"}, field_4 = [1, 2], field_5 = list, field_6 = [2, 4, 3, 6]),
         # flat_map -> filter_by
-        (
-            "lists",
-            {"operation": "flat_map", "expression": "[item, item * 2]"},
-            "lists",
-            {"operation": "filter_by", "expression": "item > 2"},
-            [1, 2],
-            list,
-            [4],
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "flat_map", "expression": "[item, item * 2]"}, field_2 = "lists", field_3 = {"operation": "filter_by", "expression": "item > 2"}, field_4 = [1, 2], field_5 = list, field_6 = [4]),
         # map -> head
-        (
-            "lists",
-            {"operation": "map", "expression": "item * 2"},
-            "lists",
-            {"operation": "head"},
-            [1, 2, 3],
-            int,
-            2,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "map", "expression": "item * 2"}, field_2 = "lists", field_3 = {"operation": "head"}, field_4 = [1, 2, 3], field_5 = int, field_6 = 2),
         # filter_by -> head
-        (
-            "lists",
-            {"operation": "filter_by", "expression": "item > 1"},
-            "lists",
-            {"operation": "head"},
-            [0, 1, 2, 3],
-            int,
-            2,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "filter_by", "expression": "item > 1"}, field_2 = "lists", field_3 = {"operation": "head"}, field_4 = [0, 1, 2, 3], field_5 = int, field_6 = 2),
         # map -> reduce (no param)
-        (
-            "lists",
-            {"operation": "map", "expression": "item * 2"},
-            "lists",
-            {"operation": "reduce", "expression": "acc + item"},
-            [1, 2, 3],
-            int,
-            12,
-        ),
+        TestChainAllToolPairsResult(field_0 = "lists", field_1 = {"operation": "map", "expression": "item * 2"}, field_2 = "lists", field_3 = {"operation": "reduce", "expression": "acc + item"}, field_4 = [1, 2, 3], field_5 = int, field_6 = 12),
         # --- End new chain pairings ---
     ],
 )

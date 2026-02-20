@@ -1,9 +1,20 @@
+from typing import Any
+from dataclasses import dataclass
 import pytest
 import importlib
 import main
 from main import LeverMCP
 from fastmcp import Client
 from tests import make_tool_call
+@dataclass
+class TestChainAllToolPairsResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+    field_3: Any
+    field_4: Any
+    field_5: Any
+    field_6: Any
 
 
 def get_engine_expression(lua_expr, js_expr):
@@ -941,25 +952,9 @@ async def client():
         ),
         # === any.eval as FIRST tool (outputting different types) ===
         # any.eval (Any -> str) -> strings (str -> str)
-        (
-            "any",
-            {"operation": "eval", "expression": "value"},
-            "strings",
-            {"operation": "upper_case"},
-            "hello",
-            str,
-            "HELLO",
-        ),
+        TestChainAllToolPairsResult(field_0 = "any", field_1 = {"operation": "eval", "expression": "value"}, field_2 = "strings", field_3 = {"operation": "upper_case"}, field_4 = "hello", field_5 = str, field_6 = "HELLO"),
         # any.eval (Any -> str) -> strings (str -> bool)
-        (
-            "any",
-            {"operation": "eval", "expression": "value"},
-            "strings",
-            {"operation": "contains", "param": "ell"},
-            "hello",
-            bool,
-            True,
-        ),
+        TestChainAllToolPairsResult(field_0 = "any", field_1 = {"operation": "eval", "expression": "value"}, field_2 = "strings", field_3 = {"operation": "contains", "param": "ell"}, field_4 = "hello", field_5 = bool, field_6 = True),
         # any.eval (Any -> int) -> generate (int -> list)
         (
             "any",
@@ -971,15 +966,7 @@ async def client():
             [10, 10, 10],
         ),
         # any.eval (Any -> int) -> generate (int -> list)
-        (
-            "any",
-            {"operation": "eval", "expression": "value * 2"},
-            "generate",
-            {"operation": "repeat", "count": 2},
-            8,
-            list,
-            [16, 16],
-        ),
+        TestChainAllToolPairsResult(field_0 = "any", field_1 = {"operation": "eval", "expression": "value * 2"}, field_2 = "generate", field_3 = {"operation": "repeat", "count": 2}, field_4 = 8, field_5 = list, field_6 = [16, 16]),
         # any.eval (Any -> bool) -> generate (bool -> list)
         (
             "any",
@@ -1309,15 +1296,7 @@ async def client():
             "Alice",
         ),
         # any.eval (arithmetic calculation) -> generate
-        (
-            "any",
-            {"operation": "eval", "expression": "value - 2"},
-            "generate",
-            {"operation": "repeat", "count": 2},
-            7,
-            list,
-            [5, 5],
-        ),
+        TestChainAllToolPairsResult(field_0 = "any", field_1 = {"operation": "eval", "expression": "value - 2"}, field_2 = "generate", field_3 = {"operation": "repeat", "count": 2}, field_4 = 7, field_5 = list, field_6 = [5, 5]),
         # any.eval (math calculation) -> lists (single item list)
         (
             "any",

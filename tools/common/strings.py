@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 """
 Common operations for the 'strings' tool that don't require expression evaluation.
 
@@ -9,6 +10,11 @@ import re
 import unicodedata
 import random
 from typing import Any, Dict, Optional, Callable
+@dataclass
+class OpSliceResult:
+    ValueError: Any
+    TypeError: Any
+    KeyError: Any
 
 
 def op_camel_case(text: str, **kwargs) -> dict:
@@ -175,7 +181,7 @@ def op_slice(text: str, data: Optional[dict] = None, **kwargs) -> dict:
         else:
             result = text[from_idx:]
         return {"value": result}
-    except (ValueError, TypeError, KeyError):
+    except OpSliceResult(ValueError = ValueError, TypeError = TypeError, KeyError = KeyError):
         return {
             "value": None,
             "error": "slice operation requires valid 'from' and optional 'to' indices",

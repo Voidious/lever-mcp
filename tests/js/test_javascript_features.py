@@ -1,3 +1,5 @@
+from typing import Any
+from dataclasses import dataclass
 """
 JavaScript-specific language feature tests.
 
@@ -11,6 +13,41 @@ import main
 from main import LeverMCP
 from fastmcp import Client
 from tests import make_tool_call
+@dataclass
+class TestTemplateLiteralsResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+@dataclass
+class TestDestructuringResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+@dataclass
+class TestSpreadOperatorResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+@dataclass
+class TestTruthyFalsyBehaviorResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+@dataclass
+class TestTypeSystemResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+@dataclass
+class TestJsonOperationsResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+@dataclass
+class TestRegularExpressionsResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
 
 
 @pytest.fixture
@@ -71,28 +108,16 @@ async def test_arrow_functions(client, expression, expected_result):
     "expression, context_value, expected_result",
     [
         # Basic template literals
-        ("`Hello ${value.name}!`", {"name": "World"}, "Hello World!"),
-        ("`Value: ${value.count}`", {"count": 42}, "Value: 42"),
+        TestTemplateLiteralsResult(field_0 = "`Hello ${value.name}!`", field_1 = {"name": "World"}, field_2 = "Hello World!"),
+        TestTemplateLiteralsResult(field_0 = "`Value: ${value.count}`", field_1 = {"count": 42}, field_2 = "Value: 42"),
         # Template literals with expressions
-        ("`Sum: ${value.a + value.b}`", {"a": 5, "b": 3}, "Sum: 8"),
-        ("`Name: ${value.name.toUpperCase()}`", {"name": "alice"}, "Name: ALICE"),
+        TestTemplateLiteralsResult(field_0 = "`Sum: ${value.a + value.b}`", field_1 = {"a": 5, "b": 3}, field_2 = "Sum: 8"),
+        TestTemplateLiteralsResult(field_0 = "`Name: ${value.name.toUpperCase()}`", field_1 = {"name": "alice"}, field_2 = "Name: ALICE"),
         # Multiple interpolations
-        (
-            "`${value.first} ${value.last}`",
-            {"first": "John", "last": "Doe"},
-            "John Doe",
-        ),
+        TestTemplateLiteralsResult(field_0 = "`${value.first} ${value.last}`", field_1 = {"first": "John", "last": "Doe"}, field_2 = "John Doe"),
         # Template literals with ternary
-        (
-            "`Result: ${value.score > 80 ? 'Pass' : 'Fail'}`",
-            {"score": 85},
-            "Result: Pass",
-        ),
-        (
-            "`Result: ${value.score > 80 ? 'Pass' : 'Fail'}`",
-            {"score": 75},
-            "Result: Fail",
-        ),
+        TestTemplateLiteralsResult(field_0 = "`Result: ${value.score > 80 ? 'Pass' : 'Fail'}`", field_1 = {"score": 85}, field_2 = "Result: Pass"),
+        TestTemplateLiteralsResult(field_0 = "`Result: ${value.score > 80 ? 'Pass' : 'Fail'}`", field_1 = {"score": 75}, field_2 = "Result: Fail"),
     ],
 )
 async def test_template_literals(client, expression, context_value, expected_result):
@@ -114,32 +139,16 @@ async def test_template_literals(client, expression, context_value, expected_res
     "expression, context_value, expected_result",
     [
         # Object destructuring
-        (
-            "(function() { const {name, age} = value; return name + ' is ' + age; })()",
-            {"name": "Alice", "age": 30},
-            "Alice is 30",
-        ),
+        TestDestructuringResult(field_0 = "(function() { const {name, age} = value; return name + ' is ' + age; })()", field_1 = {"name": "Alice", "age": 30}, field_2 = "Alice is 30"),
         # Array destructuring
-        (
-            "(function() { const [first, second] = value; return first + second; })()",
-            [10, 20],
-            30,
-        ),
+        TestDestructuringResult(field_0 = "(function() { const [first, second] = value; return first + second; })()", field_1 = [10, 20], field_2 = 30),
         # Destructuring with defaults
-        (
-            (
+        TestDestructuringResult(field_0 = (
                 "(function() { const {name = 'Unknown', age = 0} = value; "
                 "return name + ' ' + age; })()"
-            ),
-            {"name": "Bob"},
-            "Bob 0",
-        ),
+            ), field_1 = {"name": "Bob"}, field_2 = "Bob 0"),
         # Nested destructuring
-        (
-            "(function() { const {user: {name}} = value; return name; })()",
-            {"user": {"name": "Charlie"}},
-            "Charlie",
-        ),
+        TestDestructuringResult(field_0 = "(function() { const {user: {name}} = value; return name; })()", field_1 = {"user": {"name": "Charlie"}}, field_2 = "Charlie"),
     ],
 )
 async def test_destructuring(client, expression, context_value, expected_result):
@@ -161,21 +170,13 @@ async def test_destructuring(client, expression, context_value, expected_result)
     "expression, context_value, expected_result",
     [
         # Array spread
-        (
-            "[...value.arr1, ...value.arr2]",
-            {"arr1": [1, 2], "arr2": [3, 4]},
-            [1, 2, 3, 4],
-        ),
+        TestSpreadOperatorResult(field_0 = "[...value.arr1, ...value.arr2]", field_1 = {"arr1": [1, 2], "arr2": [3, 4]}, field_2 = [1, 2, 3, 4]),
         # Object spread
-        (
-            "({...value.obj1, ...value.obj2})",
-            {"obj1": {"a": 1}, "obj2": {"b": 2}},
-            {"a": 1, "b": 2},
-        ),
+        TestSpreadOperatorResult(field_0 = "({...value.obj1, ...value.obj2})", field_1 = {"obj1": {"a": 1}, "obj2": {"b": 2}}, field_2 = {"a": 1, "b": 2}),
         # Function spread
-        ("Math.max(...value)", [1, 5, 3, 2], 5),
+        TestSpreadOperatorResult(field_0 = "Math.max(...value)", field_1 = [1, 5, 3, 2], field_2 = 5),
         # Array copying
-        ("[...value]", [1, 2, 3], [1, 2, 3]),
+        TestSpreadOperatorResult(field_0 = "[...value]", field_1 = [1, 2, 3], field_2 = [1, 2, 3]),
     ],
 )
 async def test_spread_operator(client, expression, context_value, expected_result):
@@ -278,26 +279,26 @@ async def test_let_const_scoping(client, expression, expected_result):
     "value, expression, expected_result",
     [
         # Falsy values
-        (False, "!!value", False),
-        (0, "!!value", False),
-        ("", "!!value", False),
-        (None, "!!value", False),  # Python None becomes JS null
+        TestTruthyFalsyBehaviorResult(field_0 = False, field_1 = "!!value", field_2 = False),
+        TestTruthyFalsyBehaviorResult(field_0 = 0, field_1 = "!!value", field_2 = False),
+        TestTruthyFalsyBehaviorResult(field_0 = "", field_1 = "!!value", field_2 = False),
+        TestTruthyFalsyBehaviorResult(field_0 = None, field_1 = "!!value", field_2 = False),  # Python None becomes JS null
         # Truthy values
-        (True, "!!value", True),
-        (1, "!!value", True),
-        ("hello", "!!value", True),
-        ([], "!!value", True),  # Empty array is truthy in JS
-        ({}, "!!value", True),  # Empty object is truthy in JS
+        TestTruthyFalsyBehaviorResult(field_0 = True, field_1 = "!!value", field_2 = True),
+        TestTruthyFalsyBehaviorResult(field_0 = 1, field_1 = "!!value", field_2 = True),
+        TestTruthyFalsyBehaviorResult(field_0 = "hello", field_1 = "!!value", field_2 = True),
+        TestTruthyFalsyBehaviorResult(field_0 = [], field_1 = "!!value", field_2 = True),  # Empty array is truthy in JS
+        TestTruthyFalsyBehaviorResult(field_0 = {}, field_1 = "!!value", field_2 = True),  # Empty object is truthy in JS
         # Ternary with truthy/falsy
-        (0, "value ? 'truthy' : 'falsy'", "falsy"),
-        (1, "value ? 'truthy' : 'falsy'", "truthy"),
-        ("", "value ? 'truthy' : 'falsy'", "falsy"),
-        ("hello", "value ? 'truthy' : 'falsy'", "truthy"),
+        TestTruthyFalsyBehaviorResult(field_0 = 0, field_1 = "value ? 'truthy' : 'falsy'", field_2 = "falsy"),
+        TestTruthyFalsyBehaviorResult(field_0 = 1, field_1 = "value ? 'truthy' : 'falsy'", field_2 = "truthy"),
+        TestTruthyFalsyBehaviorResult(field_0 = "", field_1 = "value ? 'truthy' : 'falsy'", field_2 = "falsy"),
+        TestTruthyFalsyBehaviorResult(field_0 = "hello", field_1 = "value ? 'truthy' : 'falsy'", field_2 = "truthy"),
         # Logical operators
-        (0, "value || 'default'", "default"),
-        (42, "value || 'default'", 42),
-        (None, "value && 'has value'", None),
-        (42, "value && 'has value'", "has value"),
+        TestTruthyFalsyBehaviorResult(field_0 = 0, field_1 = "value || 'default'", field_2 = "default"),
+        TestTruthyFalsyBehaviorResult(field_0 = 42, field_1 = "value || 'default'", field_2 = 42),
+        TestTruthyFalsyBehaviorResult(field_0 = None, field_1 = "value && 'has value'", field_2 = None),
+        TestTruthyFalsyBehaviorResult(field_0 = 42, field_1 = "value && 'has value'", field_2 = "has value"),
     ],
 )
 async def test_truthy_falsy_behavior(client, value, expression, expected_result):
@@ -317,27 +318,27 @@ async def test_truthy_falsy_behavior(client, value, expression, expected_result)
     "value, expression, expected_result",
     [
         # typeof operator
-        ("hello", "typeof value", "string"),
-        (42, "typeof value", "number"),
-        (True, "typeof value", "boolean"),
-        (None, "typeof value", "object"),  # null is object in JS
-        ([], "typeof value", "object"),
-        ({}, "typeof value", "object"),
+        TestTypeSystemResult(field_0 = "hello", field_1 = "typeof value", field_2 = "string"),
+        TestTypeSystemResult(field_0 = 42, field_1 = "typeof value", field_2 = "number"),
+        TestTypeSystemResult(field_0 = True, field_1 = "typeof value", field_2 = "boolean"),
+        TestTypeSystemResult(field_0 = None, field_1 = "typeof value", field_2 = "object"),  # null is object in JS
+        TestTypeSystemResult(field_0 = [], field_1 = "typeof value", field_2 = "object"),
+        TestTypeSystemResult(field_0 = {}, field_1 = "typeof value", field_2 = "object"),
         # instanceof checks
-        ([], "value instanceof Array", True),
-        ({}, "value instanceof Array", False),
-        ({}, "value instanceof Object", True),
+        TestTypeSystemResult(field_0 = [], field_1 = "value instanceof Array", field_2 = True),
+        TestTypeSystemResult(field_0 = {}, field_1 = "value instanceof Array", field_2 = False),
+        TestTypeSystemResult(field_0 = {}, field_1 = "value instanceof Object", field_2 = True),
         # Array.isArray
-        ([], "Array.isArray(value)", True),
-        ({}, "Array.isArray(value)", False),
+        TestTypeSystemResult(field_0 = [], field_1 = "Array.isArray(value)", field_2 = True),
+        TestTypeSystemResult(field_0 = {}, field_1 = "Array.isArray(value)", field_2 = False),
         # Number checks
-        (42, "Number.isInteger(value)", True),
-        (42.5, "Number.isInteger(value)", False),
-        (42, "Number.isFinite(value)", True),
+        TestTypeSystemResult(field_0 = 42, field_1 = "Number.isInteger(value)", field_2 = True),
+        TestTypeSystemResult(field_0 = 42.5, field_1 = "Number.isInteger(value)", field_2 = False),
+        TestTypeSystemResult(field_0 = 42, field_1 = "Number.isFinite(value)", field_2 = True),
         # String methods
-        ("hello", "value.charAt(1)", "e"),
-        ("hello", "value.slice(1, 3)", "el"),
-        ("hello", "value.indexOf('l')", 2),
+        TestTypeSystemResult(field_0 = "hello", field_1 = "value.charAt(1)", field_2 = "e"),
+        TestTypeSystemResult(field_0 = "hello", field_1 = "value.slice(1, 3)", field_2 = "el"),
+        TestTypeSystemResult(field_0 = "hello", field_1 = "value.indexOf('l')", field_2 = 2),
     ],
 )
 async def test_type_system(client, value, expression, expected_result):
@@ -402,17 +403,13 @@ async def test_try_catch_expressions(client):
     "expression, context_value, expected_result",
     [
         # JSON.stringify
-        (
-            "JSON.stringify(value)",
-            {"name": "Alice", "age": 30},
-            '{"name":"Alice","age":30}',
-        ),
-        ("JSON.stringify(value)", [1, 2, 3], "[1,2,3]"),
+        TestJsonOperationsResult(field_0 = "JSON.stringify(value)", field_1 = {"name": "Alice", "age": 30}, field_2 = '{"name":"Alice","age":30}'),
+        TestJsonOperationsResult(field_0 = "JSON.stringify(value)", field_1 = [1, 2, 3], field_2 = "[1,2,3]"),
         # JSON.parse
-        ("JSON.parse(value)", '{"a":1,"b":2}', {"a": 1, "b": 2}),
-        ("JSON.parse(value)", "[1,2,3]", [1, 2, 3]),
+        TestJsonOperationsResult(field_0 = "JSON.parse(value)", field_1 = '{"a":1,"b":2}', field_2 = {"a": 1, "b": 2}),
+        TestJsonOperationsResult(field_0 = "JSON.parse(value)", field_1 = "[1,2,3]", field_2 = [1, 2, 3]),
         # Pretty print JSON
-        ("JSON.stringify(value, null, 2)", {"a": 1}, '{\n  "a": 1\n}'),
+        TestJsonOperationsResult(field_0 = "JSON.stringify(value, null, 2)", field_1 = {"a": 1}, field_2 = '{\n  "a": 1\n}'),
     ],
 )
 async def test_json_operations(client, expression, context_value, expected_result):
@@ -434,15 +431,15 @@ async def test_json_operations(client, expression, context_value, expected_resul
     "expression, context_value, expected_result",
     [
         # RegExp test
-        ("/hello/.test(value)", "hello world", True),
-        ("/hello/.test(value)", "hi world", False),
+        TestRegularExpressionsResult(field_0 = "/hello/.test(value)", field_1 = "hello world", field_2 = True),
+        TestRegularExpressionsResult(field_0 = "/hello/.test(value)", field_1 = "hi world", field_2 = False),
         # String match
-        ("value.match(/[0-9]+/)", "abc123def", ["123"]),
-        ("value.match(/[0-9]+/g)", "12 34 56", ["12", "34", "56"]),
+        TestRegularExpressionsResult(field_0 = "value.match(/[0-9]+/)", field_1 = "abc123def", field_2 = ["123"]),
+        TestRegularExpressionsResult(field_0 = "value.match(/[0-9]+/g)", field_1 = "12 34 56", field_2 = ["12", "34", "56"]),
         # String replace with regex
-        ("value.replace(/[0-9]/g, 'X')", "a1b2c3", "aXbXcX"),
+        TestRegularExpressionsResult(field_0 = "value.replace(/[0-9]/g, 'X')", field_1 = "a1b2c3", field_2 = "aXbXcX"),
         # String split with regex
-        ("value.split(/[,;]/)", "a,b;c", ["a", "b", "c"]),
+        TestRegularExpressionsResult(field_0 = "value.split(/[,;]/)", field_1 = "a,b;c", field_2 = ["a", "b", "c"]),
     ],
 )
 async def test_regular_expressions(client, expression, context_value, expected_result):

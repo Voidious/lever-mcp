@@ -1,9 +1,20 @@
+from typing import Any
+from dataclasses import dataclass
 import pytest
 import importlib
 import main
 from main import LeverMCP
 from fastmcp import Client
 from tests import make_tool_call
+@dataclass
+class TestBasicChainPairingsResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+    field_3: Any
+    field_4: Any
+    field_5: Any
+    field_6: Any
 
 
 @pytest.fixture(params=["lua", "javascript"])
@@ -43,155 +54,35 @@ async def client(request):
     "expected_value",
     [
         # strings (str -> str) -> strings (str -> str)
-        (
-            "strings",
-            {"operation": "upper_case"},
-            "strings",
-            {"operation": "reverse"},
-            "abc",
-            str,
-            "CBA",
-        ),
+        TestBasicChainPairingsResult(field_0 = "strings", field_1 = {"operation": "upper_case"}, field_2 = "strings", field_3 = {"operation": "reverse"}, field_4 = "abc", field_5 = str, field_6 = "CBA"),
         # strings (str -> str) -> strings (str -> bool)
-        (
-            "strings",
-            {"operation": "upper_case"},
-            "strings",
-            {"operation": "is_upper"},
-            "abc",
-            bool,
-            True,
-        ),
+        TestBasicChainPairingsResult(field_0 = "strings", field_1 = {"operation": "upper_case"}, field_2 = "strings", field_3 = {"operation": "is_upper"}, field_4 = "abc", field_5 = bool, field_6 = True),
         # strings (str -> str) -> generate (str -> list) (repeat)
-        (
-            "strings",
-            {"operation": "capitalize"},
-            "generate",
-            {"operation": "repeat", "count": 2},
-            "foo",
-            list,
-            ["Foo", "Foo"],
-        ),
+        TestBasicChainPairingsResult(field_0 = "strings", field_1 = {"operation": "capitalize"}, field_2 = "generate", field_3 = {"operation": "repeat", "count": 2}, field_4 = "foo", field_5 = list, field_6 = ["Foo", "Foo"]),
         # lists (list -> list) -> lists (list -> list)
-        (
-            "lists",
-            {"operation": "flatten_deep"},
-            "lists",
-            {"operation": "compact"},
-            [1, [0, 2, None]],
-            list,
-            [1, 2],
-        ),
+        TestBasicChainPairingsResult(field_0 = "lists", field_1 = {"operation": "flatten_deep"}, field_2 = "lists", field_3 = {"operation": "compact"}, field_4 = [1, [0, 2, None]], field_5 = list, field_6 = [1, 2]),
         # lists (list -> list) -> lists (list -> Any)
-        (
-            "lists",
-            {"operation": "compact"},
-            "lists",
-            {"operation": "head"},
-            [None, "foo", "bar"],
-            str,
-            "foo",
-        ),
+        TestBasicChainPairingsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "lists", field_3 = {"operation": "head"}, field_4 = [None, "foo", "bar"], field_5 = str, field_6 = "foo"),
         # lists (list -> list) -> lists (list -> bool) is_empty
-        (
-            "lists",
-            {"operation": "compact"},
-            "lists",
-            {"operation": "is_empty"},
-            [None, None],
-            bool,
-            True,
-        ),
+        TestBasicChainPairingsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "lists", field_3 = {"operation": "is_empty"}, field_4 = [None, None], field_5 = bool, field_6 = True),
         # lists (list -> list) -> lists (list -> bool) is_equal
-        (
-            "lists",
-            {"operation": "compact"},
-            "lists",
-            {"operation": "is_equal", "param": [1, 2]},
-            [1, 2],
-            bool,
-            True,
-        ),
+        TestBasicChainPairingsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "lists", field_3 = {"operation": "is_equal", "param": [1, 2]}, field_4 = [1, 2], field_5 = bool, field_6 = True),
         # lists (list -> list) -> lists (list -> bool) contains
-        (
-            "lists",
-            {"operation": "compact"},
-            "lists",
-            {"operation": "contains", "param": 2},
-            [1, 2, 3],
-            bool,
-            True,
-        ),
+        TestBasicChainPairingsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "lists", field_3 = {"operation": "contains", "param": 2}, field_4 = [1, 2, 3], field_5 = bool, field_6 = True),
         # lists (list -> list) -> generate (powerset)
-        (
-            "lists",
-            {"operation": "compact"},
-            "generate",
-            {"operation": "powerset"},
-            [1, 2],
-            list,
-            [[], [1], [2], [1, 2]],
-        ),
+        TestBasicChainPairingsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "generate", field_3 = {"operation": "powerset"}, field_4 = [1, 2], field_5 = list, field_6 = [[], [1], [2], [1, 2]]),
         # lists (list -> list) -> generate (permutations)
-        (
-            "lists",
-            {"operation": "compact"},
-            "generate",
-            {"operation": "permutations"},
-            [1, 2],
-            list,
-            [[1, 2], [2, 1]],
-        ),
+        TestBasicChainPairingsResult(field_0 = "lists", field_1 = {"operation": "compact"}, field_2 = "generate", field_3 = {"operation": "permutations"}, field_4 = [1, 2], field_5 = list, field_6 = [[1, 2], [2, 1]]),
         # dicts (dict -> dict) -> dicts (dict -> list)
-        (
-            "dicts",
-            {"operation": "pick", "param": ["name"]},
-            "dicts",
-            {"operation": "keys"},
-            {"name": "Alice", "age": 30},
-            list,
-            ["name"],
-        ),
+        TestBasicChainPairingsResult(field_0 = "dicts", field_1 = {"operation": "pick", "param": ["name"]}, field_2 = "dicts", field_3 = {"operation": "keys"}, field_4 = {"name": "Alice", "age": 30}, field_5 = list, field_6 = ["name"]),
         # dicts (dict -> dict) -> dicts (dict -> Any)
-        (
-            "dicts",
-            {"operation": "pick", "param": ["name"]},
-            "dicts",
-            {"operation": "get_value", "path": "name"},
-            {"name": "Alice", "age": 30},
-            str,
-            "Alice",
-        ),
+        TestBasicChainPairingsResult(field_0 = "dicts", field_1 = {"operation": "pick", "param": ["name"]}, field_2 = "dicts", field_3 = {"operation": "get_value", "path": "name"}, field_4 = {"name": "Alice", "age": 30}, field_5 = str, field_6 = "Alice"),
         # any (Any -> bool) -> any (bool -> Any)
-        (
-            "any",
-            {"operation": "is_empty"},
-            "any",
-            {"operation": "is_equal", "param": True},
-            "",
-            bool,
-            True,
-        ),
+        TestBasicChainPairingsResult(field_0 = "any", field_1 = {"operation": "is_empty"}, field_2 = "any", field_3 = {"operation": "is_equal", "param": True}, field_4 = "", field_5 = bool, field_6 = True),
         # any (Any -> int) -> any (int -> bool)
-        (
-            "any",
-            {"operation": "size"},
-            "any",
-            {"operation": "is_equal", "param": 5},
-            "hello",
-            bool,
-            True,
-        ),
+        TestBasicChainPairingsResult(field_0 = "any", field_1 = {"operation": "size"}, field_2 = "any", field_3 = {"operation": "is_equal", "param": 5}, field_4 = "hello", field_5 = bool, field_6 = True),
         # dicts (dict -> Any) -> strings (str -> str)
-        (
-            "dicts",
-            {"operation": "get_value", "path": "name"},
-            "strings",
-            {"operation": "upper_case"},
-            {"name": "alice", "age": 30},
-            str,
-            "ALICE",
-        ),
+        TestBasicChainPairingsResult(field_0 = "dicts", field_1 = {"operation": "get_value", "path": "name"}, field_2 = "strings", field_3 = {"operation": "upper_case"}, field_4 = {"name": "alice", "age": 30}, field_5 = str, field_6 = "ALICE"),
     ],
 )
 async def test_basic_chain_pairings(

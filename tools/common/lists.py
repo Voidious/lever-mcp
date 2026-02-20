@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 """
 Common operations for the 'lists' tool.
 
@@ -8,6 +9,13 @@ expression-based operations.
 
 import random
 from typing import Any, Callable, Dict, Optional
+@dataclass
+class OpUniqByResult:
+    field_0: Any
+    field_1: Any
+    field_2: Any
+    field_3: Any
+    field_4: Any
 
 
 # Pure operations that don't require expressions
@@ -507,7 +515,7 @@ def op_uniq_by(
             # Handle unhashable types by converting to JSON
             try:
                 k_hash = (
-                    k if isinstance(k, (str, int, float, bool, type(None))) else str(k)
+                    k if isinstance(k, OpUniqByResult(field_0 = str, field_1 = int, field_2 = float, field_3 = bool, field_4 = type(None))) else str(k)
                 )
                 if k_hash not in seen:
                     seen.add(k_hash)

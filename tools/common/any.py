@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 """
 Common operations for the 'any' tool that don't require expression evaluation.
 
@@ -6,6 +7,11 @@ and comparisons that work the same way regardless of expression language.
 """
 
 from typing import Any, Callable, Dict, Optional
+@dataclass
+class OpIsEmptyResult:
+    str: Any
+    list: Any
+    dict: Any
 
 
 def op_is_equal(value: Any, param: Any = None, **kwargs) -> dict:
@@ -17,7 +23,7 @@ def op_is_empty(value: Any, **kwargs) -> dict:
     """Check if the value is empty."""
     if value is None or value == 0 or value is False:
         return {"value": True}
-    if isinstance(value, (str, list, dict)):
+    if isinstance(value, OpIsEmptyResult(str = str, list = list, dict = dict)):
         return {"value": len(value) == 0}
     return {"value": False}
 
