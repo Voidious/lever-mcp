@@ -35,6 +35,14 @@ async def client():
 # --- Arrow Function Tests ---
 
 
+async def _assert_js_eval(client, expression, expected_result):
+    result, error = await make_tool_call(
+        client, "any", {"value": {}, "operation": "eval", "expression": expression}
+    )
+    assert error is None
+    assert result == expected_result
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "expression, expected_result",
@@ -56,11 +64,7 @@ async def client():
 )
 async def test_arrow_functions(client, expression, expected_result):
     """Test various arrow function syntaxes."""
-    result, error = await make_tool_call(
-        client, "any", {"value": {}, "operation": "eval", "expression": expression}
-    )
-    assert error is None
-    assert result == expected_result
+    await _assert_js_eval(client, expression, expected_result)
 
 
 # --- Template Literal Tests ---
@@ -215,11 +219,7 @@ async def test_spread_operator(client, expression, context_value, expected_resul
 )
 async def test_modern_array_methods(client, expression, expected_result):
     """Test modern JavaScript array methods."""
-    result, error = await make_tool_call(
-        client, "any", {"value": {}, "operation": "eval", "expression": expression}
-    )
-    assert error is None
-    assert result == expected_result
+    await _assert_js_eval(client, expression, expected_result)
 
 
 # --- Let/Const Scoping Tests ---
@@ -263,11 +263,7 @@ async def test_modern_array_methods(client, expression, expected_result):
 )
 async def test_let_const_scoping(client, expression, expected_result):
     """Test let/const scoping behavior."""
-    result, error = await make_tool_call(
-        client, "any", {"value": {}, "operation": "eval", "expression": expression}
-    )
-    assert error is None
-    assert result == expected_result
+    await _assert_js_eval(client, expression, expected_result)
 
 
 # --- Truthy/Falsy Behavior Tests ---

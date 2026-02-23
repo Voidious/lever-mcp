@@ -796,6 +796,20 @@ def python_to_lua(obj, lua_runtime):
         return obj
 
 
+def _convert_lua_table_to_list(data, null_sentinel, converter):
+    keys = list(data.keys())
+    if not keys:
+        return []
+    elif all(isinstance(k, int) and k > 0 for k in keys):
+        max_k = max(keys)
+        return [
+            converter(data[k] if k in keys else None, null_sentinel)
+            for k in range(1, max_k + 1)
+        ]
+    else:
+        return [converter(v, null_sentinel) for v in data.values()]
+
+
 def lua_to_python_preserve_wrapped(obj, null_sentinel=None):
     """
     Convert Lua data structures to Python equivalents, preserving wrapped objects.
@@ -819,23 +833,9 @@ def lua_to_python_preserve_wrapped(obj, null_sentinel=None):
                 # Force conversion to list but preserve wrapped objects within
                 if hasattr(data, "keys"):
                     # It's a Lua table, convert to Python list
-                    keys = list(data.keys())
-                    if not keys:
-                        converted_data = []
-                    elif all(isinstance(k, int) and k > 0 for k in keys):
-                        max_k = max(keys)
-                        converted_data = [
-                            lua_to_python_preserve_wrapped(
-                                data[k] if k in keys else None, null_sentinel
-                            )
-                            for k in range(1, max_k + 1)
-                        ]
-                    else:
-                        # Non-consecutive keys, convert to list of values
-                        converted_data = [
-                            lua_to_python_preserve_wrapped(v, null_sentinel)
-                            for v in data.values()
-                        ]
+                    converted_data = _convert_lua_table_to_list(
+                        data, null_sentinel, lua_to_python_preserve_wrapped
+                    )
                 elif isinstance(data, list):
                     converted_data = [
                         lua_to_python_preserve_wrapped(x, null_sentinel) for x in data
@@ -924,23 +924,9 @@ def lua_to_python(obj, null_sentinel=None):
                 if hasattr(data, "keys"):
                     # It's a Lua table, convert to Python list preserving wrapped
                     # objects
-                    keys = list(data.keys())
-                    if not keys:
-                        converted_data = []
-                    elif all(isinstance(k, int) and k > 0 for k in keys):
-                        max_k = max(keys)
-                        converted_data = [
-                            lua_to_python_preserve_wrapped(
-                                data[k] if k in keys else None, null_sentinel
-                            )
-                            for k in range(1, max_k + 1)
-                        ]
-                    else:
-                        # Non-consecutive keys, convert to list of values
-                        converted_data = [
-                            lua_to_python_preserve_wrapped(v, null_sentinel)
-                            for v in data.values()
-                        ]
+                    converted_data = _convert_lua_table_to_list(
+                        data, null_sentinel, lua_to_python_preserve_wrapped
+                    )
                 elif isinstance(data, list):
                     # Preserve wrapped objects within the list
                     converted_data = []
@@ -960,9 +946,7 @@ def lua_to_python(obj, null_sentinel=None):
                                     # Force list conversion
                                     if hasattr(inner_data_lua, "keys"):
                                         keys = list(inner_data_lua.keys())
-                                        if not keys:
-                                            inner_data = []
-                                        else:
+                                        if keys:
                                             # Convert Lua table to list, preserving
                                             # wrapped objects
                                             inner_data = []
@@ -1005,6 +989,8 @@ def lua_to_python(obj, null_sentinel=None):
                                                                 item, null_sentinel
                                                             )
                                                         )
+                                        else:
+                                            inner_data = []
                                     else:
                                         inner_data = []
                                 elif inner_type == "dict":
@@ -1138,6 +1124,36 @@ def lua_to_python(obj, null_sentinel=None):
         return obj
 
 
+def _setup_and_evaluate_lua(
+    item: Any, context: Optional[Dict[str, Any]], expression: str, safe_mode: bool
+):
+    lua_runtime = create_lua_runtime(safe_mode)
+    # Set up context - always make dict keys available for direct access
+    if isinstance(item, dict):
+        for key, value in item.items():
+            if (
+                isinstance(key, str)
+                and key.isidentifier()
+                and key not in ["and", "or", "not", "if", "then", "else", "end"]
+            ):
+                lua_runtime.globals()[key] = python_to_lua(
+                    value, lua_runtime
+                )  # type: ignore  # noqa
+
+    # Set up additional context variables (may override dict keys)
+    if context is not None:
+        for k, v in context.items():
+            lua_runtime.globals()[k] = python_to_lua(
+                v, lua_runtime
+            )  # type: ignore  # noqa
+    # Evaluate the expression
+    try:
+        result = lua_runtime.execute("return (" + expression + ")")
+    except lupa.LuaError:
+        result = lua_runtime.execute(expression)
+    return lua_runtime, result
+
+
 def evaluate_expression_preserve_wrapped(
     expression: str,
     item: Any,
@@ -1149,30 +1165,9 @@ def evaluate_expression_preserve_wrapped(
     This version preserves list({})/dict({}) wrapped objects instead of unwrapping them.
     """
     try:
-        lua_runtime = create_lua_runtime(safe_mode)
-        # Set up context - always make dict keys available for direct access
-        if isinstance(item, dict):
-            for key, value in item.items():
-                if (
-                    isinstance(key, str)
-                    and key.isidentifier()
-                    and key not in ["and", "or", "not", "if", "then", "else", "end"]
-                ):
-                    lua_runtime.globals()[key] = python_to_lua(
-                        value, lua_runtime
-                    )  # type: ignore  # noqa
-
-        # Set up additional context variables (may override dict keys)
-        if context is not None:
-            for k, v in context.items():
-                lua_runtime.globals()[k] = python_to_lua(
-                    v, lua_runtime
-                )  # type: ignore  # noqa
-        # Evaluate the expression
-        try:
-            result = lua_runtime.execute("return (" + expression + ")")
-        except lupa.LuaError:
-            result = lua_runtime.execute(expression)
+        lua_runtime, result = _setup_and_evaluate_lua(
+            item, context, expression, safe_mode
+        )
 
         # Convert result back to Python, preserving wrapped objects
         null_sentinel = lua_runtime.eval("null")
@@ -1203,30 +1198,9 @@ def evaluate_expression(
             Required for parameter access in expressions.
     """
     try:
-        lua_runtime = create_lua_runtime(safe_mode)
-        # Set up context - always make dict keys available for direct access
-        if isinstance(item, dict):
-            for key, value in item.items():
-                if (
-                    isinstance(key, str)
-                    and key.isidentifier()
-                    and key not in ["and", "or", "not", "if", "then", "else", "end"]
-                ):
-                    lua_runtime.globals()[key] = python_to_lua(
-                        value, lua_runtime
-                    )  # type: ignore  # noqa
-
-        # Set up additional context variables (may override dict keys)
-        if context is not None:
-            for k, v in context.items():
-                lua_runtime.globals()[k] = python_to_lua(
-                    v, lua_runtime
-                )  # type: ignore  # noqa
-        # Evaluate the expression
-        try:
-            result = lua_runtime.execute("return (" + expression + ")")
-        except lupa.LuaError:
-            result = lua_runtime.execute(expression)
+        lua_runtime, result = _setup_and_evaluate_lua(
+            item, context, expression, safe_mode
+        )
 
         # Check if the result is a Lua function - if so, call it with the item
         if callable(result):
