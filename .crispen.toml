@@ -1,0 +1,4 @@
+provider = "moonshot"
+model = "kimi-k2.5"
+extraction_retries = 2
+llm_verify_retries = 2
