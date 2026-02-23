@@ -960,9 +960,7 @@ def lua_to_python(obj, null_sentinel=None):
                                     # Force list conversion
                                     if hasattr(inner_data_lua, "keys"):
                                         keys = list(inner_data_lua.keys())
-                                        if not keys:
-                                            inner_data = []
-                                        else:
+                                        if keys:
                                             # Convert Lua table to list, preserving
                                             # wrapped objects
                                             inner_data = []
@@ -1005,6 +1003,8 @@ def lua_to_python(obj, null_sentinel=None):
                                                                 item, null_sentinel
                                                             )
                                                         )
+                                        else:
+                                            inner_data = []
                                     else:
                                         inner_data = []
                                 elif inner_type == "dict":

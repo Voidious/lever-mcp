@@ -9,6 +9,20 @@ from typing import Any, Dict, List
 import inspect
 
 
+def _check_and_assign_param(param_name, arguments, value, step_idx, unwrap_func):
+    if param_name in arguments:
+        return {
+            "value": None,
+            "error": (
+                f"Step {step_idx}: Chaining does not allow specifying the "
+                f"primary parameter '{param_name}' in params. The "
+                "output from the previous tool is always used as input."
+            ),
+        }
+    arguments[param_name] = unwrap_func(value)
+    return None
+
+
 async def chain_tool(input: Any, tool_calls: List[Dict[str, Any]], mcp) -> dict:
     """MCP tool wrapper for chaining multiple tool calls."""
     value = input
@@ -45,17 +59,11 @@ async def chain_tool(input: Any, tool_calls: List[Dict[str, Any]], mcp) -> dict:
 
         # Fallback to required parameters (excluding 'operation')
         if not primary_param:
-            for k in required:
-                if k != "operation":
-                    primary_param = k
-                    break
+            primary_param = _find_primary_param_key(required)
 
         # Fallback to first non-'operation' parameter in schema
         if not primary_param and param_schema:
-            for k in param_schema:
-                if k != "operation":
-                    primary_param = k
-                    break
+            primary_param = _find_primary_param_key(param_schema)
 
         arguments = dict(params)
 
@@ -183,29 +191,18 @@ async def chain_tool(input: Any, tool_calls: List[Dict[str, Any]], mcp) -> dict:
                     ),
                 }
         elif primary_param:
-            if primary_param in arguments:
-                return {
-                    "value": None,
-                    "error": (
-                        f"Step {i}: Chaining does not allow specifying the "
-                        f"primary parameter '{primary_param}' in params. The "
-                        "output from the previous tool is always used as input."
-                    ),
-                }
-            # Unwrap the value before passing to the next tool
-            arguments[primary_param] = unwrap_result(value)
+            result = _check_and_assign_param(
+                primary_param, arguments, value, i, unwrap_result
+            )
+            if result:
+                return result
         elif len(param_schema) == 1:
             only_param = next(iter(param_schema))
-            if only_param in arguments:
-                return {
-                    "value": None,
-                    "error": (
-                        f"Step {i}: Chaining does not allow specifying the "
-                        f"primary parameter '{only_param}' in params. The output "
-                        "from the previous tool is always used as input."
-                    ),
-                }
-            arguments[only_param] = unwrap_result(value)
+            result = _check_and_assign_param(
+                only_param, arguments, value, i, unwrap_result
+            )
+            if result:
+                return result
         elif not param_schema:
             arguments = {}
         try:
