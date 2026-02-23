@@ -1,3 +1,9 @@
+def assert_result_with_count(result, error, expected_count):
+    assert error is None
+    assert result is not None
+    assert len(result) == expected_count
+
+
 import importlib
 import pytest
 import main
@@ -593,9 +599,7 @@ async def test_difference_intersection_by_expression(
             "expression": expression,
         },
     )
-    assert error is None
-    assert result is not None
-    assert len(result) == expected_count
+    assert_result_with_count(result, error, expected_count)
 
 
 # --- Remove By Expression Tests ---
@@ -628,9 +632,7 @@ async def test_remove_by_expression(client, items, expression, expected_count):
         "lists",
         {"items": items, "operation": "remove_by", "expression": expression},
     )
-    assert error is None
-    assert result is not None
-    assert len(result) == expected_count
+    assert_result_with_count(result, error, expected_count)
 
 
 # --- Null Handling Expression Tests ---

@@ -1,3 +1,26 @@
+def assert_value_or_empty_list(value, expected):
+    if value:
+        assert value == expected
+    else:
+        assert expected == []
+
+
+def assert_list_result(value, expected):
+    if value:
+        if (
+            isinstance(value, list)
+            and value
+            and all(isinstance(x, dict) and "value" in x for x in value)
+        ):
+            value = [x["value"] for x in value]
+        if len(expected) == 1 and not isinstance(value, list):
+            assert [value] == expected
+        else:
+            assert value == expected
+    else:
+        assert expected == []
+
+
 import importlib
 import main
 import pytest
@@ -289,10 +312,7 @@ async def test_tail(client, items, expected):
     value, error = await make_tool_call(
         client, "lists", {"items": items, "operation": "tail"}
     )
-    if not value:
-        assert expected == []
-    else:
-        assert value == expected
+    assert_value_or_empty_list(value, expected)
 
 
 @pytest.mark.asyncio
@@ -308,10 +328,10 @@ async def test_last(client, items, expected):
     value, error = await make_tool_call(
         client, "lists", {"items": items, "operation": "last"}
     )
-    if not value:
-        assert expected is None
-    else:
+    if value:
         assert value == expected
+    else:
+        assert expected is None
 
 
 @pytest.mark.asyncio
@@ -327,10 +347,7 @@ async def test_initial(client, items, expected):
     value, error = await make_tool_call(
         client, "lists", {"items": items, "operation": "initial"}
     )
-    if not value:
-        assert expected == []
-    else:
-        assert value == expected
+    assert_value_or_empty_list(value, expected)
 
 
 @pytest.mark.asyncio
@@ -347,10 +364,7 @@ async def test_drop(client, items, n, expected):
     value, error = await make_tool_call(
         client, "lists", {"items": items, "operation": "drop", "param": n}
     )
-    if not value:
-        assert expected == []
-    else:
-        assert value == expected
+    assert_value_or_empty_list(value, expected)
 
 
 @pytest.mark.asyncio
@@ -367,10 +381,7 @@ async def test_drop_right(client, items, n, expected):
     value, error = await make_tool_call(
         client, "lists", {"items": items, "operation": "drop_right", "param": n}
     )
-    if not value:
-        assert expected == []
-    else:
-        assert value == expected
+    assert_value_or_empty_list(value, expected)
 
 
 @pytest.mark.asyncio
@@ -387,9 +398,7 @@ async def test_take(client, items, n, expected):
     value, error = await make_tool_call(
         client, "lists", {"items": items, "operation": "take", "param": n}
     )
-    if not value:
-        assert expected == []
-    else:
+    if value:
         if (
             isinstance(value, list)
             and value
@@ -406,6 +415,8 @@ async def test_take(client, items, n, expected):
             assert [value] == expected
         else:
             assert value == expected
+    else:
+        assert expected == []
 
 
 @pytest.mark.asyncio
@@ -422,19 +433,7 @@ async def test_take_right(client, items, n, expected):
     value, error = await make_tool_call(
         client, "lists", {"items": items, "operation": "take_right", "param": n}
     )
-    if not value:
-        assert expected == []
-    else:
-        if (
-            isinstance(value, list)
-            and value
-            and all(isinstance(x, dict) and "value" in x for x in value)
-        ):
-            value = [x["value"] for x in value]
-        if len(expected) == 1 and not isinstance(value, list):
-            assert [value] == expected
-        else:
-            assert value == expected
+    assert_list_result(value, expected)
 
 
 @pytest.mark.asyncio
@@ -453,19 +452,7 @@ async def test_flatten(client, items, expected):
     value, error = await make_tool_call(
         client, "lists", {"items": items, "operation": "flatten"}
     )
-    if not value:
-        assert expected == []
-    else:
-        if (
-            isinstance(value, list)
-            and value
-            and all(isinstance(x, dict) and "value" in x for x in value)
-        ):
-            value = [x["value"] for x in value]
-        if len(expected) == 1 and not isinstance(value, list):
-            assert [value] == expected
-        else:
-            assert value == expected
+    assert_list_result(value, expected)
 
 
 @pytest.mark.asyncio
@@ -482,13 +469,13 @@ async def test_union(client, lists, expected):
     value, error = await make_tool_call(
         client, "lists", {"items": lists, "operation": "union"}
     )
-    if not value:
-        assert expected == []
-    else:
+    if value:
         if isinstance(value, list):
             assert sorted(value) == sorted(expected)
         else:
             assert [value] == expected
+    else:
+        assert expected == []
 
 
 @pytest.mark.asyncio
@@ -510,9 +497,7 @@ async def test_intersection(client, lists, expected):
         "lists",
         {"items": lists[0], "others": lists[1], "operation": "intersection"},
     )
-    if not value:
-        assert expected == []
-    else:
+    if value:
         if (
             isinstance(value, list)
             and value
@@ -546,6 +531,8 @@ async def test_intersection(client, lists, expected):
                 assert value == expected
         else:
             assert value == expected
+    else:
+        assert expected == []
 
 
 @pytest.mark.asyncio
@@ -566,10 +553,7 @@ async def test_difference(client, items, others, expected):
         "lists",
         {"items": items, "others": others[0], "operation": "difference"},
     )
-    if not value:
-        assert expected == []
-    else:
-        assert value == expected
+    assert_value_or_empty_list(value, expected)
 
 
 @pytest.mark.asyncio
