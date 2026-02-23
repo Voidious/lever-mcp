@@ -8,6 +8,20 @@ from typing import Any, Dict, List
 import inspect
 
 
+def check_and_set_primary_param(arguments, param_name, value, i):
+    if param_name in arguments:
+        return {
+            "value": None,
+            "error": (
+                f"Step {i}: Chaining does not allow specifying the "
+                f"primary parameter '{param_name}' in params. The "
+                "output from the previous tool is always used as input."
+            ),
+        }
+    arguments[param_name] = unwrap_result(value)
+    return None
+
+
 async def chain_tool(input: Any, tool_calls: List[Dict[str, Any]], mcp) -> dict:
     """MCP tool wrapper for chaining multiple tool calls."""
     value = input
@@ -182,29 +196,14 @@ async def chain_tool(input: Any, tool_calls: List[Dict[str, Any]], mcp) -> dict:
                     ),
                 }
         elif primary_param:
-            if primary_param in arguments:
-                return {
-                    "value": None,
-                    "error": (
-                        f"Step {i}: Chaining does not allow specifying the "
-                        f"primary parameter '{primary_param}' in params. The "
-                        "output from the previous tool is always used as input."
-                    ),
-                }
-            # Unwrap the value before passing to the next tool
-            arguments[primary_param] = unwrap_result(value)
+            _err = check_and_set_primary_param(arguments, primary_param, value, i)
+            if _err is not None:
+                return _err
         elif len(param_schema) == 1:
             only_param = next(iter(param_schema))
-            if only_param in arguments:
-                return {
-                    "value": None,
-                    "error": (
-                        f"Step {i}: Chaining does not allow specifying the "
-                        f"primary parameter '{only_param}' in params. The output "
-                        "from the previous tool is always used as input."
-                    ),
-                }
-            arguments[only_param] = unwrap_result(value)
+            _err = check_and_set_primary_param(arguments, only_param, value, i)
+            if _err is not None:
+                return _err
         elif not param_schema:
             arguments = {}
         try:

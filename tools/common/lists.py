@@ -36,17 +36,20 @@ def op_shuffle(items: list, **kwargs) -> dict:
     return {"value": result}
 
 
+def parse_int_param(param: Any, default: int = 1) -> int:
+    if isinstance(param, int):
+        return param
+    elif isinstance(param, float) and param.is_integer():
+        return int(param)
+    return default
+
+
 def op_sample_size(items: list, param: Any = None, **kwargs) -> dict:
     """Gets n random items."""
     if not isinstance(items, list):
         return {"value": None, "error": "Argument must be a list for sample_size."}
     # Handle both int and float that represents an integer
-    if isinstance(param, int):
-        n = param
-    elif isinstance(param, float) and param.is_integer():
-        n = int(param)
-    else:
-        n = 1
+    n = parse_int_param(param)
     if n <= 0:
         return {"value": []}
     if n >= len(items):
@@ -97,12 +100,7 @@ def op_drop(items: list, param: Any = None, **kwargs) -> dict:
     if not isinstance(items, list):
         return {"value": None, "error": "Argument must be a list for drop."}
     # Handle both int and float that represents an integer
-    if isinstance(param, int):
-        n = param
-    elif isinstance(param, float) and param.is_integer():
-        n = int(param)
-    else:
-        n = 1
+    n = parse_int_param(param)
     return {"value": items[n:]}
 
 
@@ -111,12 +109,7 @@ def op_drop_right(items: list, param: Any = None, **kwargs) -> dict:
     if not isinstance(items, list):
         return {"value": None, "error": "Argument must be a list for drop_right."}
     # Handle both int and float that represents an integer
-    if isinstance(param, int):
-        n = param
-    elif isinstance(param, float) and param.is_integer():
-        n = int(param)
-    else:
-        n = 1
+    n = parse_int_param(param)
     return {"value": items[:-n] if n > 0 else items}
 
 
@@ -125,12 +118,7 @@ def op_take(items: list, param: Any = None, **kwargs) -> dict:
     if not isinstance(items, list):
         return {"value": None, "error": "Argument must be a list for take."}
     # Handle both int and float that represents an integer
-    if isinstance(param, int):
-        n = param
-    elif isinstance(param, float) and param.is_integer():
-        n = int(param)
-    else:
-        n = 1
+    n = parse_int_param(param)
     return {"value": items[:n]}
 
 
@@ -139,12 +127,7 @@ def op_take_right(items: list, param: Any = None, **kwargs) -> dict:
     if not isinstance(items, list):
         return {"value": None, "error": "Argument must be a list for take_right."}
     # Handle both int and float that represents an integer
-    if isinstance(param, int):
-        n = param
-    elif isinstance(param, float) and param.is_integer():
-        n = int(param)
-    else:
-        n = 1
+    n = parse_int_param(param)
     return {"value": items[-n:] if n > 0 else []}
 
 
@@ -226,6 +209,17 @@ def op_unzip_list(items: list, **kwargs) -> dict:
     return {"value": [list(t) for t in zip(*items)]}
 
 
+def add_unique_item(item, seen, result):
+    try:
+        if item not in seen:
+            seen.add(item)
+            result.append(item)
+    except TypeError:
+        # Handle unhashable types
+        if item not in result:
+            result.append(item)
+
+
 def op_union(items: list, others: Optional[list] = None, **kwargs) -> dict:
     """Unique values from multiple lists. Expects items to be a list of lists."""
     if not isinstance(items, list):
@@ -237,23 +231,10 @@ def op_union(items: list, others: Optional[list] = None, **kwargs) -> dict:
         for sublist in items:
             if isinstance(sublist, list):
                 for item in sublist:
-                    try:
-                        if item not in seen:
-                            seen.add(item)
-                            result.append(item)
-                    except TypeError:
-                        # Handle unhashable types
-                        if item not in result:
-                            result.append(item)
+                    add_unique_item(item, seen, result)
             else:
                 # Handle case where items is not a list of lists
-                try:
-                    if sublist not in seen:
-                        seen.add(sublist)
-                        result.append(sublist)
-                except TypeError:
-                    if sublist not in result:
-                        result.append(sublist)
+                add_unique_item(sublist, seen, result)
         return {"value": result}
     except Exception as e:
         return {"value": None, "error": f"union failed: {str(e)}"}
@@ -758,6 +739,15 @@ def op_flat_map(items: list, expression: str, expr_handler: Callable, **kwargs) 
         return {"value": None, "error": f"flat_map failed: {str(e)}"}
 
 
+def build_others_keys(others, expr, expr_handler):
+    others_keys = set()
+    for index, item in enumerate(others, 1):
+        key_val = expr_handler(expr, item, index, others)
+        others_keys.add(key_val)
+    result = []
+    return others_keys, result
+
+
 def op_difference_by(
     items: list,
     others: list,
@@ -778,10 +768,7 @@ def op_difference_by(
 
     try:
         # Extract keys from others list using expression
-        others_keys = set()
-        for index, item in enumerate(others, 1):
-            key_val = expr_handler(diff_expr, item, index, others)
-            others_keys.add(key_val)
+        others_keys, result = build_others_keys(others, diff_expr, expr_handler)
 
         # Return items from main list whose key is not in others_keys
         result = []
@@ -815,10 +802,7 @@ def op_intersection_by(
 
     try:
         # Extract keys from others list using expression
-        others_keys = set()
-        for index, item in enumerate(others, 1):
-            key_val = expr_handler(inter_expr, item, index, others)
-            others_keys.add(key_val)
+        others_keys, result = build_others_keys(others, inter_expr, expr_handler)
 
         # Return items from main list whose key is in others_keys
         result = []

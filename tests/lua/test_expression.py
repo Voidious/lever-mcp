@@ -74,6 +74,12 @@ async def test_find_by_expression(client, items, expression, expected_name):
 # --- Remove By Expression Tests ---
 
 
+def assert_result_count(result, error, expected_count):
+    assert error is None
+    assert result is not None
+    assert len(result) == expected_count
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "items, expression, expected_count",
@@ -101,9 +107,7 @@ async def test_remove_by_expression(client, items, expression, expected_count):
         "lists",
         {"items": items, "operation": "remove_by", "expression": expression},
     )
-    assert error is None
-    assert result is not None
-    assert len(result) == expected_count
+    assert_result_count(result, error, expected_count)
 
 
 # --- Group By Expression Tests ---
@@ -330,9 +334,7 @@ async def test_difference_intersection_by_expression(
             "expression": expression,
         },
     )
-    assert error is None
-    assert result is not None
-    assert len(result) == expected_count
+    assert_result_count(result, error, expected_count)
 
 
 # --- Any Eval Expression Tests ---

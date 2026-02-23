@@ -12,6 +12,19 @@ from lib.lua import evaluate_expression
 
 
 class TestListsWrapBehavior:
+
+    @staticmethod
+    def assert_wrapped_results(test_cases):
+        for operation, expression, expected_type in test_cases:
+            result = evaluate_expression(expression, {})
+            assert isinstance(
+                result, dict
+            ), f"{operation} should return wrapped structure"
+            assert (
+                result.get("__type") == expected_type
+            ), f"{operation} should wrap as {expected_type}"
+            assert "data" in result, f"{operation} should have data field when wrapped"
+
     """Test wrap parameter behavior for all lists operations."""
 
     def test_list_returning_operations_with_wrap_true(self):
@@ -41,15 +54,7 @@ class TestListsWrapBehavior:
             ),
         ]
 
-        for operation, expression, expected_type in test_cases:
-            result = evaluate_expression(expression, {})
-            assert isinstance(
-                result, dict
-            ), f"{operation} should return wrapped structure"
-            assert (
-                result.get("__type") == expected_type
-            ), f"{operation} should wrap as {expected_type}"
-            assert "data" in result, f"{operation} should have data field when wrapped"
+        self.assert_wrapped_results(test_cases)
 
     def test_expression_based_list_operations_with_wrap_true(self):
         """Test expression-based operations returning lists are properly wrapped."""
@@ -107,15 +112,7 @@ class TestListsWrapBehavior:
             ),
         ]
 
-        for operation, expression, expected_type in test_cases:
-            result = evaluate_expression(expression, {})
-            assert isinstance(
-                result, dict
-            ), f"{operation} should return wrapped structure"
-            assert (
-                result.get("__type") == expected_type
-            ), f"{operation} should wrap as {expected_type}"
-            assert "data" in result, f"{operation} should have data field when wrapped"
+        self.assert_wrapped_results(test_cases)
 
     def test_dict_returning_operations_with_wrap_true(self):
         """Test that operations returning dicts are properly wrapped when wrap=true."""
@@ -148,15 +145,7 @@ class TestListsWrapBehavior:
             ),
         ]
 
-        for operation, expression, expected_type in test_cases:
-            result = evaluate_expression(expression, {})
-            assert isinstance(
-                result, dict
-            ), f"{operation} should return wrapped structure"
-            assert (
-                result.get("__type") == expected_type
-            ), f"{operation} should wrap as {expected_type}"
-            assert "data" in result, f"{operation} should have data field when wrapped"
+        self.assert_wrapped_results(test_cases)
 
     def test_scalar_returning_operations_with_wrap_true(self):
         """Test that operations returning scalars are NOT wrapped when wrap=true."""
