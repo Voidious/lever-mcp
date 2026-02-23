@@ -1224,6 +1224,17 @@ class TestLuaAnyOperations:
 
 
 class TestLuaGenerateOperations:
+
+    @staticmethod
+    def _check_cartesian_product():
+        result = evaluate_expression(
+            'generate.cartesian_product({lists={{1, 2}, {"a", "b"}}})', {}
+        )
+        # Result comes as tuples, not lists
+        expected = [(1, "a"), (1, "b"), (2, "a"), (2, "b")]
+        assert sorted(result) == sorted(expected)
+        return result, expected
+
     """Test generate tool operations via Lua function calls."""
 
     def test_generate_range(self):
@@ -1302,12 +1313,7 @@ class TestLuaGenerateOperations:
 
     def test_generate_cartesian_product(self):
         # Cartesian product of multiple lists
-        result = evaluate_expression(
-            'generate.cartesian_product({lists={{1, 2}, {"a", "b"}}})', {}
-        )
-        # Result comes as tuples, not lists
-        expected = [(1, "a"), (1, "b"), (2, "a"), (2, "b")]
-        assert sorted(result) == sorted(expected)
+        result, expected = self._check_cartesian_product()
 
     def test_generate_combinations(self):
         # All combinations of given length
@@ -2424,11 +2430,7 @@ class TestGenerateWrapParameter:
     def test_generate_cartesian_product_wrap(self):
         """Test cartesian_product operation with wrap parameter."""
         # Without wrap
-        result = evaluate_expression(
-            'generate.cartesian_product({lists={{1, 2}, {"a", "b"}}})', {}
-        )
-        expected = [(1, "a"), (1, "b"), (2, "a"), (2, "b")]
-        assert sorted(result) == sorted(expected)
+        self._check_cartesian_product()
 
         # With wrap=true
         result = evaluate_expression(

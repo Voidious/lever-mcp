@@ -960,9 +960,7 @@ def lua_to_python(obj, null_sentinel=None):
                                     # Force list conversion
                                     if hasattr(inner_data_lua, "keys"):
                                         keys = list(inner_data_lua.keys())
-                                        if not keys:
-                                            inner_data = []
-                                        else:
+                                        if keys:
                                             # Convert Lua table to list, preserving
                                             # wrapped objects
                                             inner_data = []
@@ -1005,6 +1003,8 @@ def lua_to_python(obj, null_sentinel=None):
                                                                 item, null_sentinel
                                                             )
                                                         )
+                                        else:
+                                            inner_data = []
                                     else:
                                         inner_data = []
                                 elif inner_type == "dict":
@@ -1138,6 +1138,36 @@ def lua_to_python(obj, null_sentinel=None):
         return obj
 
 
+def _setup_and_evaluate_lua(
+    item, context, expression, safe_mode, create_lua_runtime, python_to_lua, lupa
+):
+    lua_runtime = create_lua_runtime(safe_mode)
+    # Set up context - always make dict keys available for direct access
+    if isinstance(item, dict):
+        for key, value in item.items():
+            if (
+                isinstance(key, str)
+                and key.isidentifier()
+                and key not in ["and", "or", "not", "if", "then", "else", "end"]
+            ):
+                lua_runtime.globals()[key] = python_to_lua(
+                    value, lua_runtime
+                )  # type: ignore  # noqa
+
+    # Set up additional context variables (may override dict keys)
+    if context is not None:
+        for k, v in context.items():
+            lua_runtime.globals()[k] = python_to_lua(
+                v, lua_runtime
+            )  # type: ignore  # noqa
+    # Evaluate the expression
+    try:
+        result = lua_runtime.execute("return (" + expression + ")")
+    except lupa.LuaError:
+        result = lua_runtime.execute(expression)
+    return lua_runtime, result
+
+
 def evaluate_expression_preserve_wrapped(
     expression: str,
     item: Any,
@@ -1149,30 +1179,15 @@ def evaluate_expression_preserve_wrapped(
     This version preserves list({})/dict({}) wrapped objects instead of unwrapping them.
     """
     try:
-        lua_runtime = create_lua_runtime(safe_mode)
-        # Set up context - always make dict keys available for direct access
-        if isinstance(item, dict):
-            for key, value in item.items():
-                if (
-                    isinstance(key, str)
-                    and key.isidentifier()
-                    and key not in ["and", "or", "not", "if", "then", "else", "end"]
-                ):
-                    lua_runtime.globals()[key] = python_to_lua(
-                        value, lua_runtime
-                    )  # type: ignore  # noqa
-
-        # Set up additional context variables (may override dict keys)
-        if context is not None:
-            for k, v in context.items():
-                lua_runtime.globals()[k] = python_to_lua(
-                    v, lua_runtime
-                )  # type: ignore  # noqa
-        # Evaluate the expression
-        try:
-            result = lua_runtime.execute("return (" + expression + ")")
-        except lupa.LuaError:
-            result = lua_runtime.execute(expression)
+        lua_runtime, result = _setup_and_evaluate_lua(
+            item,
+            context,
+            expression,
+            safe_mode,
+            create_lua_runtime,
+            python_to_lua,
+            lupa,
+        )
 
         # Convert result back to Python, preserving wrapped objects
         null_sentinel = lua_runtime.eval("null")
@@ -1203,30 +1218,15 @@ def evaluate_expression(
             Required for parameter access in expressions.
     """
     try:
-        lua_runtime = create_lua_runtime(safe_mode)
-        # Set up context - always make dict keys available for direct access
-        if isinstance(item, dict):
-            for key, value in item.items():
-                if (
-                    isinstance(key, str)
-                    and key.isidentifier()
-                    and key not in ["and", "or", "not", "if", "then", "else", "end"]
-                ):
-                    lua_runtime.globals()[key] = python_to_lua(
-                        value, lua_runtime
-                    )  # type: ignore  # noqa
-
-        # Set up additional context variables (may override dict keys)
-        if context is not None:
-            for k, v in context.items():
-                lua_runtime.globals()[k] = python_to_lua(
-                    v, lua_runtime
-                )  # type: ignore  # noqa
-        # Evaluate the expression
-        try:
-            result = lua_runtime.execute("return (" + expression + ")")
-        except lupa.LuaError:
-            result = lua_runtime.execute(expression)
+        lua_runtime, result = _setup_and_evaluate_lua(
+            item,
+            context,
+            expression,
+            safe_mode,
+            create_lua_runtime,
+            python_to_lua,
+            lupa,
+        )
 
         # Check if the result is a Lua function - if so, call it with the item
         if callable(result):

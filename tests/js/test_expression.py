@@ -560,6 +560,12 @@ async def test_min_max_by_expression(
 # --- Difference/Intersection By Expression Tests ---
 
 
+def assert_query_success(error, result, expected_count):
+    assert error is None
+    assert result is not None
+    assert len(result) == expected_count
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "items, others, expression, operation, expected_count",
@@ -593,9 +599,7 @@ async def test_difference_intersection_by_expression(
             "expression": expression,
         },
     )
-    assert error is None
-    assert result is not None
-    assert len(result) == expected_count
+    assert_query_success(error, result, expected_count)
 
 
 # --- Remove By Expression Tests ---
@@ -628,9 +632,7 @@ async def test_remove_by_expression(client, items, expression, expected_count):
         "lists",
         {"items": items, "operation": "remove_by", "expression": expression},
     )
-    assert error is None
-    assert result is not None
-    assert len(result) == expected_count
+    assert_query_success(error, result, expected_count)
 
 
 # --- Null Handling Expression Tests ---

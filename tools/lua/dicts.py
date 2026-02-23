@@ -62,6 +62,12 @@ def _lua_expr_handler(
     return _evaluate_expression_optimized(expression, key_or_value, key, value, obj)
 
 
+def _unwrap_inputs(*names_and_values):
+    from . import unwrap_input
+
+    return tuple(unwrap_input(v) for _, v in names_and_values)
+
+
 def _dicts_impl(
     obj: Any,
     operation: str,
@@ -85,9 +91,9 @@ def _dicts_impl(
             obj = unwrap_input(obj)
 
         param = unwrap_input(param)
-        path = unwrap_input(path)
-        value = unwrap_input(value)
-        default = unwrap_input(default)
+        path, value, default = _unwrap_inputs(
+            ("path", path), ("value", value), ("default", default)
+        )
 
         # Delegate to common operation
         result = dicts_operation(
