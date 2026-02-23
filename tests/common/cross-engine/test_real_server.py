@@ -365,6 +365,12 @@ async def test_chain_tool_operations(shared_client):
 # === ERROR HANDLING TESTS ===
 
 
+def assert_is_error_response(result_data):
+    assert result_data["value"] is None
+    assert "error" in result_data
+    return result_data
+
+
 @pytest.mark.asyncio
 async def test_error_handling(shared_client):
     """Test error handling for invalid operations."""
@@ -372,9 +378,7 @@ async def test_error_handling(shared_client):
     result = await shared_client.call_tool(
         "strings", {"text": "hello", "operation": "nonexistent"}
     )
-    result_data = json.loads(result[0].text)
-    assert result_data["value"] is None
-    assert "error" in result_data
+    result_data = assert_is_error_response(json.loads(result[0].text))
 
     # Wrong type for tool - this will raise ToolError due to Pydantic validation
     try:
@@ -390,6 +394,4 @@ async def test_error_handling(shared_client):
     result = await shared_client.call_tool(
         "strings", {"text": "hello", "operation": "contains"}  # missing param
     )
-    result_data = json.loads(result[0].text)
-    assert result_data["value"] is None
-    assert "error" in result_data
+    result_data = assert_is_error_response(json.loads(result[0].text))
