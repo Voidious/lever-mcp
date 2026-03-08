@@ -1,7 +1,7 @@
 """
 Common operations for the 'lists' tool.
 
-This module contains shared implementations for list operations that
+This module contains shared implementations for list operations that work
 the same way regardless of expression language, plus framework for
 expression-based operations.
 """
