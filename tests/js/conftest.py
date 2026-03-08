@@ -1,16 +1,15 @@
-import pytest
-import importlib
-import main
 from main import LeverMCP
 from fastmcp import Client
-from tests.js.chain_pairings_comprehensive.test_fixtures import get_engine_expression  # fmt: skip # noqa: F401, E501
+import importlib
+import pytest
+import main
 
 
 @pytest.fixture
 async def client():
     """
     Provides an isolated FastMCP client for each test by reloading the main
-    module and explicitly resetting the application state for the session.
+    module and explicitly configuring it for JavaScript expressions.
     """
     importlib.reload(main)
     main.USE_JAVASCRIPT = True
