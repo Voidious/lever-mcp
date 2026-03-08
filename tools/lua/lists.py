@@ -36,7 +36,9 @@ def _evaluate_expression_optimized(expr, item, index=None, items_list=None):
         return evaluate_expression(expr, item, context=context)
 
 
-def _lua_expr_handler(expression: str, item: Any, index: int, items: list) -> Any:
+def _lua_expr_handler(
+    expression: str, item: Any, index: int, items: list, context: Optional[dict] = None
+) -> Any:
     """
     Handle Lua expression evaluation for expression-based operations.
 
@@ -45,11 +47,17 @@ def _lua_expr_handler(expression: str, item: Any, index: int, items: list) -> An
         item: The current item being processed
         index: The 1-based index of the item
         items: The full list being processed
+        context: Optional additional context for the expression
 
     Returns:
         The result of evaluating the expression
     """
-    return _evaluate_expression_optimized(expression, item, index, items)
+    # Merge default context with provided context
+    full_context = {"item": item, "index": index, "items": items}
+    if context:
+        full_context.update(context)
+
+    return evaluate_expression(expression, item, context=full_context)
 
 
 def _lists_impl(

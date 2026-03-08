@@ -127,7 +127,7 @@ def _register_mcp_tools_in_lua(lua_runtime: lupa.LuaRuntime, mcp_tools=None):
 
                 if is_param_table:
                     # Single table argument - extract named parameters
-                    params_table = lua_to_python(table_dict)
+                    params_table = lua_to_python(table_dict, null_sentinel)
                     if not isinstance(params_table, dict):
                         params_table = {}
                     # Call the tool function with named parameters from the table
@@ -238,7 +238,7 @@ def _register_mcp_tools_in_lua(lua_runtime: lupa.LuaRuntime, mcp_tools=None):
                         if arg is null_sentinel:
                             py_args.append(None)
                         else:
-                            converted_table = lua_to_python(dict(arg))
+                            converted_table = lua_to_python(dict(arg), null_sentinel)
 
                             # Special handling for first argument that might be a
                             # parameter table
@@ -275,7 +275,7 @@ def _register_mcp_tools_in_lua(lua_runtime: lupa.LuaRuntime, mcp_tools=None):
                         arg, str
                     ):  # Other Lua tables
                         try:
-                            py_args.append(lua_to_python(dict(arg)))
+                            py_args.append(lua_to_python(dict(arg), null_sentinel))
                         except Exception:
                             py_args.append(list(arg))
                     else:

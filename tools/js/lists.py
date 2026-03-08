@@ -21,27 +21,36 @@ def lists_tool(
     return _lists_impl(items, operation, param, others, expression)
 
 
-def _js_expr_handler(expression: str, item: Any, index: int, items: list) -> Any:
+def _js_expr_handler(
+    expression: str, item: Any, index: int, items: list, context: Optional[dict] = None
+) -> Any:
     """
     Handle JavaScript expression evaluation for expression-based operations.
 
     Args:
         expression: The JavaScript expression to evaluate
         item: The current item being processed
-        index: The 0-based index of the item (converted from 1-based)
+        index: The 1-based index of the item (converted from 1-based to 0-based)
         items: The full list being processed
+        context: Optional additional context for the expression
 
     Returns:
         The result of evaluating the expression
     """
     # Set up context with item, index, and items available
     # Note: JavaScript uses 0-based indexing, so we convert from 1-based
-    context = {
+    full_context = {
         "item": item,
         "index": index - 1,  # Convert to 0-based for JavaScript
         "items": items,
     }
-    return evaluate_expression(expression, item, context=context)
+    if context:
+        # For context provided by common operations (like 'acc' in reduce),
+        # we might want to convert some values too if they are 1-based,
+        # but usually they are just values.
+        full_context.update(context)
+
+    return evaluate_expression(expression, item, context=full_context)
 
 
 def _lists_impl(

@@ -389,20 +389,24 @@ def op_sort_by(
         return {"value": None, "error": "expression is required for sort_by operation"}
 
     try:
-
-        def sort_key(item):
-            index = items.index(item) + 1  # 1-based index
+        # Pre-compute sort keys with true indices to handle duplicate items correctly
+        indexed_items = []
+        for index, item in enumerate(items, 1):
             result = expr_handler(sort_expr, item, index, items)
             # Handle different result types for sorting
             if result is None:
-                return ""  # Sort None values first
+                key = ""  # Sort None values first
             elif isinstance(result, dict):
                 import json
 
-                return json.dumps(result, sort_keys=True)
-            return result
+                key = json.dumps(result, sort_keys=True)
+            else:
+                key = result
+            indexed_items.append((key, index, item))
 
-        return {"value": sorted(items, key=sort_key)}
+        # Sort by key, then by original index to ensure stability
+        sorted_indexed = sorted(indexed_items, key=lambda x: (x[0], x[1]))
+        return {"value": [item for key, index, item in sorted_indexed]}
     except Exception as e:
         return {"value": None, "error": f"sort_by failed: {str(e)}"}
 
@@ -873,15 +877,17 @@ def op_reduce(
         if not items:
             return {"value": param if param is not None else None}
 
-        # For reduce, we need a special handler that provides 'acc' and 'item' context
-        from lib.lua import evaluate_expression
-
+        # Use the provided expr_handler with 'acc' and 'item' context
         acc = param if param is not None else items[0]
         start_idx = 0 if param is not None else 1
         for i in range(start_idx, len(items)):
             # The expression can use 'acc' and 'item'
-            acc = evaluate_expression(
-                expression, None, context={"acc": acc, "item": items[i]}
+            acc = expr_handler(
+                expression,
+                items[i],
+                i + 1,
+                items,
+                context={"acc": acc, "item": items[i]},
             )
         return {"value": acc}
     except Exception as e:
@@ -896,8 +902,6 @@ def op_zip_with(
         return {"value": None, "error": "expression is required for zip_with operation"}
 
     try:
-        from lib.lua import evaluate_expression
-
         if not isinstance(items, list) or not isinstance(others, list):
             return {
                 "value": None,
@@ -907,8 +911,12 @@ def op_zip_with(
         min_len = min(len(items), len(others))
         result = []
         for i in range(min_len):
-            val = evaluate_expression(
-                expression, None, context={"item": items[i], "other": others[i]}
+            val = expr_handler(
+                expression,
+                items[i],
+                i + 1,
+                items,
+                context={"item": items[i], "other": others[i]},
             )
             result.append(val)
         return {"value": result}
