@@ -1,8 +1,8 @@
-import importlib
-import pytest
-import main
 from main import LeverMCP
 from fastmcp import Client
+import pytest
+import importlib
+import main
 
 
 @pytest.fixture
