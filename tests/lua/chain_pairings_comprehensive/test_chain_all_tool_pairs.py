@@ -1,8 +1,5 @@
-import pytest
 from tests import make_tool_call
-
-# Re-exported for backwards compatibility with external callers.
-from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  # fmt: skip # noqa: F401, E501
+import pytest
 
 
 @pytest.mark.asyncio
@@ -215,11 +212,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             "lists",
             {"operation": "compact"},
             "lists",
-            {
-                "operation": "difference_by",
-                "others": [{"id": 2}],
-                "expression": "item.id",
-            },
+            {"operation": "difference_by", "others": [{"id": 2}], "expression": "id"},
             [{"id": 1}, None, {"id": 2}],
             list,
             [{"id": 1}],
@@ -229,11 +222,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             "lists",
             {"operation": "compact"},
             "lists",
-            {
-                "operation": "intersection_by",
-                "others": [{"id": 2}],
-                "expression": "item.id",
-            },
+            {"operation": "intersection_by", "others": [{"id": 2}], "expression": "id"},
             [{"id": 1}, None, {"id": 2}],
             list,
             [{"id": 2}],
@@ -261,7 +250,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
         # lists (list -> dict) -> dicts (dict -> bool) is_empty (working case)
         (
             "lists",
-            {"operation": "count_by", "expression": "item.x"},
+            {"operation": "count_by", "expression": "x"},
             "dicts",
             {"operation": "is_empty"},
             [{"x": 1}, {"x": 1}, {"x": 2}],
@@ -281,7 +270,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
         # lists (list -> dict) -> dicts (dict -> bool) has_key (working case)
         (
             "lists",
-            {"operation": "count_by", "expression": "item.x"},
+            {"operation": "count_by", "expression": "x"},
             "dicts",
             {"operation": "has_key", "param": "1"},
             [{"x": 1}, {"x": 1}, {"x": 2}],
@@ -301,7 +290,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
         # lists (list -> dict) -> any (any -> bool) is_nil (working case)
         (
             "lists",
-            {"operation": "count_by", "expression": "item.x"},
+            {"operation": "count_by", "expression": "x"},
             "any",
             {"operation": "is_nil"},
             [{"x": 1}, {"x": 1}, {"x": 2}],
@@ -321,7 +310,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
         # lists (list -> dict) -> any (any -> bool) contains (working case)
         (
             "lists",
-            {"operation": "count_by", "expression": "item.x"},
+            {"operation": "count_by", "expression": "x"},
             "any",
             {"operation": "contains", "param": "2"},
             [{"x": 1}, {"x": 1}, {"x": 2}],
@@ -341,7 +330,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
         # lists (list -> dict) -> dicts (dict -> Any) (working case)
         (
             "lists",
-            {"operation": "count_by", "expression": "item.x"},
+            {"operation": "count_by", "expression": "x"},
             "dicts",
             {"operation": "get_value", "path": "1"},
             [{"x": 1}, {"x": 1}, {"x": 2}],
@@ -553,13 +542,9 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
         # lists -> lists (list of dicts)
         (
             "lists",
-            {
-                "operation": "difference_by",
-                "others": [{"id": 2}],
-                "expression": "item.id",
-            },
+            {"operation": "difference_by", "others": [{"id": 2}], "expression": "id"},
             "lists",
-            {"operation": "count_by", "expression": "item.id"},
+            {"operation": "count_by", "expression": "id"},
             [{"id": 1}, {"id": 2}, {"id": 1}],
             dict,
             {"1": 2},
@@ -577,11 +562,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
         # lists -> dicts (difference_by, expect {"x": 1})
         (
             "lists",
-            {
-                "operation": "difference_by",
-                "others": [{"x": 2}],
-                "expression": "item.x",
-            },
+            {"operation": "difference_by", "others": [{"x": 2}], "expression": "x"},
             "dicts",
             {"operation": "merge"},
             [{"x": 1}, {"x": 2}],
@@ -591,7 +572,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
         # lists -> dicts
         (
             "lists",
-            {"operation": "key_by", "expression": "item.id"},
+            {"operation": "key_by", "expression": "id"},
             "dicts",
             {"operation": "set_value", "path": "x", "value": 99},
             [{"id": "a", "val": 1}],
@@ -601,7 +582,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
         # lists -> dicts
         (
             "lists",
-            {"operation": "key_by", "expression": "item.id"},
+            {"operation": "key_by", "expression": "id"},
             "dicts",
             {"operation": "get_value", "path": "a"},
             [{"id": "a", "val": 1}],
@@ -663,7 +644,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             "generate",
             {"operation": "repeat", "count": 2},
             "lists",
-            {"operation": "count_by", "expression": "item.a"},
+            {"operation": "count_by", "expression": "a"},
             {"a": 1},
             dict,
             {"1": 2},
@@ -1001,7 +982,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
         # any.eval (Any -> str) -> strings (str -> str)
         (
             "any",
-            {"operation": "eval", "expression": "value.toString().toUpperCase()"},
+            {"operation": "eval", "expression": "string.upper(tostring(value))"},
             "strings",
             {"operation": "reverse"},
             3,
@@ -1034,7 +1015,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             "strings",
             {"operation": "upper_case"},
             "any",
-            {"operation": "eval", "expression": "value.split('').reverse().join('')"},
+            {"operation": "eval", "expression": "string.reverse(value)"},
             "hello",
             str,
             "OLLEH",
@@ -1044,7 +1025,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             "strings",
             {"operation": "upper_case"},
             "any",
-            {"operation": "eval", "expression": "value.length"},
+            {"operation": "eval", "expression": "string.len(value)"},
             "hello",
             int,
             5,
@@ -1054,7 +1035,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             "strings",
             {"operation": "upper_case"},
             "any",
-            {"operation": "eval", "expression": "value.includes('H')"},
+            {"operation": "eval", "expression": "string.find(value, 'H') ~= nil"},
             "hello",
             bool,
             True,
@@ -1066,7 +1047,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             "any",
             {
                 "operation": "eval",
-                "expression": "parseFloat(value.match(/\\d+\\.\\d+/)[0])",
+                "expression": "tonumber(string.match(value, '%d+%.%d+'))",
             },
             "The number is {num}",
             float,
@@ -1077,7 +1058,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             "lists",
             {"operation": "compact"},
             "any",
-            {"operation": "eval", "expression": "value[0] ? 1 : 0"},
+            {"operation": "eval", "expression": "value[1] and 1 or 0"},
             [1, None, 2, 3],
             int,
             1,
@@ -1087,7 +1068,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             "lists",
             {"operation": "compact"},
             "any",
-            {"operation": "eval", "expression": "value[0].toString()"},
+            {"operation": "eval", "expression": "tostring(value[1])"},
             ["a", None, "b", "c"],
             str,
             "a",
@@ -1097,7 +1078,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             "lists",
             {"operation": "compact"},
             "any",
-            {"operation": "eval", "expression": "value[1] !== undefined"},
+            {"operation": "eval", "expression": "value[2] ~= nil"},
             [1, None, 2, 3],
             bool,
             True,
@@ -1107,7 +1088,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             "lists",
             {"operation": "compact"},
             "any",
-            {"operation": "eval", "expression": "(value[0] + value[1]) / 2.0"},
+            {"operation": "eval", "expression": "(value[1] + value[2]) / 2.0"},
             [10, None, 20],
             float,
             15.0,
@@ -1115,11 +1096,11 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
         # lists (list -> dict) -> any.eval (dict -> str)
         (
             "lists",
-            {"operation": "count_by", "expression": "item.type"},
+            {"operation": "count_by", "expression": "type"},
             "any",
             {
                 "operation": "eval",
-                "expression": "value.fruit ? 'has fruit' : 'no fruit'",
+                "expression": "value.fruit and 'has fruit' or 'no fruit'",
             },
             [{"type": "fruit"}, {"type": "fruit"}, {"type": "vegetable"}],
             str,
@@ -1128,9 +1109,9 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
         # lists (list -> dict) -> any.eval (dict -> int)
         (
             "lists",
-            {"operation": "count_by", "expression": "item.category"},
+            {"operation": "count_by", "expression": "category"},
             "any",
-            {"operation": "eval", "expression": "value.A || 0"},
+            {"operation": "eval", "expression": "value.A or 0"},
             [{"category": "A"}, {"category": "A"}, {"category": "B"}],
             int,
             2,
@@ -1138,9 +1119,9 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
         # lists (list -> dict) -> any.eval (dict -> bool)
         (
             "lists",
-            {"operation": "count_by", "expression": "item.status"},
+            {"operation": "count_by", "expression": "status"},
             "any",
-            {"operation": "eval", "expression": "value.active && value.active > 1"},
+            {"operation": "eval", "expression": "value.active and value.active > 1"},
             [{"status": "active"}, {"status": "active"}, {"status": "inactive"}],
             bool,
             True,
@@ -1153,7 +1134,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             {
                 "operation": "eval",
                 "expression": (
-                    "typeof value === 'string' ? value.toUpperCase() : value.toString()"
+                    "type(value) == 'string' and string.upper(value) or tostring(value)"
                 ),
             },
             ["hello", "world"],
@@ -1168,7 +1149,8 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             {
                 "operation": "eval",
                 "expression": (
-                    "typeof value === 'number' ? value * 2 : " "value.toString().length"
+                    "type(value) == 'number' and value * 2 or "
+                    "string.len(tostring(value))"
                 ),
             },
             [42, "test"],
@@ -1180,7 +1162,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             "dicts",
             {"operation": "invert"},
             "any",
-            {"operation": "eval", "expression": "value['2'] || 'not found'"},
+            {"operation": "eval", "expression": "value['2'] or 'not found'"},
             {"a": 1, "b": 2},
             str,
             "b",
@@ -1192,7 +1174,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             "any",
             {
                 "operation": "eval",
-                "expression": "value['1'] ? value['1'].length : 0",
+                "expression": "value['1'] and string.len(value['1']) or 0",
             },
             {"a": 1, "b": 2},
             int,
@@ -1203,7 +1185,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             "dicts",
             {"operation": "invert"},
             "any",
-            {"operation": "eval", "expression": "value['1'] !== undefined"},
+            {"operation": "eval", "expression": "value['1'] ~= nil"},
             {"a": 1, "b": 2},
             bool,
             True,
@@ -1213,7 +1195,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             "dicts",
             {"operation": "get_value", "path": "name"},
             "any",
-            {"operation": "eval", "expression": "value.toUpperCase()"},
+            {"operation": "eval", "expression": "string.upper(value)"},
             {"name": "alice", "age": 30},
             str,
             "ALICE",
@@ -1243,7 +1225,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             "generate",
             {"operation": "repeat", "count": 3},
             "any",
-            {"operation": "eval", "expression": "value[1] ? 3 : 0"},
+            {"operation": "eval", "expression": "value[2] and 3 or 0"},
             "x",
             int,
             3,
@@ -1256,8 +1238,8 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             {
                 "operation": "eval",
                 "expression": (
-                    "value[0].toString() + '-' + value[1].toString() + '-' + "
-                    "value[2].toString()"
+                    "tostring(value[1]) .. '-' .. tostring(value[2]) .. '-' .. "
+                    "tostring(value[3])"
                 ),
             },
             None,
@@ -1269,7 +1251,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             "generate",
             {"operation": "repeat", "count": 2},
             "any",
-            {"operation": "eval", "expression": "value[0] === value[1]"},
+            {"operation": "eval", "expression": "value[1] == value[2]"},
             42,
             bool,
             True,
@@ -1279,7 +1261,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             "generate",
             {"operation": "range", "from": 1, "to": 6},
             "any",
-            {"operation": "eval", "expression": "(value[0] + value[4]) / 2.0"},
+            {"operation": "eval", "expression": "(value[1] + value[5]) / 2.0"},
             None,
             float,
             3.0,
@@ -1339,7 +1321,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
         # filter_by -> map
         (
             "lists",
-            {"operation": "filter_by", "expression": "item % 2 === 0"},
+            {"operation": "filter_by", "expression": "item % 2 == 0"},
             "lists",
             {"operation": "map", "expression": "item * 10"},
             [1, 2, 3, 4],
@@ -1359,7 +1341,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
         # flat_map -> reduce
         (
             "lists",
-            {"operation": "flat_map", "expression": "[item, item * 10]"},
+            {"operation": "flat_map", "expression": "{item, item * 10}"},
             "lists",
             {"operation": "reduce", "expression": "acc + item", "param": 0},
             [1, 2],
@@ -1371,7 +1353,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             "lists",
             {"operation": "map", "expression": "item * 2"},
             "lists",
-            {"operation": "all_by", "expression": "item % 2 === 0"},
+            {"operation": "all_by", "expression": "item % 2 == 0"},
             [1, 2, 3],
             bool,
             True,
@@ -1381,7 +1363,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             "lists",
             {"operation": "map", "expression": "item * 2"},
             "lists",
-            {"operation": "any_by", "expression": "item === 4"},
+            {"operation": "any_by", "expression": "item == 4"},
             [1, 2, 3],
             bool,
             True,
@@ -1403,7 +1385,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
         # map -> compact
         (
             "lists",
-            {"operation": "map", "expression": "item > 1 ? item : null"},
+            {"operation": "map", "expression": "item > 1 and item or None"},
             "lists",
             {"operation": "compact"},
             [0, 1, 2, 3],
@@ -1435,7 +1417,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
             "lists",
             {"operation": "map", "expression": "item + 1"},
             "lists",
-            {"operation": "flat_map", "expression": "[item, item * 2]"},
+            {"operation": "flat_map", "expression": "{item, item * 2}"},
             [1, 2],
             list,
             [2, 4, 3, 6],
@@ -1443,7 +1425,7 @@ from tests.js.chain_pairings_comprehensive.utils import get_engine_expression  #
         # flat_map -> filter_by
         (
             "lists",
-            {"operation": "flat_map", "expression": "[item, item * 2]"},
+            {"operation": "flat_map", "expression": "{item, item * 2}"},
             "lists",
             {"operation": "filter_by", "expression": "item > 2"},
             [1, 2],
