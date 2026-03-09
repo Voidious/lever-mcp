@@ -94,7 +94,6 @@ def _lists_impl(
             others=others,
             expression=expression,
             expr_handler=_lua_expr_handler,
-            wrap=False,
         )
 
         # Apply wrapping if requested

@@ -992,7 +992,6 @@ def lists_operation(
     others: Optional[list] = None,
     expression: Optional[str] = None,
     expr_handler: Optional[Callable] = None,
-    wrap: bool = False,
 ) -> dict:
     """
     Execute a lists tool operation.
@@ -1004,7 +1003,6 @@ def lists_operation(
         others: Optional second list for set operations
         expression: Optional expression for expression-based operations
         expr_handler: Function to handle expression evaluation
-        wrap: Whether to wrap the result (for Lua compatibility)
 
     Returns:
         Dict with 'value' key and optional 'error' key
