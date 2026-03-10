@@ -713,12 +713,12 @@ async def test_process_list_edge_cases(client):
     )
     assert error is not None
 
-    # Non-dict items - should group under "None" key when property doesn't exist
+    # Non-dict items - should group under "(null)" key when property doesn't exist
     value, error = await make_tool_call(
         client, "lists", {"items": [1, 2], "operation": "group_by", "expression": "a"}
     )
     assert error is None
-    assert value == {"None": [1, 2]}
+    assert value == {"(null)": [1, 2]}
 
     # Unknown operation returns error
     value, error = await make_tool_call(

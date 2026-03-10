@@ -11,6 +11,11 @@ import random
 from typing import Any, Callable, Dict, Optional
 
 
+# Sentinel for None keys in operations returning dictionaries (group_by, count_by,
+# key_by) to avoid collision with legitimate string keys like "null" or "None".
+NULL_SENTINEL = "(null)"
+
+
 def _get_key_hash(k: Any) -> Any:
     """Get a hashable representation of a key, handling unhashable types."""
     if isinstance(k, (str, int, float, bool, type(None))):
@@ -503,7 +508,7 @@ def op_group_by(
         for index, item in enumerate(items, 1):
             key = expr_handler(group_expr, item, index, items)
             # Convert result to string for consistent grouping
-            key = str(key) if key is not None else "None"
+            key = str(key) if key is not None else NULL_SENTINEL
             result.setdefault(key, []).append(item)
         return {"value": result}
     except Exception as e:
@@ -613,7 +618,7 @@ def op_count_by(
         for index, item in enumerate(items, 1):
             k = expr_handler(count_expr, item, index, items)
             # Convert result to string for consistent dictionary keys
-            k = str(k) if k is not None else "null"
+            k = str(k) if k is not None else NULL_SENTINEL
             result[k] = result.get(k, 0) + 1
         return {"value": result}
     except Exception as e:
@@ -634,8 +639,11 @@ def op_key_by(
         result = {}
         for index, item in enumerate(items, 1):
             k = expr_handler(key_expr, item, index, items)
-            # Convert integer keys to strings like JSON does
-            if isinstance(k, int):
+            # Convert result to string for consistent dictionary keys
+            # Use NULL_SENTINEL for None to avoid collision with string "null"
+            if k is None:
+                k = NULL_SENTINEL
+            elif isinstance(k, int):
                 k = str(k)
             result[k] = item
         return {"value": result}
