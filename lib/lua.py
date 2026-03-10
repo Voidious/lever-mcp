@@ -1232,18 +1232,7 @@ def evaluate_expression(
         if callable(result):
             try:
                 # Check if this is one of our MCP tool functions
-                is_mcp_tool = False
-                try:
-                    # Check if the function is one of our registered MCP tool wrappers
-                    # by examining if it has the characteristic wrapper function
-                    # structure
-                    func_str = str(result)
-                    # Our tool wrappers are created by create_tool_wrapper and have
-                    # this signature
-                    if "create_tool_wrapper" in func_str and "wrapper" in func_str:
-                        is_mcp_tool = True
-                except Exception:
-                    pass
+                is_mcp_tool = hasattr(result, "_mcp_tool_name")
 
                 if is_mcp_tool:
                     # For MCP tool functions, pass a table with wrap=True to ensure
