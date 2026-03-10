@@ -1,65 +1,142 @@
-"""
-Lua utility functions for MCP tools.
-
-This module contains all Lua-related functionality including:
-- Lua runtime creation and safety
-- Data conversion between Python and Lua
-- Expression evaluation
-- MCP tool registration in Lua
-- Wrapping/unwrapping utilities
-"""
-
 from typing import Any, Dict, Optional
 import lupa
+from .conversion import (
+    SAFE_MODE_DEFAULT,
+    lua_to_python,
+    lua_to_python_preserve_wrapped,
+    python_to_lua,
+)
 
-# Default for Lua safety mode
-SAFE_MODE_DEFAULT = True
 
-
-def _unwrap_input(value: Any) -> Any:
+def create_lua_runtime(
+    safe_mode: Optional[bool] = None, mcp_tools=None
+) -> lupa.LuaRuntime:
     """
-    Unwrap input parameters for tool processing.
-    Recursively unwraps wrapped lists/dicts to regular Python objects.
-    """
-    if isinstance(value, dict) and "__type" in value and "data" in value:
-        # This is a wrapped object, unwrap it
-        return _unwrap_input(value["data"])
-    elif isinstance(value, list):
-        # Recursively unwrap list contents
-        return [_unwrap_input(item) for item in value]
-    elif isinstance(value, dict):
-        # Recursively unwrap dict contents
-        return {k: _unwrap_input(v) for k, v in value.items()}
-    else:
-        return value
+    Create a Lua runtime with optional sandboxing and MCP tool function
+    registration.
 
-
-def _apply_wrapping(result: Any, wrap: bool) -> Any:
+    Args:
+        safe_mode: If True, applies safety rails. If None, uses global
+            SAFE_MODE_DEFAULT setting.
     """
-    Apply wrapping to lists and dicts if wrap=True.
-    Recursively wraps ALL nested structures.
-    """
-    if not wrap:
-        return result
+    if safe_mode is None:
+        safe_mode = SAFE_MODE_DEFAULT
 
-    if isinstance(result, list):
-        # Wrap as list and recursively wrap ALL contents
-        wrapped_items = [_apply_wrapping(item, wrap) for item in result]
-        return {"__type": "list", "data": wrapped_items}
-    elif isinstance(result, dict):
-        # Check if it's already a wrapped object
-        if "__type" in result and "data" in result:
-            # Already wrapped, just wrap the data recursively
-            return {
-                "__type": result["__type"],
-                "data": _apply_wrapping(result["data"], wrap),
+    lua_runtime = lupa.LuaRuntime()
+
+    # Always define a global 'null' table as the None sentinel with a unique marker
+    lua_runtime.execute("null = {__null_sentinel = true}")
+
+    if safe_mode:
+        # Apply safety rails - disable dangerous functions but keep useful ones
+        lua_runtime.execute(
+            """
+            -- Disable dangerous file/system operations
+            os = {
+                -- Keep safe time/date functions
+                time = os.time,
+                date = os.date,
+                clock = os.clock,
+                difftime = os.difftime,
+                -- Remove dangerous ones: execute, exit, getenv, remove, rename, etc.
             }
+
+            -- Disable file I/O
+            io = nil
+
+            -- Disable module loading that could access filesystem
+            require = nil
+            dofile = nil
+            loadfile = nil
+
+            -- Keep package.loaded for accessing already loaded safe modules
+            if package then
+                package.loadlib = nil
+                package.searchpath = nil
+                package.searchers = nil
+                package.path = nil
+                package.cpath = nil
+            end
+
+            -- Disable debug library (could be used for introspection attacks)
+            debug = nil
+        """
+        )
+
+    # Register MCP tool functions in Lua runtime
+    _register_mcp_tools_in_lua(lua_runtime, mcp_tools)
+
+    # Register utility functions for type disambiguation
+    def lua_list(table):
+        """
+        Creates a list-typed wrapper for explicit type disambiguation.
+
+        Usage: list({1, 2, 3}) or list({})
+        Returns: A wrapped object that will be converted to Python list
+
+        Use this when you need to ensure an empty table {} becomes an empty list []
+        in the JSON output, rather than an empty dict {}.
+        """
+        if table is None:
+            return lua_runtime.table_from(
+                {"__type": "list", "data": lua_runtime.table_from([])}
+            )
+
+        # Create wrapper with list type
+        wrapper = {"__type": "list", "data": table}
+        return lua_runtime.table_from(wrapper)
+
+    def lua_dict(table):
+        """
+        Creates a dict-typed wrapper for explicit type disambiguation.
+
+        Usage: dict({a=1, b=2}) or dict({})
+        Returns: A wrapped object that will be converted to Python dict
+
+        Use this when you need to ensure an empty table {} is explicitly
+        treated as an empty dict {} in the JSON output.
+        """
+        if table is None:
+            return lua_runtime.table_from(
+                {"__type": "dict", "data": lua_runtime.table_from({})}
+            )
+
+        # Create wrapper with dict type
+        wrapper = {"__type": "dict", "data": table}
+        return lua_runtime.table_from(wrapper)
+
+    def lua_unwrap(obj):
+        """
+        Unwraps a wrapped object to access the underlying data.
+
+        Usage: unwrap(list({1, 2, 3})) or unwrap(dict({a=1}))
+        Returns: The original Lua table without the wrapper
+
+        Use this to extract the data from wrapped objects for further processing.
+        For non-wrapped objects, returns the object unchanged.
+        """
+        if obj is None:
+            return None
+
+        # Convert to Python dict to check structure
+        if hasattr(obj, "values"):
+            obj_dict = dict(obj)
         else:
-            # Wrap as dict and recursively wrap ALL contents
-            wrapped_items = {k: _apply_wrapping(v, wrap) for k, v in result.items()}
-            return {"__type": "dict", "data": wrapped_items}
-    else:
-        return result
+            obj_dict = obj if isinstance(obj, dict) else {}
+
+        # Check if it's a wrapped object
+        if "__type" in obj_dict and "data" in obj_dict:
+            return obj_dict["data"]
+
+        # If not wrapped, return as-is
+        return obj
+
+    # Register the functions in Lua runtime
+    lua_runtime.globals()["list"] = lua_list
+    lua_runtime.globals()["dict"] = lua_dict
+    lua_runtime.globals()["unwrap"] = lua_unwrap
+
+    return lua_runtime
 
 
 def _register_mcp_tools_in_lua(lua_runtime: lupa.LuaRuntime, mcp_tools=None):
@@ -607,570 +684,6 @@ def _register_mcp_tools_in_lua(lua_runtime: lupa.LuaRuntime, mcp_tools=None):
     )  # type: ignore  # noqa
 
 
-def create_lua_runtime(
-    safe_mode: Optional[bool] = None, mcp_tools=None
-) -> lupa.LuaRuntime:
-    """
-    Create a Lua runtime with optional sandboxing and MCP tool function
-    registration.
-
-    Args:
-        safe_mode: If True, applies safety rails. If None, uses global
-            SAFE_MODE_DEFAULT setting.
-    """
-    if safe_mode is None:
-        safe_mode = SAFE_MODE_DEFAULT
-
-    lua_runtime = lupa.LuaRuntime()
-
-    # Always define a global 'null' table as the None sentinel with a unique marker
-    lua_runtime.execute("null = {__null_sentinel = true}")
-
-    if safe_mode:
-        # Apply safety rails - disable dangerous functions but keep useful ones
-        lua_runtime.execute(
-            """
-            -- Disable dangerous file/system operations
-            os = {
-                -- Keep safe time/date functions
-                time = os.time,
-                date = os.date,
-                clock = os.clock,
-                difftime = os.difftime,
-                -- Remove dangerous ones: execute, exit, getenv, remove, rename, etc.
-            }
-
-            -- Disable file I/O
-            io = nil
-
-            -- Disable module loading that could access filesystem
-            require = nil
-            dofile = nil
-            loadfile = nil
-
-            -- Keep package.loaded for accessing already loaded safe modules
-            if package then
-                package.loadlib = nil
-                package.searchpath = nil
-                package.searchers = nil
-                package.path = nil
-                package.cpath = nil
-            end
-
-            -- Disable debug library (could be used for introspection attacks)
-            debug = nil
-        """
-        )
-
-    # Register MCP tool functions in Lua runtime
-    _register_mcp_tools_in_lua(lua_runtime, mcp_tools)
-
-    # Register utility functions for type disambiguation
-    def lua_list(table):
-        """
-        Creates a list-typed wrapper for explicit type disambiguation.
-
-        Usage: list({1, 2, 3}) or list({})
-        Returns: A wrapped object that will be converted to Python list
-
-        Use this when you need to ensure an empty table {} becomes an empty list []
-        in the JSON output, rather than an empty dict {}.
-        """
-        if table is None:
-            return lua_runtime.table_from(
-                {"__type": "list", "data": lua_runtime.table_from([])}
-            )
-
-        # Create wrapper with list type
-        wrapper = {"__type": "list", "data": table}
-        return lua_runtime.table_from(wrapper)
-
-    def lua_dict(table):
-        """
-        Creates a dict-typed wrapper for explicit type disambiguation.
-
-        Usage: dict({a=1, b=2}) or dict({})
-        Returns: A wrapped object that will be converted to Python dict
-
-        Use this when you need to ensure an empty table {} is explicitly
-        treated as an empty dict {} in the JSON output.
-        """
-        if table is None:
-            return lua_runtime.table_from(
-                {"__type": "dict", "data": lua_runtime.table_from({})}
-            )
-
-        # Create wrapper with dict type
-        wrapper = {"__type": "dict", "data": table}
-        return lua_runtime.table_from(wrapper)
-
-    def lua_unwrap(obj):
-        """
-        Unwraps a wrapped object to access the underlying data.
-
-        Usage: unwrap(list({1, 2, 3})) or unwrap(dict({a=1}))
-        Returns: The original Lua table without the wrapper
-
-        Use this to extract the data from wrapped objects for further processing.
-        For non-wrapped objects, returns the object unchanged.
-        """
-        if obj is None:
-            return None
-
-        # Convert to Python dict to check structure
-        if hasattr(obj, "values"):
-            obj_dict = dict(obj)
-        else:
-            obj_dict = obj if isinstance(obj, dict) else {}
-
-        # Check if it's a wrapped object
-        if "__type" in obj_dict and "data" in obj_dict:
-            return obj_dict["data"]
-
-        # If not wrapped, return as-is
-        return obj
-
-    # Register the functions in Lua runtime
-    lua_runtime.globals()["list"] = lua_list
-    lua_runtime.globals()["dict"] = lua_dict
-    lua_runtime.globals()["unwrap"] = lua_unwrap
-
-    return lua_runtime
-
-
-def python_to_lua(obj, lua_runtime):
-    """
-    Convert Python data structures to Lua equivalents. Handles None values,
-    lists, dicts, and wrapped list/dict formats. None values become 'null'
-    sentinels, enabling consistent null checks with 'item == null'. Lists are
-    converted to Lua tables, dicts as tables.
-    """
-    null_sentinel = lua_runtime.eval("null")
-    if obj is None:
-        return null_sentinel
-    elif isinstance(obj, list):
-        # Convert each element and then convert the whole list to a Lua
-        # table
-        converted_items = [python_to_lua(x, lua_runtime) for x in obj]
-        return lua_runtime.table_from(converted_items)
-    elif isinstance(obj, dict):
-        # Check for special wrapped result marker first
-        if "__wrapped_result" in obj and obj["__wrapped_result"] is True:
-            # Preserve the special wrapper structure
-            wrapper = {
-                "__wrapped_result": True,
-                "__type": obj["__type"],
-                "data": python_to_lua(obj["data"], lua_runtime),
-            }
-            return lua_runtime.table_from(wrapper)
-        # Check for wrapped list/dict format
-        elif "__type" in obj and "data" in obj:
-            # It's a wrapped object, preserve the wrapper structure
-            obj_type = obj["__type"]
-            data = obj["data"]
-
-            # Recursively encode the data part
-            encoded_data = python_to_lua(data, lua_runtime)
-
-            # Return the wrapped structure
-            wrapper = {"__type": obj_type, "data": encoded_data}
-            return lua_runtime.table_from(wrapper)
-        else:
-            # Regular dict handling
-            converted_dict = {}
-            for k, v in obj.items():
-                converted_dict[k] = python_to_lua(v, lua_runtime)
-            return lua_runtime.table_from(converted_dict)
-    else:
-        return obj
-
-
-def lua_to_python_preserve_wrapped(obj, null_sentinel=None):
-    """
-    Convert Lua data structures to Python equivalents, preserving wrapped objects.
-    This version keeps wrapped list/dict objects in wrapped format instead of unwrapping
-    them.
-    """
-    # Check for null sentinel - handle both identity and empty table cases
-    if null_sentinel is not None and obj is null_sentinel:
-        return None
-    elif isinstance(obj, list):
-        return [lua_to_python_preserve_wrapped(x, null_sentinel) for x in obj]
-    elif isinstance(obj, dict):
-        # Check for wrapped list/dict format - preserve them!
-        if "__type" in obj and "data" in obj:
-            # This is a wrapped object, preserve it but convert the data part
-            obj_type = obj["__type"]
-            data = obj["data"]
-
-            # Convert the data part recursively, preserving any nested wrapped objects
-            if obj_type == "list":
-                # Force conversion to list but preserve wrapped objects within
-                if hasattr(data, "keys"):
-                    # It's a Lua table, convert to Python list
-                    keys = list(data.keys())
-                    if not keys:
-                        converted_data = []
-                    elif all(isinstance(k, int) and k > 0 for k in keys):
-                        max_k = max(keys)
-                        converted_data = [
-                            lua_to_python_preserve_wrapped(
-                                data[k] if k in keys else None, null_sentinel
-                            )
-                            for k in range(1, max_k + 1)
-                        ]
-                    else:
-                        # Non-consecutive keys, convert to list of values
-                        converted_data = [
-                            lua_to_python_preserve_wrapped(v, null_sentinel)
-                            for v in data.values()
-                        ]
-                elif isinstance(data, list):
-                    converted_data = [
-                        lua_to_python_preserve_wrapped(x, null_sentinel) for x in data
-                    ]
-                else:
-                    converted_data = []
-            elif obj_type == "dict":
-                # Force conversion to dict but preserve wrapped objects within
-                if hasattr(data, "items"):
-                    converted_data = {
-                        k: lua_to_python_preserve_wrapped(v, null_sentinel)
-                        for k, v in data.items()
-                    }
-                elif isinstance(data, dict):
-                    converted_data = {
-                        k: lua_to_python_preserve_wrapped(v, null_sentinel)
-                        for k, v in data.items()
-                    }
-                else:
-                    converted_data = {}
-            else:
-                # Unknown type, use regular conversion
-                converted_data = lua_to_python_preserve_wrapped(data, null_sentinel)
-
-            return {"__type": obj_type, "data": converted_data}
-
-        # Check for null sentinel marker first
-        if "__null_sentinel" in obj and obj["__null_sentinel"] is True:
-            return None
-
-        # Regular dict handling (no wrapper)
-        keys = list(obj.keys())
-        if not keys:
-            # Empty dict - ambiguous, keep as dict
-            return {}
-        elif all(isinstance(k, int) and k > 0 for k in keys):
-            min_k, max_k = min(keys), max(keys)
-            if min_k == 1 and max_k == len(keys):
-                # Convert to list in order
-                return [
-                    lua_to_python_preserve_wrapped(obj[k], null_sentinel)
-                    for k in range(1, max_k + 1)
-                ]
-            else:
-                # Non-consecutive keys, convert to list of values
-                return [
-                    lua_to_python_preserve_wrapped(v, null_sentinel)
-                    for v in obj.values()
-                ]
-        else:
-            # Regular dict with string/mixed keys
-            return {
-                k: lua_to_python_preserve_wrapped(v, null_sentinel)
-                for k, v in obj.items()
-            }
-    elif hasattr(obj, "keys"):
-        # It's a Lua table, convert to dict first
-        table_dict = dict(obj)
-        return lua_to_python_preserve_wrapped(table_dict, null_sentinel)
-    else:
-        return obj
-
-
-def lua_to_python(obj, null_sentinel=None):
-    """
-    Convert Lua data structures to Python equivalents. Converts Lua 'null' tables
-    back to Python None. Handles wrapped list/dict formats and converts Lua tables
-    with consecutive integer keys starting at 1 to lists. Ambiguous empty tables
-    default to empty dicts.
-    """
-    # Check for null sentinel - handle both identity and empty table cases
-    if null_sentinel is not None and obj is null_sentinel:
-        return None
-    elif isinstance(obj, list):
-        return [lua_to_python(x, null_sentinel) for x in obj]
-    elif isinstance(obj, dict):
-        # Check for special wrapped result marker first
-        if "__wrapped_result" in obj and obj["__wrapped_result"] is True:
-            # This is a wrapped result that should be preserved
-            obj_type = obj["__type"]
-            data = obj["data"]
-
-            # Use the preserve-wrapped conversion for the data
-            if obj_type == "list":
-                # Force conversion to list, preserving wrapped objects
-                if hasattr(data, "keys"):
-                    # It's a Lua table, convert to Python list preserving wrapped
-                    # objects
-                    keys = list(data.keys())
-                    if not keys:
-                        converted_data = []
-                    elif all(isinstance(k, int) and k > 0 for k in keys):
-                        max_k = max(keys)
-                        converted_data = [
-                            lua_to_python_preserve_wrapped(
-                                data[k] if k in keys else None, null_sentinel
-                            )
-                            for k in range(1, max_k + 1)
-                        ]
-                    else:
-                        # Non-consecutive keys, convert to list of values
-                        converted_data = [
-                            lua_to_python_preserve_wrapped(v, null_sentinel)
-                            for v in data.values()
-                        ]
-                elif isinstance(data, list):
-                    # Preserve wrapped objects within the list
-                    converted_data = []
-                    for x in data:
-                        # Check if this is a Lua table that represents a wrapped object
-                        if hasattr(x, "keys"):
-                            x_dict = dict(x)
-                            if "__type" in x_dict and "data" in x_dict:
-                                # This is a wrapped object, preserve the wrapped format
-                                # exactly. Convert the data part directly without
-                                # unwrapping the whole object.
-                                inner_type = x_dict["__type"]
-                                inner_data_lua = x_dict["data"]
-
-                                # Convert the inner data preserving its structure
-                                if inner_type == "list":
-                                    # Force list conversion
-                                    if hasattr(inner_data_lua, "keys"):
-                                        keys = list(inner_data_lua.keys())
-                                        if not keys:
-                                            inner_data = []
-                                        else:
-                                            # Convert Lua table to list, preserving
-                                            # wrapped objects
-                                            inner_data = []
-                                            for k in range(1, max(keys) + 1):
-                                                if k in keys:
-                                                    item = inner_data_lua[k]
-                                                    # Check if this item is a
-                                                    # wrapped object
-                                                    if hasattr(item, "keys"):
-                                                        item_dict = dict(item)
-                                                        if (
-                                                            "__type" in item_dict
-                                                            and "data" in item_dict
-                                                        ):
-                                                            # Preserve wrapped object
-                                                            item_type = item_dict[
-                                                                "__type"
-                                                            ]
-                                                            item_data = lua_to_python(
-                                                                item_dict["data"],
-                                                                null_sentinel,
-                                                            )
-                                                            inner_data.append(
-                                                                {
-                                                                    "__type": item_type,
-                                                                    "data": item_data,
-                                                                }
-                                                            )
-                                                        else:
-                                                            # Regular item
-                                                            inner_data.append(
-                                                                lua_to_python(
-                                                                    item, null_sentinel
-                                                                )
-                                                            )
-                                                    else:
-                                                        # Regular item
-                                                        inner_data.append(
-                                                            lua_to_python(
-                                                                item, null_sentinel
-                                                            )
-                                                        )
-                                    else:
-                                        inner_data = []
-                                elif inner_type == "dict":
-                                    # Force dict conversion
-                                    if hasattr(inner_data_lua, "items"):
-                                        inner_data = {
-                                            k: lua_to_python(v, null_sentinel)
-                                            for k, v in inner_data_lua.items()
-                                        }
-                                    else:
-                                        inner_data = {}
-                                else:
-                                    inner_data = lua_to_python(
-                                        inner_data_lua, null_sentinel
-                                    )
-
-                                converted_data.append(
-                                    {"__type": inner_type, "data": inner_data}
-                                )
-                            else:
-                                # Regular Lua table, convert normally
-                                converted_data.append(lua_to_python(x, null_sentinel))
-                        else:
-                            # Not a table, convert normally
-                            converted_data.append(lua_to_python(x, null_sentinel))
-                else:
-                    converted_data = []
-            elif obj_type == "dict":
-                # Force conversion to dict
-                if hasattr(data, "items"):
-                    converted_data = {
-                        k: lua_to_python(v, null_sentinel) for k, v in data.items()
-                    }
-                elif isinstance(data, dict):
-                    # Preserve wrapped objects within the dict
-                    converted_data = {}
-                    for k, v in data.items():
-                        # Check if this is a Lua table that represents a wrapped object
-                        if hasattr(v, "keys"):
-                            v_dict = dict(v)
-                            if "__type" in v_dict and "data" in v_dict:
-                                # This is a wrapped object, preserve the wrapped format
-                                # Use lua_to_python on the whole wrapped object which
-                                # will unwrap it, but since we know it's supposed to be
-                                # wrapped, re-wrap it
-                                unwrapped_inner = lua_to_python(v, null_sentinel)
-                                # Re-wrap it with the original type
-                                converted_data[k] = {
-                                    "__type": v_dict["__type"],
-                                    "data": unwrapped_inner,
-                                }
-                            else:
-                                # Regular Lua table, convert normally
-                                converted_data[k] = lua_to_python(v, null_sentinel)
-                        else:
-                            # Not a table, convert normally
-                            converted_data[k] = lua_to_python(v, null_sentinel)
-                else:
-                    converted_data = {}
-            else:
-                # Unknown type, use regular conversion
-                converted_data = lua_to_python(data, null_sentinel)
-
-            return {"__type": obj_type, "data": converted_data}
-        # Check for null sentinel marker
-        elif "__null_sentinel" in obj and obj["__null_sentinel"] is True:
-            return None
-        # Check for wrapped list/dict format
-        elif "__type" in obj and "data" in obj:
-            obj_type = obj["__type"]
-            data = obj["data"]
-
-            if obj_type == "list":
-                # Force conversion to list regardless of structure
-                if hasattr(data, "keys"):
-                    # It's a Lua table, convert to Python list
-                    keys = list(data.keys())
-                    if not keys:
-                        return []
-                    elif all(isinstance(k, int) and k > 0 for k in keys):
-                        max_k = max(keys)
-                        return [
-                            lua_to_python(data[k] if k in keys else None, null_sentinel)
-                            for k in range(1, max_k + 1)
-                        ]
-                    else:
-                        # Non-consecutive keys, convert to list of values
-                        return [lua_to_python(v, null_sentinel) for v in data.values()]
-                elif isinstance(data, list):
-                    return [lua_to_python(x, null_sentinel) for x in data]
-                else:
-                    return []
-            elif obj_type == "dict":
-                # Force conversion to dict regardless of structure
-                if hasattr(data, "items"):
-                    return {k: lua_to_python(v, null_sentinel) for k, v in data.items()}
-                elif isinstance(data, dict):
-                    return {k: lua_to_python(v, null_sentinel) for k, v in data.items()}
-                else:
-                    return {}
-
-        # Regular dict handling (no wrapper)
-        keys = list(obj.keys())
-        if not keys:
-            # Empty dict could be either empty list or empty dict
-            # We can't determine this from structure alone, so keep as dict
-            # The caller should handle type conversion if needed
-            return {}
-        elif all(isinstance(k, int) and k > 0 for k in keys):
-            min_k, max_k = min(keys), max(keys)
-            if min_k == 1 and max_k == len(keys):
-                # Convert to list in order
-                return [
-                    lua_to_python(obj[k], null_sentinel) for k in range(1, max_k + 1)
-                ]
-        # Otherwise, keep as dict
-        return {k: lua_to_python(v, null_sentinel) for k, v in obj.items()}
-    # Check for LuaTable objects
-    elif "LuaTable" in type(obj).__name__:
-        try:
-            keys = list(obj.keys())
-            # Check if this is a null sentinel by looking for the marker
-            lua_dict = {k: obj[k] for k in keys}
-            if "__null_sentinel" in lua_dict and lua_dict["__null_sentinel"] is True:
-                return None
-            # Convert to dict and recurse to handle potential wrapped formats
-            return lua_to_python(lua_dict, null_sentinel)
-        except Exception:
-            return obj
-    else:
-        return obj
-
-
-def evaluate_expression_preserve_wrapped(
-    expression: str,
-    item: Any,
-    safe_mode: Optional[bool] = None,
-    context: Optional[Dict] = None,
-) -> Any:
-    """
-    Evaluate a Lua expression against an item, preserving wrapped objects.
-    This version preserves list({})/dict({}) wrapped objects instead of unwrapping them.
-    """
-    try:
-        lua_runtime = create_lua_runtime(safe_mode)
-        # Set up context - always make dict keys available for direct access
-        if isinstance(item, dict):
-            for key, value in item.items():
-                if (
-                    isinstance(key, str)
-                    and key.isidentifier()
-                    and key not in ["and", "or", "not", "if", "then", "else", "end"]
-                ):
-                    lua_runtime.globals()[key] = python_to_lua(
-                        value, lua_runtime
-                    )  # type: ignore  # noqa
-
-        # Set up additional context variables (may override dict keys)
-        if context is not None:
-            for k, v in context.items():
-                lua_runtime.globals()[k] = python_to_lua(
-                    v, lua_runtime
-                )  # type: ignore  # noqa
-        # Evaluate the expression
-        try:
-            result = lua_runtime.execute("return (" + expression + ")")
-        except lupa.LuaError:
-            result = lua_runtime.execute(expression)
-
-        # Convert result back to Python, preserving wrapped objects
-        null_sentinel = lua_runtime.eval("null")
-        return lua_to_python_preserve_wrapped(result, null_sentinel)
-    except Exception:
-        # Fallback to regular expression evaluation on error
-        return evaluate_expression(expression, item, safe_mode, context)
-
-
 def evaluate_expression(
     expression: str,
     item: Any,
@@ -1269,3 +782,47 @@ def evaluate_expression(
         return lua_to_python(result, null_sentinel)
     except Exception:
         return None
+
+
+def evaluate_expression_preserve_wrapped(
+    expression: str,
+    item: Any,
+    safe_mode: Optional[bool] = None,
+    context: Optional[Dict] = None,
+) -> Any:
+    """
+    Evaluate a Lua expression against an item, preserving wrapped objects.
+    This version preserves list({})/dict({}) wrapped objects instead of unwrapping them.
+    """
+    try:
+        lua_runtime = create_lua_runtime(safe_mode)
+        # Set up context - always make dict keys available for direct access
+        if isinstance(item, dict):
+            for key, value in item.items():
+                if (
+                    isinstance(key, str)
+                    and key.isidentifier()
+                    and key not in ["and", "or", "not", "if", "then", "else", "end"]
+                ):
+                    lua_runtime.globals()[key] = python_to_lua(
+                        value, lua_runtime
+                    )  # type: ignore  # noqa
+
+        # Set up additional context variables (may override dict keys)
+        if context is not None:
+            for k, v in context.items():
+                lua_runtime.globals()[k] = python_to_lua(
+                    v, lua_runtime
+                )  # type: ignore  # noqa
+        # Evaluate the expression
+        try:
+            result = lua_runtime.execute("return (" + expression + ")")
+        except lupa.LuaError:
+            result = lua_runtime.execute(expression)
+
+        # Convert result back to Python, preserving wrapped objects
+        null_sentinel = lua_runtime.eval("null")
+        return lua_to_python_preserve_wrapped(result, null_sentinel)
+    except Exception:
+        # Fallback to regular expression evaluation on error
+        return evaluate_expression(expression, item, safe_mode, context)
