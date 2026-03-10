@@ -12,8 +12,8 @@ This module contains all Lua-related functionality including:
 from typing import Any, Dict, Optional
 import lupa
 
-# Global configuration for Lua safety mode
-SAFE_MODE = True  # Default to safe mode, can be overridden by command line
+# Default for Lua safety mode
+SAFE_MODE_DEFAULT = True
 
 
 def _unwrap_input(value: Any) -> Any:
@@ -615,11 +615,11 @@ def create_lua_runtime(
     registration.
 
     Args:
-        safe_mode: If True, applies safety rails. If None, uses global SAFE_MODE
-            setting.
+        safe_mode: If True, applies safety rails. If None, uses global
+            SAFE_MODE_DEFAULT setting.
     """
     if safe_mode is None:
-        safe_mode = SAFE_MODE
+        safe_mode = SAFE_MODE_DEFAULT
 
     lua_runtime = lupa.LuaRuntime()
 
@@ -1186,8 +1186,8 @@ def evaluate_expression(
     Args:
         expression: Lua expression to evaluate (can return any value)
         item: The data item to evaluate against (None values become 'null')
-        safe_mode: If True, applies safety rails. If None, uses global SAFE_MODE
-            setting.
+        safe_mode: If True, applies safety rails. If None, uses global
+            SAFE_MODE_DEFAULT setting.
         context: Dict of variables to set in the Lua context (e.g., {"item": item}).
             Required for parameter access in expressions.
     """

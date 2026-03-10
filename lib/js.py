@@ -11,13 +11,8 @@ This module contains all JavaScript-related functionality including:
 from typing import Any, Dict, Optional
 import pythonmonkey as pm
 
-# Global configuration for JavaScript safety mode
-try:
-    # Try to import from main module if available
-    from main import SAFE_MODE
-except ImportError:
-    # Fallback if main module not available (e.g., in tests)
-    SAFE_MODE = True  # Default to safe mode
+# Default for JavaScript safety mode
+SAFE_MODE_DEFAULT = True
 
 
 def _register_mcp_tools_in_js(js_global=None):
@@ -464,11 +459,11 @@ def create_js_runtime(safe_mode: Optional[bool] = None):
     registration.
 
     Args:
-        safe_mode: If True, applies safety rails. If None, uses global SAFE_MODE
-            setting.
+        safe_mode: If True, applies safety rails. If None, uses global
+            SAFE_MODE_DEFAULT setting.
     """
     if safe_mode is None:
-        safe_mode = SAFE_MODE
+        safe_mode = SAFE_MODE_DEFAULT
 
     # Get the global object
     js_global = pm.eval("globalThis")
@@ -539,8 +534,8 @@ def evaluate_expression(
         expression: JavaScript expression to evaluate (can return any value)
         item: The data item to evaluate against
         context: Dict of variables to set in the JavaScript context
-        safe_mode: If True, applies safety rails. If None, uses global SAFE_MODE
-            setting.
+        safe_mode: If True, applies safety rails. If None, uses global
+            SAFE_MODE_DEFAULT setting.
     """
     try:
         # Create a fresh context for this evaluation

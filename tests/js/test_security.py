@@ -36,10 +36,10 @@ async def unsafe_client():
     main.USE_JAVASCRIPT = True
     main.SAFE_MODE = False  # Unsafe mode
 
-    # Also need to update the js module's SAFE_MODE
+    # Also need to update the js module's SAFE_MODE_DEFAULT
     import lib.js
 
-    lib.js.SAFE_MODE = False
+    lib.js.SAFE_MODE_DEFAULT = False
 
     mcp_instance = LeverMCP("Lever MCP")
     from tools.js import register_js_tools

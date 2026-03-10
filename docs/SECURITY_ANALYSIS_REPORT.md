@@ -121,11 +121,11 @@ This approach:
 1. **Implement JavaScript Safe Mode**
    ```python
    # In lib/js.py
-   JS_SAFE_MODE = True  # Default to safe mode
+   SAFE_MODE_DEFAULT = True  # Default to safe mode
 
    def create_js_runtime(safe_mode=None):
        if safe_mode is None:
-           safe_mode = JS_SAFE_MODE
+           safe_mode = SAFE_MODE_DEFAULT
 
        if safe_mode:
            # Remove dangerous globals
@@ -188,13 +188,13 @@ This approach:
 ### Modified lib/js.py
 
 ```python
-# Global configuration for JavaScript safety mode
-JS_SAFE_MODE = True  # Default to safe mode
+# Default for JavaScript safety mode
+SAFE_MODE_DEFAULT = True
 
 def create_js_runtime(safe_mode=None):
     """Create a JavaScript runtime with optional sandboxing."""
     if safe_mode is None:
-        safe_mode = JS_SAFE_MODE
+        safe_mode = SAFE_MODE_DEFAULT
 
     # Register MCP tools first
     _register_mcp_tools_in_js()
@@ -227,11 +227,12 @@ def create_js_runtime(safe_mode=None):
 ```python
 # Update global configuration based on command line args
 SAFE_MODE = not args.unsafe
-JS_SAFE_MODE = not args.javascript_unsafe if hasattr(args, 'javascript_unsafe') else SAFE_MODE
 
-# Pass safe mode to JavaScript lib
+# Pass safe mode to libraries
 import lib.js
-lib.js.JS_SAFE_MODE = JS_SAFE_MODE
+import lib.lua
+lib.js.SAFE_MODE_DEFAULT = SAFE_MODE
+lib.lua.SAFE_MODE_DEFAULT = SAFE_MODE
 ```
 
 ## Risk Assessment
