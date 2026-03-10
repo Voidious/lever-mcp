@@ -1,0 +1,12 @@
+#provider = "openai"
+provider = "moonshot"
+#model = "gpt-5.1"
+model = "kimi-k2.5"
+extraction_retries = 2
+llm_verify_retries = 2
+file_limiter_retries = 5
+enabled_refactors = ["file_limiter"]
+# disabled_refactors = ["file_limiter"]
+api_timeout = 300
+# tool_choice = "required"
+# base_url="http://192.168.0.221:1234/v1"
