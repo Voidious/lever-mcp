@@ -62,17 +62,6 @@ def _apply_wrapping(result: Any, wrap: bool) -> Any:
         return result
 
 
-def _wrap_result(result_dict: dict, wrap: bool) -> dict:
-    """
-    Apply wrapping to the result value if wrap=True and no error occurred.
-    """
-    if "error" in result_dict or not wrap:
-        return result_dict
-
-    wrapped_value = _apply_wrapping(result_dict.get("value"), wrap)
-    return {"value": wrapped_value}
-
-
 def _register_mcp_tools_in_lua(lua_runtime: lupa.LuaRuntime, mcp_tools=None):
     """
     Register MCP tool functions in the Lua runtime to enable calling them as
