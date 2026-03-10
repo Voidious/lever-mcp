@@ -657,13 +657,13 @@ def op_min_by(
         if not items:
             return {"value": None}
 
-        def min_key(x):
-            result = expr_handler(
-                min_expr, x, 1, items
-            )  # Index not meaningful for min_by
+        def min_key(indexed_item):
+            index, x = indexed_item
+            result = expr_handler(min_expr, x, index, items)
             return result if result is not None else float("inf")
 
-        return {"value": min(items, key=min_key)}
+        best_indexed_item = min(enumerate(items, 1), key=min_key)
+        return {"value": best_indexed_item[1]}
     except Exception as e:
         return {"value": None, "error": f"min_by failed: {str(e)}"}
 
@@ -682,13 +682,13 @@ def op_max_by(
         if not items:
             return {"value": None}
 
-        def max_key(x):
-            result = expr_handler(
-                max_expr, x, 1, items
-            )  # Index not meaningful for max_by
+        def max_key(indexed_item):
+            index, x = indexed_item
+            result = expr_handler(max_expr, x, index, items)
             return result if result is not None else float("-inf")
 
-        return {"value": max(items, key=max_key)}
+        best_indexed_item = max(enumerate(items, 1), key=max_key)
+        return {"value": best_indexed_item[1]}
     except Exception as e:
         return {"value": None, "error": f"max_by failed: {str(e)}"}
 
