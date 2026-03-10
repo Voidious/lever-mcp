@@ -519,6 +519,8 @@ def op_uniq_by(
     items: list, expression: str, expr_handler: Callable, param: Any = None, **kwargs
 ) -> dict:
     """Remove duplicates by expression result."""
+    if not isinstance(items, list):
+        return {"value": None, "error": "Argument must be a list for uniq_by."}
     # Use expression if provided, otherwise use param as expression
     # (backward compatibility)
     uniq_expr = expression or (param if isinstance(param, str) else None)
@@ -543,6 +545,8 @@ def op_partition(
     items: list, expression: str, expr_handler: Callable, param: Any = None, **kwargs
 ) -> dict:
     """Split list by expression result/boolean."""
+    if not isinstance(items, list):
+        return {"value": None, "error": "Argument must be a list for partition."}
     # Use expression if provided, otherwise use param as expression
     # (backward compatibility)
     part_expr = expression or (param if isinstance(param, str) else None)
@@ -566,6 +570,8 @@ def op_pluck(
     items: list, expression: str, expr_handler: Callable, param: Any = None, **kwargs
 ) -> dict:
     """Extract values by expression."""
+    if not isinstance(items, list):
+        return {"value": None, "error": "Argument must be a list for pluck."}
     # Use expression if provided, otherwise use param as expression
     # (backward compatibility)
     pluck_expr = expression or (param if isinstance(param, str) else None)
@@ -586,6 +592,8 @@ def op_remove_by(
     items: list, expression: str, expr_handler: Callable, **kwargs
 ) -> dict:
     """Remove items matching expression."""
+    if not isinstance(items, list):
+        return {"value": None, "error": "Argument must be a list for remove_by."}
     if not expression:
         return {
             "value": None,
@@ -607,6 +615,8 @@ def op_count_by(
     items: list, expression: str, expr_handler: Callable, param: Any = None, **kwargs
 ) -> dict:
     """Count occurrences by expression result."""
+    if not isinstance(items, list):
+        return {"value": None, "error": "Argument must be a list for count_by."}
     # Use expression if provided, otherwise use param as expression
     # (backward compatibility)
     count_expr = expression or (param if isinstance(param, str) else None)
@@ -629,6 +639,8 @@ def op_key_by(
     items: list, expression: str, expr_handler: Callable, param: Any = None, **kwargs
 ) -> dict:
     """Create dict keyed by expression result."""
+    if not isinstance(items, list):
+        return {"value": None, "error": "Argument must be a list for key_by."}
     # Use expression if provided, otherwise use param as expression
     # (backward compatibility)
     key_expr = expression or (param if isinstance(param, str) else None)
@@ -655,6 +667,8 @@ def op_min_by(
     items: list, expression: str, expr_handler: Callable, param: Any = None, **kwargs
 ) -> dict:
     """Find item with minimum property value."""
+    if not isinstance(items, list):
+        return {"value": None, "error": "Argument must be a list for min_by."}
     # Use expression if provided, otherwise use param as expression
     # (backward compatibility)
     min_expr = expression or (param if isinstance(param, str) else None)
@@ -680,6 +694,8 @@ def op_max_by(
     items: list, expression: str, expr_handler: Callable, param: Any = None, **kwargs
 ) -> dict:
     """Find item with maximum property value."""
+    if not isinstance(items, list):
+        return {"value": None, "error": "Argument must be a list for max_by."}
     # Use expression if provided, otherwise use param as expression
     # (backward compatibility)
     max_expr = expression or (param if isinstance(param, str) else None)
@@ -705,6 +721,8 @@ def op_index_of(
     items: list, expression: str, expr_handler: Callable, param: Any = None, **kwargs
 ) -> dict:
     """Find index of first item matching expression."""
+    if not isinstance(items, list):
+        return {"value": None, "error": "Argument must be a list for index_of."}
     # Use expression if provided, otherwise use param as expression
     # (backward compatibility)
     index_expr = expression or (param if isinstance(param, str) else None)
@@ -727,6 +745,8 @@ def op_random_except(
     items: list, expression: str, expr_handler: Callable, param: Any = None, **kwargs
 ) -> dict:
     """Get random item excluding condition."""
+    if not isinstance(items, list):
+        return {"value": None, "error": "Argument must be a list for random_except."}
     # Use expression if provided, otherwise use param as expression
     # (backward compatibility)
     except_expr = expression or (param if isinstance(param, str) else None)
@@ -754,6 +774,8 @@ def op_random_except(
 
 def op_flat_map(items: list, expression: str, expr_handler: Callable, **kwargs) -> dict:
     """Like map, but flattens one level if the mapping returns lists."""
+    if not isinstance(items, list):
+        return {"value": None, "error": "Argument must be a list for flat_map."}
     if not expression:
         return {"value": None, "error": "expression is required for flat_map operation"}
 
@@ -783,6 +805,11 @@ def op_difference_by(
     **kwargs,
 ) -> dict:
     """Items in first not matching expression in second."""
+    if not isinstance(items, list) or not isinstance(others, list):
+        return {
+            "value": None,
+            "error": "Both 'items' and 'others' must be lists for difference_by.",
+        }
     # Use expression if provided, otherwise use param as expression
     # (backward compatibility)
     diff_expr = expression or (param if isinstance(param, str) else None)
@@ -820,6 +847,11 @@ def op_intersection_by(
     **kwargs,
 ) -> dict:
     """Items in first list matching expression in second."""
+    if not isinstance(items, list) or not isinstance(others, list):
+        return {
+            "value": None,
+            "error": "Both 'items' and 'others' must be lists for intersection_by.",
+        }
     # Use expression if provided, otherwise use param as expression
     # (backward compatibility)
     inter_expr = expression or (param if isinstance(param, str) else None)
@@ -850,6 +882,8 @@ def op_intersection_by(
 
 def op_all_by(items: list, expression: str, expr_handler: Callable, **kwargs) -> dict:
     """Check if all items match expression."""
+    if not isinstance(items, list):
+        return {"value": None, "error": "Argument must be a list for all_by."}
     if not expression:
         return {"value": None, "error": "expression is required for all_by operation"}
 
@@ -865,6 +899,8 @@ def op_all_by(items: list, expression: str, expr_handler: Callable, **kwargs) ->
 
 def op_any_by(items: list, expression: str, expr_handler: Callable, **kwargs) -> dict:
     """Check if any items match expression."""
+    if not isinstance(items, list):
+        return {"value": None, "error": "Argument must be a list for any_by."}
     if not expression:
         return {"value": None, "error": "expression is required for any_by operation"}
 
@@ -882,6 +918,8 @@ def op_reduce(
     items: list, expression: str, expr_handler: Callable, param: Any = None, **kwargs
 ) -> dict:
     """Aggregate the list using a binary expression."""
+    if not isinstance(items, list):
+        return {"value": None, "error": "Argument must be a list for reduce."}
     if not expression:
         return {"value": None, "error": "expression is required for reduce operation"}
 
@@ -910,16 +948,15 @@ def op_zip_with(
     items: list, others: list, expression: str, expr_handler: Callable, **kwargs
 ) -> dict:
     """Combine two lists element-wise using expression."""
+    if not isinstance(items, list) or not isinstance(others, list):
+        return {
+            "value": None,
+            "error": "Both 'items' and 'others' must be lists for zip_with.",
+        }
     if not expression:
         return {"value": None, "error": "expression is required for zip_with operation"}
 
     try:
-        if not isinstance(items, list) or not isinstance(others, list):
-            return {
-                "value": None,
-                "error": "Both 'items' and 'others' must be lists for zip_with",
-            }
-
         min_len = min(len(items), len(others))
         result = []
         for i in range(min_len):
