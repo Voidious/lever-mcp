@@ -6,8 +6,25 @@ the same way regardless of expression language, plus framework for
 expression-based operations.
 """
 
+import json
 import random
 from typing import Any, Callable, Dict, Optional
+
+
+def _get_key_hash(k: Any) -> Any:
+    """Get a hashable representation of a key, handling unhashable types."""
+    if isinstance(k, (str, int, float, bool, type(None))):
+        return k
+    try:
+        hash(k)
+        return k
+    except (TypeError, ValueError):
+        try:
+            if isinstance(k, (dict, list)):
+                return json.dumps(k, sort_keys=True)
+            return str(k)
+        except Exception:
+            return str(k)
 
 
 # Pure operations that don't require expressions
@@ -508,23 +525,10 @@ def op_uniq_by(
         result = []
         for index, item in enumerate(items, 1):
             k = expr_handler(uniq_expr, item, index, items)
-            # Handle unhashable types by converting to JSON
-            try:
-                k_hash = (
-                    k if isinstance(k, (str, int, float, bool, type(None))) else str(k)
-                )
-                if k_hash not in seen:
-                    seen.add(k_hash)
-                    result.append(item)
-            except (TypeError, ValueError):
-                import json
-
-                k_hash = (
-                    json.dumps(k, sort_keys=True) if isinstance(k, dict) else str(k)
-                )
-                if k_hash not in seen:
-                    seen.add(k_hash)
-                    result.append(item)
+            k_hash = _get_key_hash(k)
+            if k_hash not in seen:
+                seen.add(k_hash)
+                result.append(item)
         return {"value": result}
     except Exception as e:
         return {"value": None, "error": f"uniq_by failed: {str(e)}"}
@@ -785,13 +789,13 @@ def op_difference_by(
         others_keys = set()
         for index, item in enumerate(others, 1):
             key_val = expr_handler(diff_expr, item, index, others)
-            others_keys.add(key_val)
+            others_keys.add(_get_key_hash(key_val))
 
         # Return items from main list whose key is not in others_keys
         result = []
         for index, item in enumerate(items, 1):
             key_val = expr_handler(diff_expr, item, index, items)
-            if key_val not in others_keys:
+            if _get_key_hash(key_val) not in others_keys:
                 result.append(item)
 
         return {"value": result}
@@ -822,13 +826,13 @@ def op_intersection_by(
         others_keys = set()
         for index, item in enumerate(others, 1):
             key_val = expr_handler(inter_expr, item, index, others)
-            others_keys.add(key_val)
+            others_keys.add(_get_key_hash(key_val))
 
         # Return items from main list whose key is in others_keys
         result = []
         for index, item in enumerate(items, 1):
             key_val = expr_handler(inter_expr, item, index, items)
-            if key_val in others_keys:
+            if _get_key_hash(key_val) in others_keys:
                 result.append(item)
 
         return {"value": result}
