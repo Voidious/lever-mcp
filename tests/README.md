@@ -19,7 +19,7 @@ Tests that specifically target Lua-based tools with Lua expressions:
 Tests for shared functionality in `lib/` and `tools/common/`:
 - `test_real_server.py` - Integration tests for the MCP server
 
-### `tests/common/cross-engine/`
+### `tests/common/cross_engine/`
 Tests that run against both Lua and JavaScript engines using common functionality (no expressions):
 - `test_lever.py` - Basic tool operations without expressions
 - `test_chain_pairings.py` - Chain tool functionality tests
@@ -30,12 +30,12 @@ Tests that run against both Lua and JavaScript engines using common functionalit
 
 1. **Engine-specific tests** (`lua/`, `js/`): Use expressions and engine-specific features
 2. **Common library tests** (`common/`): Test shared infrastructure code
-3. **Cross-engine tests** (`common/cross-engine/`): Test basic operations that work the same across engines
+3. **Cross-engine tests** (`common/cross_engine/`): Test basic operations that work the same across engines
 
 ## Future Plans
 
 When JavaScript implementations are added:
 - Copy tests from `tests/lua/` to `tests/js/`
 - Replace Lua expressions with JavaScript expressions
-- Parametrize `tests/common/cross-engine/` tests to run against both engines
+- Parametrize `tests/common/cross_engine/` tests to run against both engines
 - JavaScript tools will not have wrap/unwrap functionality like Lua tools
