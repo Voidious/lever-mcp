@@ -13,12 +13,15 @@ from fastmcp import Client
 from tests import make_tool_call
 
 
-@pytest.fixture
-async def safe_client():
-    """Client with JavaScript in safe mode (default)."""
+async def _create_client_context(safe_mode: bool = True):
     importlib.reload(main)
     main.USE_JAVASCRIPT = True
-    main.SAFE_MODE = True  # Explicitly set safe mode
+    main.SAFE_MODE = safe_mode
+
+    if not safe_mode:
+        import lib.js
+
+        lib.js.SAFE_MODE_DEFAULT = False
 
     mcp_instance = LeverMCP("Lever MCP")
     from tools.js import register_js_tools
@@ -26,6 +29,17 @@ async def safe_client():
     register_js_tools(mcp_instance)
 
     async with Client(mcp_instance) as c:
+        yield c
+
+
+@pytest.fixture
+async def safe_client():
+    """Client with JavaScript in safe mode (default)."""
+    importlib.reload(main)
+    main.USE_JAVASCRIPT = True
+    main.SAFE_MODE = True  # Explicitly set safe mode
+
+    async for c in _create_client_context(safe_mode=True):
         yield c
 
 
@@ -41,12 +55,7 @@ async def unsafe_client():
 
     lib.js.SAFE_MODE_DEFAULT = False
 
-    mcp_instance = LeverMCP("Lever MCP")
-    from tools.js import register_js_tools
-
-    register_js_tools(mcp_instance)
-
-    async with Client(mcp_instance) as c:
+    async for c in _create_client_context(safe_mode=False):
         yield c
 
 
