@@ -785,6 +785,21 @@ def python_to_lua(obj, lua_runtime):
         return obj
 
 
+def _convert_lua_dict_to_list(data: Any, null_sentinel: Any, convert_fn) -> list:
+    keys = list(data.keys())
+    if not keys:
+        return []
+    elif all(isinstance(k, int) and k > 0 for k in keys):
+        max_k = max(keys)
+        return [
+            convert_fn(data[k] if k in keys else None, null_sentinel)
+            for k in range(1, max_k + 1)
+        ]
+    else:
+        # Non-consecutive keys, convert to list of values
+        return [convert_fn(v, null_sentinel) for v in data.values()]
+
+
 def lua_to_python_preserve_wrapped(obj, null_sentinel=None):
     """
     Convert Lua data structures to Python equivalents, preserving wrapped objects.
@@ -808,23 +823,9 @@ def lua_to_python_preserve_wrapped(obj, null_sentinel=None):
                 # Force conversion to list but preserve wrapped objects within
                 if hasattr(data, "keys"):
                     # It's a Lua table, convert to Python list
-                    keys = list(data.keys())
-                    if not keys:
-                        converted_data = []
-                    elif all(isinstance(k, int) and k > 0 for k in keys):
-                        max_k = max(keys)
-                        converted_data = [
-                            lua_to_python_preserve_wrapped(
-                                data[k] if k in keys else None, null_sentinel
-                            )
-                            for k in range(1, max_k + 1)
-                        ]
-                    else:
-                        # Non-consecutive keys, convert to list of values
-                        converted_data = [
-                            lua_to_python_preserve_wrapped(v, null_sentinel)
-                            for v in data.values()
-                        ]
+                    converted_data = _convert_lua_dict_to_list(
+                        data, null_sentinel, lua_to_python_preserve_wrapped
+                    )
                 elif isinstance(data, list):
                     converted_data = [
                         lua_to_python_preserve_wrapped(x, null_sentinel) for x in data
@@ -913,23 +914,9 @@ def lua_to_python(obj, null_sentinel=None):
                 if hasattr(data, "keys"):
                     # It's a Lua table, convert to Python list preserving wrapped
                     # objects
-                    keys = list(data.keys())
-                    if not keys:
-                        converted_data = []
-                    elif all(isinstance(k, int) and k > 0 for k in keys):
-                        max_k = max(keys)
-                        converted_data = [
-                            lua_to_python_preserve_wrapped(
-                                data[k] if k in keys else None, null_sentinel
-                            )
-                            for k in range(1, max_k + 1)
-                        ]
-                    else:
-                        # Non-consecutive keys, convert to list of values
-                        converted_data = [
-                            lua_to_python_preserve_wrapped(v, null_sentinel)
-                            for v in data.values()
-                        ]
+                    converted_data = _convert_lua_dict_to_list(
+                        data, null_sentinel, lua_to_python_preserve_wrapped
+                    )
                 elif isinstance(data, list):
                     # Preserve wrapped objects within the list
                     converted_data = []
