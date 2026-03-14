@@ -499,6 +499,16 @@ async def test_pluck_expression(client, items, expression, expected_values):
 # --- Min/Max By Expression Tests ---
 
 
+async def _call_lists_tool_and_assert(client, items, operation, expression, expected):
+    result, error = await make_tool_call(
+        client,
+        "lists",
+        {"items": items, "operation": operation, "expression": expression},
+    )
+    assert error is None
+    assert result == expected
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "items, expression, operation, expected_value",
@@ -548,16 +558,18 @@ async def test_pluck_expression(client, items, expression, expected_values):
 async def test_min_max_by_expression(
     client, items, expression, operation, expected_value
 ):
-    result, error = await make_tool_call(
-        client,
-        "lists",
-        {"items": items, "operation": operation, "expression": expression},
+    await _call_lists_tool_and_assert(
+        client, items, operation, expression, expected_value
     )
-    assert error is None
-    assert result == expected_value
 
 
 # --- Difference/Intersection By Expression Tests ---
+
+
+def _assert_success_with_count(error, result, expected_count):
+    assert error is None
+    assert result is not None
+    assert len(result) == expected_count
 
 
 @pytest.mark.asyncio
@@ -593,9 +605,7 @@ async def test_difference_intersection_by_expression(
             "expression": expression,
         },
     )
-    assert error is None
-    assert result is not None
-    assert len(result) == expected_count
+    _assert_success_with_count(error, result, expected_count)
 
 
 # --- Remove By Expression Tests ---
@@ -628,12 +638,18 @@ async def test_remove_by_expression(client, items, expression, expected_count):
         "lists",
         {"items": items, "operation": "remove_by", "expression": expression},
     )
-    assert error is None
-    assert result is not None
-    assert len(result) == expected_count
+    _assert_success_with_count(error, result, expected_count)
 
 
 # --- Null Handling Expression Tests ---
+
+
+async def _call_any_eval_and_assert(client, value, expression, expected_result):
+    result, error = await make_tool_call(
+        client, "any", {"value": value, "operation": "eval", "expression": expression}
+    )
+    assert error is None
+    assert result == expected_result
 
 
 @pytest.mark.asyncio
@@ -665,11 +681,7 @@ async def test_remove_by_expression(client, items, expression, expected_count):
     ],
 )
 async def test_null_handling_expression(client, value, expression, expected_result):
-    result, error = await make_tool_call(
-        client, "any", {"value": value, "operation": "eval", "expression": expression}
-    )
-    assert error is None
-    assert result == expected_result
+    await _call_any_eval_and_assert(client, value, expression, expected_result)
 
 
 # --- Null Sentinel Behavior Tests ---
@@ -735,11 +747,7 @@ async def test_null_sentinel_behavior(
     ],
 )
 async def test_multiline_expression(client, value, expression, expected_result):
-    result, error = await make_tool_call(
-        client, "any", {"value": value, "operation": "eval", "expression": expression}
-    )
-    assert error is None
-    assert result == expected_result
+    await _call_any_eval_and_assert(client, value, expression, expected_result)
 
 
 # --- Safety Mode Tests ---
@@ -972,13 +980,9 @@ async def test_new_list_operations_expressions(
 async def test_new_list_by_operations_expressions(
     client, items, operation, expression, expected_result
 ):
-    result, error = await make_tool_call(
-        client,
-        "lists",
-        {"items": items, "operation": operation, "expression": expression},
+    await _call_lists_tool_and_assert(
+        client, items, operation, expression, expected_result
     )
-    assert error is None
-    assert result == expected_result
 
 
 # --- New Dict Operations Expression Tests ---
