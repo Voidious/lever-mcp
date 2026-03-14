@@ -10,6 +10,12 @@ import operator
 from typing import Callable, Dict
 
 
+def normalize_to_int(value):
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    return value
+
+
 def op_range(options: dict, **kwargs) -> dict:
     """Generate a list of numbers."""
     from_val = options.get("from")
@@ -26,10 +32,8 @@ def op_range(options: dict, **kwargs) -> dict:
         # Convert to integers if they're floats that represent whole numbers
         if isinstance(from_val, float) and from_val.is_integer():
             from_val = int(from_val)
-        if isinstance(to_val, float) and to_val.is_integer():
-            to_val = int(to_val)
-        if isinstance(step, float) and step.is_integer():
-            step = int(step)
+        to_val = normalize_to_int(to_val)
+        step = normalize_to_int(step)
 
         result = list(range(from_val, to_val, step))
         return {"value": result}
