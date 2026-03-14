@@ -371,6 +371,20 @@ class TestStringsWrapBehavior:
 class TestDictsWrapBehavior:
     """Test wrap parameter behavior for dicts operations."""
 
+    @staticmethod
+    def _assert_wrapped_result(test_cases, tool_name):
+        for operation, expression, expected_type in test_cases:
+            result = evaluate_expression(expression, {})
+            assert isinstance(
+                result, dict
+            ), f"{tool_name}.{operation} should return wrapped structure"
+            assert (
+                result.get("__type") == expected_type
+            ), f"{tool_name}.{operation} should wrap as {expected_type}"
+            assert (
+                "data" in result
+            ), f"{tool_name}.{operation} should have data field when wrapped"
+
     def test_dict_returning_operations_with_wrap_true(self):
         """
         Test that dicts operations returning dicts are properly wrapped
@@ -397,17 +411,7 @@ class TestDictsWrapBehavior:
             ),
         ]
 
-        for operation, expression, expected_type in test_cases:
-            result = evaluate_expression(expression, {})
-            assert isinstance(
-                result, dict
-            ), f"dicts.{operation} should return wrapped structure"
-            assert (
-                result.get("__type") == expected_type
-            ), f"dicts.{operation} should wrap as {expected_type}"
-            assert (
-                "data" in result
-            ), f"dicts.{operation} should have data field when wrapped"
+        self._assert_wrapped_result(test_cases, "dicts")
 
     def test_list_returning_dicts_operations_with_wrap_true(self):
         """
@@ -421,17 +425,7 @@ class TestDictsWrapBehavior:
             ("items", "dicts.items({obj={a=1, b=2}, wrap=true})", "list"),
         ]
 
-        for operation, expression, expected_type in test_cases:
-            result = evaluate_expression(expression, {})
-            assert isinstance(
-                result, dict
-            ), f"dicts.{operation} should return wrapped structure"
-            assert (
-                result.get("__type") == expected_type
-            ), f"dicts.{operation} should wrap as {expected_type}"
-            assert (
-                "data" in result
-            ), f"dicts.{operation} should have data field when wrapped"
+        self._assert_wrapped_result(test_cases, "dicts")
 
     def test_scalar_returning_dicts_operations_with_wrap_true(self):
         """
