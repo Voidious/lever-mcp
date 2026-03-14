@@ -9,6 +9,13 @@ from typing import Any, Dict, List
 import inspect
 
 
+def _find_first_non_operation(keys):
+    for k in keys:
+        if k != "operation":
+            return k
+    return None
+
+
 async def chain_tool(input: Any, tool_calls: List[Dict[str, Any]], mcp) -> dict:
     """MCP tool wrapper for chaining multiple tool calls."""
     value = input
@@ -45,17 +52,11 @@ async def chain_tool(input: Any, tool_calls: List[Dict[str, Any]], mcp) -> dict:
 
         # Fallback to required parameters (excluding 'operation')
         if not primary_param:
-            for k in required:
-                if k != "operation":
-                    primary_param = k
-                    break
+            primary_param = _find_first_non_operation(required)
 
         # Fallback to first non-'operation' parameter in schema
         if not primary_param and param_schema:
-            for k in param_schema:
-                if k != "operation":
-                    primary_param = k
-                    break
+            primary_param = _find_first_non_operation(param_schema)
 
         arguments = dict(params)
 
