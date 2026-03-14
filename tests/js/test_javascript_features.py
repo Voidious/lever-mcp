@@ -35,6 +35,14 @@ async def client():
 # --- Arrow Function Tests ---
 
 
+async def _assert_js_eval(client, expression, expected_result):
+    result, error = await make_tool_call(
+        client, "any", {"value": {}, "operation": "eval", "expression": expression}
+    )
+    assert error is None
+    assert result == expected_result
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "expression, expected_result",
@@ -56,14 +64,20 @@ async def client():
 )
 async def test_arrow_functions(client, expression, expected_result):
     """Test various arrow function syntaxes."""
-    result, error = await make_tool_call(
-        client, "any", {"value": {}, "operation": "eval", "expression": expression}
-    )
-    assert error is None
-    assert result == expected_result
+    await _assert_js_eval(client, expression, expected_result)
 
 
 # --- Template Literal Tests ---
+
+
+async def _assert_eval_result(client, value, expression, expected_result):
+    result, error = await make_tool_call(
+        client,
+        "any",
+        {"value": value, "operation": "eval", "expression": expression},
+    )
+    assert error is None
+    assert result == expected_result
 
 
 @pytest.mark.asyncio
@@ -97,13 +111,7 @@ async def test_arrow_functions(client, expression, expected_result):
 )
 async def test_template_literals(client, expression, context_value, expected_result):
     """Test template literal syntax."""
-    result, error = await make_tool_call(
-        client,
-        "any",
-        {"value": context_value, "operation": "eval", "expression": expression},
-    )
-    assert error is None
-    assert result == expected_result
+    await _assert_eval_result(client, context_value, expression, expected_result)
 
 
 # --- Destructuring Tests ---
@@ -144,13 +152,7 @@ async def test_template_literals(client, expression, context_value, expected_res
 )
 async def test_destructuring(client, expression, context_value, expected_result):
     """Test destructuring assignment syntax."""
-    result, error = await make_tool_call(
-        client,
-        "any",
-        {"value": context_value, "operation": "eval", "expression": expression},
-    )
-    assert error is None
-    assert result == expected_result
+    await _assert_eval_result(client, context_value, expression, expected_result)
 
 
 # --- Spread Operator Tests ---
@@ -180,13 +182,7 @@ async def test_destructuring(client, expression, context_value, expected_result)
 )
 async def test_spread_operator(client, expression, context_value, expected_result):
     """Test spread operator syntax."""
-    result, error = await make_tool_call(
-        client,
-        "any",
-        {"value": context_value, "operation": "eval", "expression": expression},
-    )
-    assert error is None
-    assert result == expected_result
+    await _assert_eval_result(client, context_value, expression, expected_result)
 
 
 # --- Modern Array Methods Tests ---
@@ -215,11 +211,7 @@ async def test_spread_operator(client, expression, context_value, expected_resul
 )
 async def test_modern_array_methods(client, expression, expected_result):
     """Test modern JavaScript array methods."""
-    result, error = await make_tool_call(
-        client, "any", {"value": {}, "operation": "eval", "expression": expression}
-    )
-    assert error is None
-    assert result == expected_result
+    await _assert_js_eval(client, expression, expected_result)
 
 
 # --- Let/Const Scoping Tests ---
@@ -263,11 +255,7 @@ async def test_modern_array_methods(client, expression, expected_result):
 )
 async def test_let_const_scoping(client, expression, expected_result):
     """Test let/const scoping behavior."""
-    result, error = await make_tool_call(
-        client, "any", {"value": {}, "operation": "eval", "expression": expression}
-    )
-    assert error is None
-    assert result == expected_result
+    await _assert_js_eval(client, expression, expected_result)
 
 
 # --- Truthy/Falsy Behavior Tests ---
@@ -302,11 +290,7 @@ async def test_let_const_scoping(client, expression, expected_result):
 )
 async def test_truthy_falsy_behavior(client, value, expression, expected_result):
     """Test JavaScript truthy/falsy behavior."""
-    result, error = await make_tool_call(
-        client, "any", {"value": value, "operation": "eval", "expression": expression}
-    )
-    assert error is None
-    assert result == expected_result
+    await _assert_eval_result(client, value, expression, expected_result)
 
 
 # --- Type System Tests ---
@@ -342,11 +326,7 @@ async def test_truthy_falsy_behavior(client, value, expression, expected_result)
 )
 async def test_type_system(client, value, expression, expected_result):
     """Test JavaScript type system features."""
-    result, error = await make_tool_call(
-        client, "any", {"value": value, "operation": "eval", "expression": expression}
-    )
-    assert error is None
-    assert result == expected_result
+    await _assert_eval_result(client, value, expression, expected_result)
 
 
 # --- Error Handling Tests ---
@@ -417,13 +397,7 @@ async def test_try_catch_expressions(client):
 )
 async def test_json_operations(client, expression, context_value, expected_result):
     """Test JSON.stringify and JSON.parse operations."""
-    result, error = await make_tool_call(
-        client,
-        "any",
-        {"value": context_value, "operation": "eval", "expression": expression},
-    )
-    assert error is None
-    assert result == expected_result
+    await _assert_eval_result(client, context_value, expression, expected_result)
 
 
 # --- Regular Expression Tests ---
@@ -447,10 +421,4 @@ async def test_json_operations(client, expression, context_value, expected_resul
 )
 async def test_regular_expressions(client, expression, context_value, expected_result):
     """Test regular expression support."""
-    result, error = await make_tool_call(
-        client,
-        "any",
-        {"value": context_value, "operation": "eval", "expression": expression},
-    )
-    assert error is None
-    assert result == expected_result
+    await _assert_eval_result(client, context_value, expression, expected_result)
